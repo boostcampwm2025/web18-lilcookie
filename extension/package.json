@@ -1,0 +1,7 @@
+{
+  "name": "extension",
+  "version": "1.0.0",
+  "devDependencies": {
+    "msw": "^2.12.4"
+  }
+}
