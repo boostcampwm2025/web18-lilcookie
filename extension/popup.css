@@ -22,9 +22,25 @@ body {
 .header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
   padding-bottom: 8px;
   border-bottom: 1px solid #f3f4f6;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-link {
+  font-size: 12px;
+  color: #4f46e5;
+  text-decoration: none;
+}
+
+.settings-link:hover {
+  text-decoration: underline;
 }
 
 .logo-icon svg {
@@ -222,4 +238,16 @@ textarea::placeholder, input[type="text"]::placeholder {
 
 .dashboard-link:hover {
   text-decoration: underline;
+}
+
+.dashboard-link.disabled {
+  color: #9ca3af;
+  pointer-events: none;
+  text-decoration: none;
+}
+
+.dashboard-notice {
+  font-size: 11px;
+  color: #ef4444;
+  margin-top: 4px;
 }

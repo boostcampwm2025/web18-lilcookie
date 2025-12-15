@@ -1,0 +1,85 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #f9fafb;
+  color: #1f2937;
+  padding: 40px;
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  background-color: white;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  width: 100%;
+  max-width: 480px;
+}
+
+h1 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 32px;
+  color: #111827;
+}
+
+.form-group {
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+label {
+  font-size: 16px;
+  font-weight: 500;
+  color: #111827;
+  min-width: 120px;
+}
+
+input, select {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #6b7280;
+  outline: none;
+  transition: border-color 0.2s;
+  text-align: center;
+}
+
+input:focus, select:focus {
+  border-color: #4f46e5;
+  color: #111827;
+}
+
+input::placeholder {
+  color: #9ca3af;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  background-color: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 16px;
+}
+
+button:hover {
+  background-color: #4338ca;
+}
+
+.status {
+  margin-top: 10px;
+  font-size: 12px;
+  text-align: center;
+  height: 20px;
+  color: #059669;
+}

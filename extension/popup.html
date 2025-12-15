@@ -10,32 +10,35 @@
     <div class="container">
       <!-- Header -->
       <header class="header">
-        <div class="logo-icon">
-          <!-- 북마크 모양 아이콘 -->
-          <svg
-            width="36"
-            height="36"
-            viewBox="0 0 36 36"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M0 11.0341C0 4.94016 4.94015 0 11.0341 0H24.2751C30.3691 0 35.3092 4.94015 35.3092 11.0341V24.2751C35.3092 30.3691 30.3691 35.3092 24.2751 35.3092H11.0341C4.94016 35.3092 0 30.3691 0 24.2751V11.0341Z"
-              fill="#E0E7FF"
-            />
-            <path
-              d="M22.8032 24.275L17.6539 21.3326L12.5046 24.275V12.5053C12.5046 12.1151 12.6596 11.7409 12.9355 11.465C13.2115 11.1891 13.5857 11.0341 13.9759 11.0341H21.3319C21.7221 11.0341 22.0963 11.1891 22.3723 11.465C22.6482 11.7409 22.8032 12.1151 22.8032 12.5053V24.275Z"
-              stroke="#4F39F6"
-              stroke-width="1.47122"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
+        <div class="header-content">
+          <div class="logo-icon">
+            <!-- 북마크 모양 아이콘 -->
+            <svg
+              width="36"
+              height="36"
+              viewBox="0 0 36 36"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M0 11.0341C0 4.94016 4.94015 0 11.0341 0H24.2751C30.3691 0 35.3092 4.94015 35.3092 11.0341V24.2751C35.3092 30.3691 30.3691 35.3092 24.2751 35.3092H11.0341C4.94016 35.3092 0 30.3691 0 24.2751V11.0341Z"
+                fill="#E0E7FF"
+              />
+              <path
+                d="M22.8032 24.275L17.6539 21.3326L12.5046 24.275V12.5053C12.5046 12.1151 12.6596 11.7409 12.9355 11.465C13.2115 11.1891 13.5857 11.0341 13.9759 11.0341H21.3319C21.7221 11.0341 22.0963 11.1891 22.3723 11.465C22.6482 11.7409 22.8032 12.1151 22.8032 12.5053V24.275Z"
+                stroke="#4F39F6"
+                stroke-width="1.47122"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+          <div class="header-text">
+            <h1 class="app-name">TeamStash</h1>
+            <p class="tagline">링크를 빠르게 저장하세요</p>
+          </div>
         </div>
-        <div class="header-text">
-          <h1 class="app-name">TeamStash</h1>
-          <p class="tagline">링크를 빠르게 저장하세요</p>
-        </div>
+        <a href="#" id="settingsLink" class="settings-link">사용자 설정</a>
       </header>
 
       <!-- Page Info Card -->
@@ -196,7 +199,8 @@
         </button>
       </form>      <!-- Footer -->
       <footer class="footer">
-        <a href="#" class="dashboard-link">대시보드 열기 →</a>
+        <a href="#" id="dashboardLink" class="dashboard-link">대시보드 열기 →</a>
+        <p id="dashboardNotice" class="dashboard-notice" style="display: none;">팀 설정을 먼저 해주세요</p>
       </footer>
     </div>
     <script src="popup.js"></script>

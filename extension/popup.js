@@ -1,3 +1,6 @@
+const BASE_URL = 'https://link-repository.eupthere.com';
+const POST_URL = BASE_URL + '/api/link';
+
 document.addEventListener('DOMContentLoaded', async () => {
   // 정보 입력 및 제출할 폼 부분
   const form = document.getElementById('stashForm');
@@ -9,6 +12,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   const pageFavicon = document.getElementById('pageFavicon');
   const pageTitle = document.getElementById('pageTitle');
   const pageUrl = document.getElementById('pageUrl');
+
+  // 설정 링크 이벤트 핸들러
+  const settingsLink = document.getElementById('settingsLink');
+  if (settingsLink) {
+    settingsLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (chrome.runtime.openOptionsPage) {
+        chrome.runtime.openOptionsPage();
+      } else {
+        window.open(chrome.runtime.getURL('options.html'));
+      }
+    });
+  }
 
   // 현재 탭 페이지 정보 가져오기
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -24,7 +40,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  const POST_URL = 'https://link-repository.eupthere.com/api/link'
+  // 대시보드 링크 설정
+  const dashboardLink = document.getElementById('dashboardLink');
+  const dashboardNotice = document.getElementById('dashboardNotice');
+
+  if (dashboardLink) {
+    chrome.storage.sync.get('teamId', ({ teamId }) => {
+      if (teamId) {
+        dashboardLink.href = `${BASE_URL}/${teamId.toLowerCase()}`;
+        dashboardLink.classList.remove('disabled');
+        if (dashboardNotice) dashboardNotice.style.display = 'none';
+      } else {
+        dashboardLink.removeAttribute('href');
+        dashboardLink.classList.add('disabled');
+        if (dashboardNotice) dashboardNotice.style.display = 'block';
+      }
+    });
+
+    dashboardLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (dashboardLink.href && !dashboardLink.classList.contains('disabled')) {
+        chrome.tabs.create({ url: dashboardLink.href });
+      }
+    });
+  }
 
   // 저장 버튼 활성화: 인풋 모두 채워지면 activate
   function checkFields() {
@@ -53,7 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     let originalBtnText;
-    
+
     try {
       // 버튼에 로딩 표시
       originalBtnText = saveButton.innerHTML;
