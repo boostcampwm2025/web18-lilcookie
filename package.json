@@ -1,0 +1,12 @@
+{
+  "name": "web18-lilcookie",
+  "version": "1.0.0",
+  "description": "URL 원클릭 저장 기획 사용자 테스트를 위한 프로토타입",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend",
+    "extension"
+  ],
+  "scripts": {}
+}
