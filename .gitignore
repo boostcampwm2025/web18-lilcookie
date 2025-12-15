@@ -1,0 +1,17 @@
+# 빌드 결과물 및 의존성 디렉토리 무시
+node_modules/
+dist/
+
+# 운영 체제 파일 무시
+.DS_Store
+
+# 환경 변수 파일 무시
+.env*
+!.env.sample
+
+# 테스트 커버리지 디렉토리
+coverage/
+
+# 로그 파일 무시
+logs
+*.log*
