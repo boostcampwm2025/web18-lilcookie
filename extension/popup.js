@@ -35,7 +35,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (tab) {
     pageTitle.textContent = tab.title;
     pageUrl.textContent = tab.url;
-    pageUrl.href = tab.url;
     if (tab.favIconUrl) {
       pageFavicon.src = tab.favIconUrl;
     } else {

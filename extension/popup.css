@@ -2,7 +2,9 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
 }
 
 body {
@@ -66,7 +68,8 @@ body {
 /* Page Info Card */
 .page-info-card {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: flex-start;
   gap: 12px;
   padding: 12px;
   border: 1px solid #e5e7eb;
@@ -160,7 +163,8 @@ body {
   background-color: #e9d5ff;
 }
 
-textarea, input[type="text"] {
+textarea,
+input[type="text"] {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #e5e7eb;
@@ -176,12 +180,14 @@ textarea {
   height: 80px;
 }
 
-textarea:focus, input[type="text"]:focus {
+textarea:focus,
+input[type="text"]:focus {
   border-color: #a78bfa;
   box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.1);
 }
 
-textarea::placeholder, input[type="text"]::placeholder {
+textarea::placeholder,
+input[type="text"]::placeholder {
   color: #9ca3af;
 }
 
@@ -193,7 +199,7 @@ textarea::placeholder, input[type="text"]::placeholder {
   justify-content: center;
   gap: 8px;
   padding: 12px;
-  background-color: #874FFF;
+  background-color: #874fff;
   color: #ffffff;
   border: none;
   border-radius: 12px;
