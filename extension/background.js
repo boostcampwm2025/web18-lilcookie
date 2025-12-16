@@ -47,7 +47,7 @@ async function checkNewLinks() {
     if (!teamId) return;
 
     const now = new Date();
-    const formattedNow = now.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+    const formattedNow = now.toISOString();
 
     if (!lastCheck) {
       await chrome.storage.sync.set({ lastCheck: formattedNow });

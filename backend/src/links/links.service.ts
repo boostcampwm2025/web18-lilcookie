@@ -145,41 +145,16 @@ export class LinksService {
 
     // createdAfter 필터링
     if (createdAfter) {
-      const afterDate = this.parseDateString(createdAfter);
+      const afterDate = new Date(createdAfter);
       if (!isNaN(afterDate.getTime())) {
         links = links.filter((link) => {
-          const linkDate = this.parseDateString(link.createdAt);
+          const linkDate = new Date(link.createdAt);
           return !isNaN(linkDate.getTime()) && linkDate > afterDate;
         });
       }
     }
 
     return links;
-  }
-
-  private parseDateString(dateString: string): Date {
-    const regex = /(\d{4})\. (\d{1,2})\. (\d{1,2})\. (오전|오후) (\d{1,2}):(\d{1,2}):(\d{1,2})/;
-    const match = dateString.match(regex);
-
-    if (!match) {
-      return new Date(NaN);
-    }
-
-    const year = parseInt(match[1]);
-    const month = parseInt(match[2]) - 1;
-    const day = parseInt(match[3]);
-    const meridiem = match[4];
-    let hour = parseInt(match[5]);
-    const minute = parseInt(match[6]);
-    const second = parseInt(match[7]);
-
-    if (meridiem === "오후" && hour !== 12) {
-      hour += 12;
-    } else if (meridiem === "오전" && hour === 12) {
-      hour = 0;
-    }
-
-    return new Date(year, month, day, hour, minute, second);
   }
 
   // 단건 조회
