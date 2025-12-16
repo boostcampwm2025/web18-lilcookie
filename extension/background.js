@@ -1,5 +1,6 @@
 const isDev = true;
 const BASE_URL = isDev ? 'http://localhost:3000' : 'https://link-repository.eupthere.com';
+const FE_BASE_URL = isDev ? 'http://localhost:5173' : 'https://link-repository.eupthere.com';
 const POST_URL = BASE_URL + '/api/links';
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -67,6 +68,18 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
+// Notification click handler: open dashboard
+chrome.notifications.onClicked.addListener(async (notificationId) => {
+  if (notificationId === 'teamstash-new-links') {
+    const { teamId } = await chrome.storage.sync.get('teamId');
+    if (teamId) {
+      chrome.tabs.create({ url: `${FE_BASE_URL}/${teamId.toLowerCase()}` });
+    }
+    chrome.notifications.clear(notificationId);
+    await chrome.storage.local.set({ unseenLinkCount: 0 });
+  }
+});
+
 async function checkNewLinks() {
   try {
     const { teamId, lastCheck, camperId } = await chrome.storage.sync.get(['teamId', 'lastCheck', 'camperId']);
@@ -91,13 +104,22 @@ async function checkNewLinks() {
       const links = json.data || [];
       const newLinks = links.filter((link) => link.createdBy !== camperId);
 
+
       if (Array.isArray(newLinks) && newLinks.length > 0) {
-        chrome.notifications.create({
+        const { unseenLinkCount } = await chrome.storage.local.get(['unseenLinkCount']);
+        const totalNewLinks = (unseenLinkCount || 0) + newLinks.length;
+
+        const notificationId = 'teamstash-new-links';
+        chrome.notifications.create(notificationId, {
           type: 'basic',
           iconUrl: 'images/icon-128.png',
           title: '[TeamStash] 새로운 링크 알림',
-          message: `${newLinks.length}개의 새로운 링크가 등록되었습니다.`,
+          message: `${totalNewLinks}개의 새로운 링크가 등록되었습니다.`,
           priority: 2
+        });
+        
+        chrome.storage.local.set({ 
+          unseenLinkCount: totalNewLinks
         });
       }
 
@@ -111,13 +133,34 @@ async function checkNewLinks() {
 chrome.tabs.onActivated.addListener((activeInfo) => {
   console.log('activated');
   showSummary(activeInfo.tabId);
+  checkDashboardVisit(activeInfo.tabId);
 });
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete') {
     console.log('change complete');
     showSummary(tabId);
+    checkDashboardVisit(tabId);
   }
 });
+
+async function checkDashboardVisit(tabId) {
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (!tab.url) return;
+
+    const { teamId } = await chrome.storage.sync.get('teamId');
+    if (!teamId) return;
+
+    const dashboardUrl = `${FE_BASE_URL}/${teamId.toLowerCase()}`;
+    
+    if (tab.url.startsWith(dashboardUrl)) {
+       await chrome.storage.local.set({ unseenLinkCount: 0 });
+       chrome.notifications.clear('teamstash-new-links');
+    }
+  } catch (error) {
+    console.debug('Error checking dashboard visit:', error);
+  }
+}
 
 async function showSummary(tabId) {
   try {
