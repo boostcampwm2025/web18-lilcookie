@@ -33,12 +33,6 @@ export const linkApi = {
     return response.data;
   },
 
-  // GET /api/links/:linkId - 링크 단건 조회
-  /*getLinkById: async (linkId: string): Promise<ApiResponse<Link>> => {
-    const response = await api.get(`/links/${linkId}`);
-    return response.data;
-  },
-*/
   // DELETE /api/links/:linkId - 링크 삭제 (204 No Content)
   deleteLink: async (linkId: string): Promise<void> => {
     await api.delete(`/links/${linkId}`);
