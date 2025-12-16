@@ -17,6 +17,8 @@ COPY frontend ./frontend
 
 # Build the application
 WORKDIR /app/frontend
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build
 
 # Production stage with nginx

@@ -24,6 +24,8 @@ services:
     build:
       context: .
       dockerfile: ./frontend/Dockerfile
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
     image: lilcookie-frontend:latest
     container_name: lilcookie-frontend
     restart: unless-stopped
