@@ -1,5 +1,6 @@
-const BASE_URL = 'https://link-repository.eupthere.com';
-const POST_URL = BASE_URL + '/api/link';
+const isDev = true;
+const BASE_URL = isDev ? 'http://localhost:3000' : 'https://link-repository.eupthere.com';
+const POST_URL = BASE_URL + '/api/links';
 
 document.addEventListener('DOMContentLoaded', async () => {
   // 정보 입력 및 제출할 폼 부분
@@ -85,10 +86,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    const { camperId, teamId } = await chrome.storage.sync.get(['camperId', 'teamId']);
+
+    if (!camperId || !teamId) {
+      alert('설정에서 캠퍼 ID와 팀 ID를 먼저 설정해주세요.');
+      if (chrome.runtime.openOptionsPage) {
+        chrome.runtime.openOptionsPage();
+      }
+      return;
+    }
+
     const formData = {
+      userId: camperId,
+      teamId: teamId,
       url: tab.url,
+      title: tab.title,
+      tags: tagsInput.value.split(',').map(v => v.trim()).filter(v => v !== ''),
       summary: commentInput.value,
-      tags: tagsInput.value.split(',').map(v => v.trim()).filter(v => v !== '')
     };
 
     let originalBtnText;
