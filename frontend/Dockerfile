@@ -1,16 +1,16 @@
 # 1. Builder stage - builds the frontend
-FROM node:lts-alpine3.22 AS builder
+FROM node:lts-slim AS builder
 
 WORKDIR /app
 
 # Copy workspace root package files
-COPY package*.json ./
+COPY package.json ./
 
 # Copy frontend package.json
-COPY frontend/package*.json ./frontend/
+COPY frontend/package.json ./frontend/
 
 # Install frontend workspace dependencies
-RUN npm ci -w frontend
+RUN npm install -w frontend
 
 # Copy frontend source code
 COPY frontend ./frontend
