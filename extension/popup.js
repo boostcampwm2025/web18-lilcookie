@@ -29,6 +29,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 현재 탭 페이지 정보 가져오기
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
+  const commentAiBtn = document.getElementById('commentAi');
+  const tagsAiBtn = document.getElementById('tagsAi');
+
   if (tab) {
     pageTitle.textContent = tab.title;
     pageUrl.textContent = tab.url;
@@ -37,6 +40,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       pageFavicon.src = tab.favIconUrl;
     } else {
       pageFavicon.style.display = 'none';
+    }
+
+    // StackOverflow 질문 페이지인지 확인
+    const isStackOverflow = tab.url.startsWith('https://stackoverflow.com/questions/');
+    if (isStackOverflow) {
+      commentAiBtn.style.display = 'flex';
+      tagsAiBtn.style.display = 'flex';
+    } else {
+      commentAiBtn.style.display = 'none';
+      tagsAiBtn.style.display = 'none';
     }
   }
 

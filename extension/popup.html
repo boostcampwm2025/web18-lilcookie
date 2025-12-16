@@ -44,18 +44,11 @@
       <!-- Page Info Card -->
       <div class="page-info-card">
         <div class="page-icon">
-          <img
-            id="pageFavicon"
-            src=""
-            alt="favicon"
-            class="favicon"
-          />
+          <img id="pageFavicon" src="" alt="favicon" class="favicon" />
         </div>
         <div class="page-details">
           <h2 id="pageTitle" class="page-title">Loading...</h2>
-          <a id="pageUrl" href="#" class="page-url">
-            Loading...
-          </a>
+          <a id="pageUrl" href="#" class="page-url"> Loading... </a>
         </div>
       </div>
 
@@ -65,7 +58,7 @@
         <div class="input-group">
           <div class="label-row">
             <label>코멘트</label>
-            <button type="button" class="ai-badge-btn">
+            <button id="commentAi" type="button" class="ai-badge-btn">
               <svg
                 width="14"
                 height="14"
@@ -112,14 +105,18 @@
               AI 생성
             </button>
           </div>
-          <textarea id="comment" name="comment" placeholder="URL에 대한 설명을 입력하세요."></textarea>
+          <textarea
+            id="comment"
+            name="comment"
+            placeholder="URL에 대한 설명을 입력하세요."
+          ></textarea>
         </div>
 
         <!-- Tag Field -->
         <div class="input-group">
           <div class="label-row">
             <label>태그</label>
-            <button type="button" class="ai-badge-btn">
+            <button id="tagsAi" type="button" class="ai-badge-btn">
               <!-- AI 생성 버튼 아이콘 -->
               <svg
                 width="14"
@@ -197,7 +194,8 @@
           </svg>
           스태시에 저장
         </button>
-      </form>      <!-- Footer -->
+      </form>
+      <!-- Footer -->
       <footer class="footer">
         <a href="#" id="dashboardLink" class="dashboard-link">대시보드 열기 →</a>
         <p id="dashboardNotice" class="dashboard-notice" style="display: none;">팀 설정을 먼저 해주세요</p>
