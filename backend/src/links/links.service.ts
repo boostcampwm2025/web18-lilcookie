@@ -29,7 +29,7 @@ export class LinksService {
   }
 
   // 목록 조회 (전체 또는 조건)
-  findAll(teamId?: string, tagsQuery?: string): Link[] {
+  findAll(teamId?: string, tagsQuery?: string, createdAfter?: string): Link[] {
     let links = Array.from(this.links.values());
 
     // teamId 필터링 (lowercase 비교)
@@ -43,7 +43,43 @@ export class LinksService {
       links = links.filter((link) => queryTags.every((queryTag) => link.tags.includes(queryTag)));
     }
 
+    // createdAfter 필터링
+    if (createdAfter) {
+      const afterDate = this.parseDateString(createdAfter);
+      if (!isNaN(afterDate.getTime())) {
+        links = links.filter((link) => {
+          const linkDate = this.parseDateString(link.createdAt);
+          return !isNaN(linkDate.getTime()) && linkDate > afterDate;
+        });
+      }
+    }
+
     return links;
+  }
+
+  private parseDateString(dateString: string): Date {
+    const regex = /(\d{4})\. (\d{1,2})\. (\d{1,2})\. (오전|오후) (\d{1,2}):(\d{1,2}):(\d{1,2})/;
+    const match = dateString.match(regex);
+
+    if (!match) {
+      return new Date(NaN);
+    }
+
+    const year = parseInt(match[1]);
+    const month = parseInt(match[2]) - 1;
+    const day = parseInt(match[3]);
+    const meridiem = match[4];
+    let hour = parseInt(match[5]);
+    const minute = parseInt(match[6]);
+    const second = parseInt(match[7]);
+
+    if (meridiem === "오후" && hour !== 12) {
+      hour += 12;
+    } else if (meridiem === "오전" && hour === 12) {
+      hour = 0;
+    }
+
+    return new Date(year, month, day, hour, minute, second);
   }
 
   // 단건 조회
