@@ -1,4 +1,4 @@
-import { ExternalLink, Trash2 } from "lucide-react";
+import { ExternalLink, Image, Trash2 } from "lucide-react";
 import type { Link } from "../../types";
 
 interface LinkCardProps {
@@ -31,11 +31,11 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 group">
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm group">
       {/* 썸네일 */}
       <div className="relative h-48 bg-linear-to-br from-blue-50 to-indigo-100">
         <div className="w-full h-full flex items-center justify-center">
-          <ExternalLink className="w-12 h-12 text-blue-400" />
+          <Image className="w-12 h-12 text-blue-400" />
         </div>
         {isNew() && (
           <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
@@ -46,9 +46,7 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
 
       {/* 콘텐츠 */}
       <div className="p-5">
-        <h3 className="font-bold text-lg mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-          {link.title}
-        </h3>
+        <h3 className="font-bold text-lg mb-2 line-clamp-2">{link.title}</h3>
 
         <p className="text-sm text-gray-600 mb-4 line-clamp-2 leading-relaxed">
           {link.summary}
@@ -94,7 +92,7 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
             {onDelete && (
               <button
                 onClick={() => onDelete(link.linkId)}
-                className="p-2 hover:bg-red-50 rounded-lg transition-colors group"
+                className="p-2 hover:bg-red-50 rounded-lg transition-colors group cursor-pointer"
                 title="링크 삭제"
               >
                 <Trash2 className="w-5 h-5 text-gray-400 group-hover:text-red-600 transition-colors" />
@@ -102,7 +100,7 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
             )}
             <button
               onClick={() => window.open(link.url, "_blank")}
-              className="p-2 hover:bg-blue-50 rounded-lg transition-colors group"
+              className="p-2 hover:bg-blue-50 rounded-lg transition-colors group cursor-pointer"
               title="새 탭에서 열기"
             >
               <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
