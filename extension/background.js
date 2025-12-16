@@ -30,3 +30,53 @@ async function saveLink(formData) {
     return { success: false, error: error.message };
   }
 }
+
+// 알람 설정: 1분마다 실행
+chrome.alarms.create('pollLinks', { periodInMinutes: 0.5 });
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'pollLinks') {
+    checkNewLinks();
+  }
+});
+
+async function checkNewLinks() {
+  try {
+    const { teamId, lastCheck, camperId } = await chrome.storage.sync.get(['teamId', 'lastCheck', 'camperId']);
+
+    if (!teamId) return;
+
+    const now = new Date();
+    const formattedNow = now.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+
+    if (!lastCheck) {
+      await chrome.storage.sync.set({ lastCheck: formattedNow });
+      return;
+    }
+
+    const url = new URL(POST_URL);
+    url.searchParams.append('teamId', teamId);
+    url.searchParams.append('createdAfter', lastCheck);
+
+    const response = await fetch(url.toString());
+    if (response.ok) {
+      const json = await response.json();
+      const links = json.data || [];
+      const newLinks = links.filter((link) => link.createdBy !== camperId);
+
+      if (Array.isArray(newLinks) && newLinks.length > 0) {
+        chrome.notifications.create({
+          type: 'basic',
+          iconUrl: 'images/icon-128.png',
+          title: '[TeamStash] 새로운 링크 알림',
+          message: `${newLinks.length}개의 새로운 링크가 등록되었습니다.`,
+          priority: 2
+        });
+      }
+
+      await chrome.storage.sync.set({ lastCheck: formattedNow });
+    }
+  } catch (error) {
+    console.error('Error checking links:', error);
+  }
+}

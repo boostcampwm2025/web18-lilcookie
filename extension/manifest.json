@@ -20,5 +20,5 @@
     "128": "images/icon-128.png"
   },
   "host_permissions": ["https://link-repository.eupthere.com/*"],
-  "permissions": ["activeTab", "storage"]
+  "permissions": ["activeTab", "storage", "alarms", "notifications"]
 }
