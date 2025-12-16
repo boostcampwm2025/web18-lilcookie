@@ -54,14 +54,19 @@ const LinkGrid = ({
   // 링크 목록
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {links.map((link) => (
-        <LinkCard
-          key={link.linkId}
-          link={link}
-          onDelete={onDeleteLink}
-          onTagClick={onTagClick}
-        />
-      ))}
+      {links
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+        .map((link) => (
+          <LinkCard
+            key={link.linkId}
+            link={link}
+            onDelete={onDeleteLink}
+            onTagClick={onTagClick}
+          />
+        ))}
     </div>
   );
 };
