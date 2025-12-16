@@ -12,11 +12,15 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    
+
     // Get calendar dates (ignoring time)
-    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const dateOnly = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    );
     const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+
     const diffTime = nowOnly.getTime() - dateOnly.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
@@ -30,11 +34,15 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
   const isNew = () => {
     const date = new Date(link.createdAt);
     const now = new Date();
-    
+
     // Get calendar dates (ignoring time)
-    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const dateOnly = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    );
     const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+
     const diffTime = nowOnly.getTime() - dateOnly.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= 3;
@@ -56,9 +64,20 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
 
       {/* 콘텐츠 */}
       <div className="p-5">
-        <h3 className="font-bold text-lg mb-2 line-clamp-2">{link.title}</h3>
+        <h3 className="font-bold text-lg mb-2 line-clamp-2">
+          <a
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full h-full"
+          >
+            <span className="transition-colors rounded-lg px-2 py-1 hover:bg-blue-50 focus:bg-blue-100 w-full block">
+              {link.title}
+            </span>
+          </a>
+        </h3>
 
-        <p className="text-sm text-gray-600 mb-4 line-clamp-2 leading-relaxed">
+        <p className="text-sm text-gray-600 px-2 py-1 mb-4 line-clamp-10 leading-relaxed">
           {link.summary}
         </p>
 
@@ -110,7 +129,7 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
             )}
             <button
               onClick={() => window.open(link.url, "_blank")}
-              className="p-2 hover:bg-blue-50 rounded-lg transition-colors group cursor-pointer"
+              className="hidden p-2 hover:bg-blue-50 rounded-lg transition-colors group cursor-pointer"
               title="새 탭에서 열기"
             >
               <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
