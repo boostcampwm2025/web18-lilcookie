@@ -1,5 +1,5 @@
 const isDev = true;
-const BASE_URL = isDev ? 'http://localhost:3000' : 'https://link-repository.eupthere.com';
+const BASE_URL = isDev ? 'http://localhost:5173' : 'https://link-repository.eupthere.com';
 
 document.addEventListener('DOMContentLoaded', async () => {
   // 정보 입력 및 제출할 폼 부분
