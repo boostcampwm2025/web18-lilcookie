@@ -4,7 +4,6 @@ import Header from "../components/layout/Header";
 import LinkGrid from "../components/dashboard/LinkGrid";
 import type { Link } from "../types";
 import { linkApi } from "../services/api";
-import { ExternalLink } from "lucide-react";
 
 const Dashboard = () => {
   const { teamId } = useParams<{ teamId: string }>();
@@ -182,10 +181,12 @@ const Dashboard = () => {
             </p>
           </div>
 
+          {/* TODO: "모두 열기" 기능 구현 후 활성화
           <button className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-lg hover:shadow-xl">
             <ExternalLink className="w-5 h-5" />
             <span className="font-semibold">모두 열기</span>
           </button>
+          */}
         </div>
 
         {/* 선택된 태그 필터 표시 */}

@@ -1,4 +1,4 @@
-import { Search, Bell, Settings, User } from "lucide-react";
+import { Search } from "lucide-react";
 
 interface HeaderProps {
   currentTeam?: string;
@@ -41,7 +41,7 @@ const Header = ({
         </div>
       </div>
 
-      {/* 오른쪽: 알림 + 설정 + 계정 */}
+      {/* TODO: 오른쪽에 알림, 설정, 계정 기능 구현 후 활성화
       <div className="flex items-center gap-3">
         <button className="relative p-2.5 hover:bg-gray-100 rounded-lg transition-colors">
           <Bell className="w-5 h-5 text-gray-600" />
@@ -57,6 +57,7 @@ const Header = ({
           <span className="text-sm font-medium text-gray-700">내 계정</span>
         </button>
       </div>
+      */}
     </header>
   );
 };
