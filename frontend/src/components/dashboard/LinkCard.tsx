@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ExternalLink, Image, Trash2 } from "lucide-react";
 import type { Link } from "../../types";
 
@@ -8,6 +9,27 @@ interface LinkCardProps {
 }
 
 const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
+  const [isVisited, setIsVisited] = useState(() => {
+    const visitedLinks = localStorage.getItem("visited_links");
+    return visitedLinks ? JSON.parse(visitedLinks).includes(link.linkId) : false;
+  });
+
+  const handleLinkClick = () => {
+    if (!isVisited) {
+      setIsVisited(true);
+      const visitedLinks = JSON.parse(localStorage.getItem("visited_links") || "[]");
+      if (!visitedLinks.includes(link.linkId)) {
+        localStorage.setItem("visited_links", JSON.stringify([...visitedLinks, link.linkId]));
+      }
+    }
+  };
+
+  const handleAuxClick = (e: React.MouseEvent) => {
+    if (e.button === 1) { // Middle mouse button
+      handleLinkClick();
+    }
+  };
+
   // 날짜 포맷팅
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -55,7 +77,7 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
         <div className="w-full h-full flex items-center justify-center">
           <Image className="w-12 h-12 text-blue-400" />
         </div>
-        {isNew() && (
+        {isNew() && !isVisited && (
           <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
             NEW
           </span>
@@ -70,8 +92,10 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
             target="_blank"
             rel="noopener noreferrer"
             className="block w-full h-full"
+            onClick={handleLinkClick}
+            onAuxClick={handleAuxClick}
           >
-            <span className="transition-colors rounded-lg px-2 py-1 hover:bg-blue-50 focus:bg-blue-100 w-full block">
+            <span className={`transition-colors rounded-lg px-2 py-1 hover:bg-blue-50 focus:bg-blue-100 w-full block text-gray-900`}>
               {link.title}
             </span>
           </a>

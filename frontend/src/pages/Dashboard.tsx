@@ -107,6 +107,18 @@ const Dashboard = () => {
     setSelectedTags([]);
   };
 
+  const handleMarkAllAsRead = () => {
+    const allLinkIds = links.map((link) => link.linkId);
+    const visitedLinks = JSON.parse(localStorage.getItem("visited_links") || "[]");
+    const newVisitedLinks = Array.from(new Set([...visitedLinks, ...allLinkIds]));
+    localStorage.setItem("visited_links", JSON.stringify(newVisitedLinks));
+    
+    // Force re-render of LinkCards by updating a key or state that they depend on
+    // Since LinkCard reads from localStorage on mount, we might need to reload or use a context
+    // For now, a simple window reload is the easiest way to reflect changes immediately without complex state management
+    window.location.reload();
+  };
+
   if (error && links.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -162,6 +174,13 @@ const Dashboard = () => {
               {selectedTags.length > 0 && ` (전체 ${links.length}개)`}
             </p>
           </div>
+
+          <button 
+            onClick={handleMarkAllAsRead}
+            className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-lg hover:shadow-xl cursor-pointer"
+          >
+            모두 읽음 표시
+          </button>
 
           {/* TODO: "모두 열기" 기능 구현 후 활성화
           <button className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-lg hover:shadow-xl">
