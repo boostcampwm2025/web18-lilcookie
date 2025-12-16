@@ -135,6 +135,7 @@ body {
 .label-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
 }
 
@@ -161,6 +162,38 @@ body {
 
 .ai-badge-btn:hover {
   background-color: #e9d5ff;
+}
+
+.ai-badge-btn:disabled {
+  cursor: not-allowed;
+  background-color: #f3f4f6;
+  color: #9ca3af;
+}
+
+.ai-badge-btn:disabled svg path {
+  stroke: #9ca3af;
+}
+
+@keyframes passing-shine {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+.ai-badge-btn.loading {
+  background: linear-gradient(
+    90deg,
+    #f3e8ff 25%,
+    #e9d5ff 50%,
+    #f3e8ff 100%
+  );
+  background-size: 200% auto;
+  animation: passing-shine 2s linear infinite;
+  cursor: wait;
+  color: #7c3aed; /* Keep text color consistent */
+}
+
+.ai-badge-btn.loading svg path {
+  stroke: #7c3aed; /* Keep icon color consistent */
 }
 
 textarea,

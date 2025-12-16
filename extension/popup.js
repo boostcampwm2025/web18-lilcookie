@@ -29,8 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 현재 탭 페이지 정보 가져오기
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-  const commentAiBtn = document.getElementById('commentAi');
-  const tagsAiBtn = document.getElementById('tagsAi');
+  const aiButton = document.getElementById('aiGen');
 
   if (tab) {
     pageTitle.textContent = tab.title;
@@ -41,15 +40,72 @@ document.addEventListener('DOMContentLoaded', async () => {
       pageFavicon.style.display = 'none';
     }
 
-    // StackOverflow 질문 페이지인지 확인
-    const isStackOverflow = tab.url.startsWith('https://stackoverflow.com/questions/');
-    if (isStackOverflow) {
-      commentAiBtn.style.display = 'flex';
-      tagsAiBtn.style.display = 'flex';
-    } else {
-      commentAiBtn.style.display = 'none';
-      tagsAiBtn.style.display = 'none';
-    }
+    // 페이지 내용이 없으면 AI 버튼 비활성화
+    chrome.storage.session.get('pageContent', ({ pageContent }) => {
+      const isReaderable = pageContent?.textContent;
+
+      if (aiButton) {
+        aiButton.disabled = !isReaderable;
+        aiButton.title = isReaderable ? 'AI로 요약 생성' : '이 페이지는 요약할 수 없습니다';
+      }
+    });
+
+    // AI 버튼 이벤트 리스너
+    const handleAiClick = async (button) => {
+      try {
+        const originalHTML = button.innerHTML;
+        // button.textContent = 'AI 생성 중...'; // 텍스트 변경 대신
+        button.classList.add('loading'); // 로딩 클래스 추가
+        button.disabled = true;
+
+        const { pageContent } = await chrome.storage.session.get('pageContent');
+        if (!pageContent || !pageContent.textContent) {
+          button.classList.remove('loading');
+          button.disabled = false;
+          return;
+        }
+
+        const { aiPassword } = await chrome.storage.sync.get('aiPassword');
+        if (!aiPassword) {
+          if (confirm('AI 기능을 사용하려면 설정에서 비밀번호를 입력해야 합니다. 설정 페이지로 이동하시겠습니까?')) {
+            if (chrome.runtime.openOptionsPage) {
+              chrome.runtime.openOptionsPage();
+            } else {
+              window.open(chrome.runtime.getURL('options.html'));
+            }
+          }
+          button.classList.remove('loading');
+          button.disabled = false;
+          return;
+        }
+
+        // 로딩 표시 등 UI 처리 필요시 추가
+
+        const response = await chrome.runtime.sendMessage({
+          action: 'summarize',
+          content: pageContent.textContent,
+          aiPassword
+        });
+
+        if (response && response.success) {
+          const { summary, tags } = response.data;
+          if (summary) commentInput.value = summary;
+          if (tags && Array.isArray(tags)) tagsInput.value = tags.join(', ');
+          checkFields(); // 저장 버튼 활성화 상태 업데이트
+        } else {
+          alert('AI 요약 실패: ' + (response?.error || '응답이 없습니다.'));
+        }
+        button.classList.remove('loading');
+        button.disabled = false;
+      } catch (error) {
+        console.error('AI Error:', error);
+        alert('오류가 발생했습니다: ' + error.message);
+        button.classList.remove('loading');
+        button.disabled = false;
+      }
+    };
+
+    if (aiButton) aiButton.addEventListener('click', (e) => handleAiClick(e.currentTarget));
   }
 
   // 대시보드 링크 설정
@@ -100,7 +156,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { camperId, teamId } = await chrome.storage.sync.get(['camperId', 'teamId']);
 
     if (!camperId || !teamId) {
-      alert('설정에서 캠퍼 ID와 팀 ID를 먼저 설정해주세요.');
+      alert('사용자 설정에서 캠퍼 ID와 팀 ID를 입력해주세요.');
       if (chrome.runtime.openOptionsPage) {
         chrome.runtime.openOptionsPage();
       }

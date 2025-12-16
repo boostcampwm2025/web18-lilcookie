@@ -7,8 +7,35 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     saveLink(request.data).then(sendResponse);
     // https://developer.chrome.com/docs/extensions/develop/concepts/messaging#responses
     return true; // Will respond asynchronously
+  } else if (request.action === 'summarize') {
+    summarizeContent(request.content, request.aiPassword)
+      .then(sendResponse)
+      .catch((error) => sendResponse({ success: false, error: error.message }));
+    return true;
   }
 });
+
+async function summarizeContent(content, aiPassword) {
+  try {
+    const response = await fetch(BASE_URL + '/api/ai/summary', {
+      method: 'POST',
+      body: JSON.stringify({ content, aiPassword }),
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      },
+    });
+
+    if (response.ok) {
+      const json = await response.json();
+      return { success: true, data: json.data };
+    } else {
+      const errorJson = await response.json().catch(() => ({}));
+      return { success: false, error: errorJson.message || '요약 실패' };
+    }
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
 
 async function saveLink(formData) {
   try {
@@ -78,5 +105,37 @@ async function checkNewLinks() {
     }
   } catch (error) {
     console.error('Error checking links:', error);
+  }
+}
+
+chrome.tabs.onActivated.addListener((activeInfo) => {
+  console.log('activated');
+  showSummary(activeInfo.tabId);
+});
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete') {
+    console.log('change complete');
+    showSummary(tabId);
+  }
+});
+
+async function showSummary(tabId) {
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (!tab.url?.startsWith('http')) {
+      chrome.storage.session.set({ pageContent: null });
+      return;
+    }
+    const injection = await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ['scripts/extract-content.js']
+    });
+
+    const result = injection?.[0]?.result;
+    chrome.storage.session.set({ pageContent: result || null });
+
+  } catch (error) {
+    console.debug('Summary extraction skipped:', error.message);
+    chrome.storage.session.set({ pageContent: null });
   }
 }
