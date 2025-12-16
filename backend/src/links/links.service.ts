@@ -15,6 +15,11 @@ export class LinksService {
 
   // 초기 mock data 생성
   private initMockData(): void {
+
+    if (process.env.NODE_ENV === "production") {
+      return;
+    }
+
     const mockLinks = [
       {
         teamId: "web01",
