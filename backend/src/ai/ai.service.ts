@@ -98,7 +98,7 @@ ${content}
       messages,
       topP: 0.8,
       topK: 0,
-      maxTokens: 100,
+      maxTokens: 500,
       temperature: 0.5,
       repetitionPenalty: 1.1,
       includeAiFilters: false,
