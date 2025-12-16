@@ -196,6 +196,19 @@ body {
   stroke: #7c3aed; /* Keep icon color consistent */
 }
 
+textarea.loading,
+input[type="text"].loading {
+  background: linear-gradient(
+    90deg,
+    #ffffff 25%,
+    #f3e8ff 50%,
+    #ffffff 75%
+  );
+  background-size: 200% auto;
+  animation: passing-shine 2s linear infinite;
+  cursor: wait;
+}
+
 textarea,
 input[type="text"] {
   width: 100%;

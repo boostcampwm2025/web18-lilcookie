@@ -57,11 +57,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         // button.textContent = 'AI 생성 중...'; // 텍스트 변경 대신
         button.classList.add('loading'); // 로딩 클래스 추가
         button.disabled = true;
+        commentInput.disabled = true;
+        tagsInput.disabled = true;
+        commentInput.classList.add('loading');
+        tagsInput.classList.add('loading');
 
         const { pageContent } = await chrome.storage.session.get('pageContent');
         if (!pageContent || !pageContent.textContent) {
           button.classList.remove('loading');
           button.disabled = false;
+          commentInput.disabled = false;
+          tagsInput.disabled = false;
+          commentInput.classList.remove('loading');
+          tagsInput.classList.remove('loading');
           return;
         }
 
@@ -76,6 +84,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
           button.classList.remove('loading');
           button.disabled = false;
+          commentInput.disabled = false;
+          tagsInput.disabled = false;
+          commentInput.classList.remove('loading');
+          tagsInput.classList.remove('loading');
           return;
         }
 
@@ -97,11 +109,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         button.classList.remove('loading');
         button.disabled = false;
+        commentInput.disabled = false;
+        tagsInput.disabled = false;
+        commentInput.classList.remove('loading');
+        tagsInput.classList.remove('loading');
       } catch (error) {
         console.error('AI Error:', error);
         alert('오류가 발생했습니다: ' + error.message);
         button.classList.remove('loading');
         button.disabled = false;
+        commentInput.disabled = false;
+        tagsInput.disabled = false;
+        commentInput.classList.remove('loading');
+        tagsInput.classList.remove('loading');
       }
     };
 
