@@ -52,24 +52,6 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
     return date.toLocaleDateString("ko-KR");
   };
 
-  // 최근 3일 이내면 NEW 뱃지
-  const isNew = () => {
-    const date = new Date(link.createdAt);
-    const now = new Date();
-
-    // Get calendar dates (ignoring time)
-    const dateOnly = new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate()
-    );
-    const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    const diffTime = nowOnly.getTime() - dateOnly.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 3;
-  };
-
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm group">
       {/* 썸네일 */}
@@ -77,7 +59,7 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
         <div className="w-full h-full flex items-center justify-center">
           <Image className="w-12 h-12 text-blue-400" />
         </div>
-        {isNew() && !isVisited && (
+        {!isVisited && (
           <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
             NEW
           </span>
