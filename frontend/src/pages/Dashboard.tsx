@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "../components/layout/Header";
 import LinkGrid from "../components/dashboard/LinkGrid";
@@ -42,11 +42,32 @@ const Dashboard = () => {
     return teams;
   };
 
+  const fetchLinks = useCallback(async (team: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await linkApi.getLinks(team);
+
+      if (response.success) {
+        setLinks(response.data);
+      } else {
+        setError("링크를 불러오는데 실패했습니다.");
+      }
+    } catch (err) {
+      console.error("API Error:", err);
+      setError("서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
+      setLinks([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (teamId) {
       fetchLinks(teamId);
     }
-  }, [teamId]);
+  }, [teamId, fetchLinks]);
 
   // 검색 및 태그 필터링
   useEffect(() => {
@@ -74,121 +95,10 @@ const Dashboard = () => {
     setFilteredLinks(result);
   }, [links, selectedTags, searchQuery]);
 
-  const fetchLinks = async (team: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await linkApi.getLinks(team);
-
-      if (response.success) {
-        setLinks(response.data);
-      } else {
-        setError("링크를 불러오는데 실패했습니다.");
-      }
-    } catch (err) {
-      console.error("API Error:", err);
-
-      // 백엔드 없을 때 데이터
-      setLinks(getMockLinks(team));
-      setError(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // mock 데이터
-  const getMockLinks = (team: string): Link[] => {
-    const allLinks: Record<string, Link[]> = {
-      web01: [
-        {
-          linkId: "uuid-1",
-          teamId: "web01",
-          url: "https://react.dev",
-          title: "React Best Practices - 2025 Complete Guide",
-          summary:
-            "Learn the latest React patterns and best practices for building modern web applications.",
-          tags: ["react", "best-practices", "guide"],
-          createdAt: "2025. 12. 16. 오전 4:30:00",
-          createdBy: "J001",
-        },
-        {
-          linkId: "uuid-2",
-          teamId: "web01",
-          url: "https://tailwindcss.com",
-          title: "Tailwind CSS v4.0 Documentation",
-          summary:
-            "Rapidly build modern websites without ever leaving your HTML.",
-          tags: ["css", "tailwind", "design-system"],
-          createdAt: "2025. 12. 15. 오후 2:15:00",
-          createdBy: "K001",
-        },
-        {
-          linkId: "uuid-3",
-          teamId: "web01",
-          url: "https://nodejs.org",
-          title: "Node.js Performance Optimization Techniques",
-          summary: "Advanced techniques for optimizing Node.js applications.",
-          tags: ["nodejs", "performance", "backend"],
-          createdAt: "2025. 12. 14. 오전 10:00:00",
-          createdBy: "S001",
-        },
-      ],
-      web02: [
-        {
-          linkId: "uuid-4",
-          teamId: "web02",
-          url: "https://www.figma.com",
-          title: "Figma Design System Best Practices",
-          summary:
-            "How to build and maintain a scalable design system in Figma.",
-          tags: ["figma", "design-system", "ui"],
-          createdAt: "2025. 12. 13. 오후 3:00:00",
-          createdBy: "J001",
-        },
-        {
-          linkId: "uuid-5",
-          teamId: "web02",
-          url: "https://vercel.com",
-          title: "Growth Hacking Strategies for 2025",
-          summary: "Proven growth strategies and tactics for startups.",
-          tags: ["marketing", "growth", "strategy"],
-          createdAt: "2025. 12. 12. 오전 11:30:00",
-          createdBy: "K001",
-        },
-      ],
-      ios01: [
-        {
-          linkId: "uuid-6",
-          teamId: "ios01",
-          url: "https://developer.apple.com/swift",
-          title: "Swift 6.0 - What's New",
-          summary: "Latest features and improvements in Swift 6.0.",
-          tags: ["swift", "ios", "mobile"],
-          createdAt: "2025. 12. 16. 오전 9:00:00",
-          createdBy: "S001",
-        },
-      ],
-      ios02: [
-        {
-          linkId: "uuid-7",
-          teamId: "ios02",
-          url: "https://developer.apple.com/swiftui",
-          title: "SwiftUI Layout Best Practices",
-          summary: "Complete guide to building layouts with SwiftUI.",
-          tags: ["swiftui", "ios", "layout"],
-          createdAt: "2025. 12. 11. 오후 4:20:00",
-          createdBy: "J001",
-        },
-      ],
-    };
-
-    return allLinks[team] || [];
-  };
-
   // 링크 삭제 (204 No Content 처리)
   const handleDeleteLink = async (linkId: string) => {
-    if (!confirm("정말로 이 링크를 삭제하시겠습니까?")) {
+    // TODO: 커스텀 확인 모달로 교체 필요
+    if (!window.confirm("정말로 이 링크를 삭제하시겠습니까?")) {
       return;
     }
 
@@ -197,7 +107,8 @@ const Dashboard = () => {
       setLinks(links.filter((link) => link.linkId !== linkId));
     } catch (err) {
       console.error("링크 삭제 실패:", err);
-      alert("링크 삭제에 실패했습니다.");
+      // TODO: 커스텀 알림 모달로 교체 필요
+      window.alert("링크 삭제에 실패했습니다.");
     }
   };
 
@@ -306,23 +217,26 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* 팀 전환 버튼 (프로토타이핑용) */}
+        {/* 팀 전환 드롭다운 */}
         <div className="mb-6">
-          <div className="flex flex-wrap gap-2">
+          <label
+            htmlFor="team-select"
+            className="block text-sm font-medium text-gray-700 mb-2"
+          >
+            다른 팀 보기
+          </label>
+          <select
+            id="team-select"
+            value={teamId}
+            onChange={(e) => navigate(`/${e.target.value}`)}
+            className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+          >
             {getValidTeamIds().map((id) => (
-              <button
-                key={id}
-                onClick={() => navigate(`/${id}`)}
-                className={`px-4 py-2 rounded-lg transition-colors text-sm ${
-                  teamId === id
-                    ? "bg-blue-600 text-white"
-                    : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
-                }`}
-              >
-                {id}
-              </button>
+              <option key={id} value={id}>
+                {getTeamName(id)}
+              </option>
             ))}
-          </div>
+          </select>
         </div>
 
         <LinkGrid
