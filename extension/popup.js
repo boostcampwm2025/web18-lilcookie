@@ -1,6 +1,5 @@
 const isDev = true;
 const BASE_URL = isDev ? 'http://localhost:3000' : 'https://link-repository.eupthere.com';
-const POST_URL = BASE_URL + '/api/links';
 
 document.addEventListener('DOMContentLoaded', async () => {
   // 정보 입력 및 제출할 폼 부분
@@ -113,21 +112,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       saveButton.textContent = '저장 중...';
       saveButton.disabled = true;
 
-      const response = await fetch(POST_URL, {
-        method: 'POST',
-        body: JSON.stringify(formData),
-        headers: {
-          'Content-type': 'application/json; charset=UTF-8',
-        },
+      const response = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({ action: 'saveLink', data: formData }, resolve);
       });
 
-      if (response.ok) {
-        const json = await response.json();
-        console.log('저장 성공:', json);
+      if (response && response.success) {
+        console.log('저장 성공:', response.data);
         form.reset();
         checkFields();
       } else {
-        throw new Error('저장 실패');
+        throw new Error(response?.error || '저장 실패');
       }
     } catch (error) {
       console.error('Error:', error);
