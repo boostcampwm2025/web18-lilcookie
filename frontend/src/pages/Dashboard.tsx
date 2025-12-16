@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import Header from "../components/layout/Header";
 import LinkGrid from "../components/dashboard/LinkGrid";
 import type { Link } from "../types";
@@ -7,7 +7,6 @@ import { linkApi } from "../services/api";
 
 const Dashboard = () => {
   const { teamId } = useParams<{ teamId: string }>();
-  const navigate = useNavigate();
 
   const [links, setLinks] = useState<Link[]>([]);
   const [filteredLinks, setFilteredLinks] = useState<Link[]>([]);
@@ -22,23 +21,6 @@ const Dashboard = () => {
       return `${id} 팀`;
     }
     return id;
-  };
-
-  // teamId 목록 생성
-  const getValidTeamIds = (): string[] => {
-    const teams: string[] = [];
-
-    // web01 ~ web30
-    for (let i = 1; i <= 30; i++) {
-      teams.push(`web${String(i).padStart(2, "0")}`);
-    }
-
-    // ios01 ~ ios04
-    for (let i = 1; i <= 4; i++) {
-      teams.push(`ios${String(i).padStart(2, "0")}`);
-    }
-
-    return teams;
   };
 
   const fetchLinks = useCallback(async (team: string) => {
@@ -203,7 +185,7 @@ const Dashboard = () => {
                 # {tag}
                 <button
                   onClick={() => handleTagClick(tag)}
-                  className="hover:text-blue-900"
+                  className="ml-1 flex items-center justify-center w-5 h-5 rounded-full cursor-pointer hover:bg-blue-200 transition-colors"
                 >
                   X
                 </button>
@@ -211,34 +193,12 @@ const Dashboard = () => {
             ))}
             <button
               onClick={clearTagFilters}
-              className="text-sm text-gray-500 hover:text-gray-700 underline"
+              className="text-sm text-gray-500 hover:text-gray-700 underline cursor-pointer"
             >
               모두 지우기
             </button>
           </div>
         )}
-
-        {/* 팀 전환 드롭다운 */}
-        <div className="mb-6">
-          <label
-            htmlFor="team-select"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            다른 팀 보기
-          </label>
-          <select
-            id="team-select"
-            value={teamId}
-            onChange={(e) => navigate(`/${e.target.value}`)}
-            className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-          >
-            {getValidTeamIds().map((id) => (
-              <option key={id} value={id}>
-                {getTeamName(id)}
-              </option>
-            ))}
-          </select>
-        </div>
 
         <LinkGrid
           links={filteredLinks}
