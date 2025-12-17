@@ -15,6 +15,11 @@ export class LinksService {
 
   // 초기 mock data 생성
   private initMockData(): void {
+
+    if (process.env.NODE_ENV === "production") {
+      return;
+    }
+
     const mockLinks = [
       {
         teamId: "web01",
@@ -129,7 +134,7 @@ export class LinksService {
   }
 
   // 목록 조회 (전체 또는 조건)
-  findAll(teamId?: string, tagsQuery?: string): Link[] {
+  findAll(teamId?: string, tagsQuery?: string, createdAfter?: string): Link[] {
     let links = Array.from(this.links.values());
 
     // teamId 필터링 (lowercase 비교)
@@ -141,6 +146,17 @@ export class LinksService {
     if (tagsQuery) {
       const queryTags = tagsQuery.split(",").map((tag) => tag.trim());
       links = links.filter((link) => queryTags.every((queryTag) => link.tags.includes(queryTag)));
+    }
+
+    // createdAfter 필터링
+    if (createdAfter) {
+      const afterDate = new Date(createdAfter);
+      if (!isNaN(afterDate.getTime())) {
+        links = links.filter((link) => {
+          const linkDate = new Date(link.createdAt);
+          return !isNaN(linkDate.getTime()) && linkDate > afterDate;
+        });
+      }
     }
 
     return links;

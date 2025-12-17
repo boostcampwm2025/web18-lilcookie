@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ExternalLink, Image, Trash2 } from "lucide-react";
 import type { Link } from "../../types";
 
@@ -8,26 +9,47 @@ interface LinkCardProps {
 }
 
 const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
+  const [isVisited, setIsVisited] = useState(() => {
+    const visitedLinks = localStorage.getItem("visited_links");
+    return visitedLinks ? JSON.parse(visitedLinks).includes(link.linkId) : false;
+  });
+
+  const handleLinkClick = () => {
+    if (!isVisited) {
+      setIsVisited(true);
+      const visitedLinks = JSON.parse(localStorage.getItem("visited_links") || "[]");
+      if (!visitedLinks.includes(link.linkId)) {
+        localStorage.setItem("visited_links", JSON.stringify([...visitedLinks, link.linkId]));
+      }
+    }
+  };
+
+  const handleAuxClick = (e: React.MouseEvent) => {
+    if (e.button === 1) { // Middle mouse button
+      handleLinkClick();
+    }
+  };
+
   // 날짜 포맷팅
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // Get calendar dates (ignoring time)
+    const dateOnly = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    );
+    const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const diffTime = nowOnly.getTime() - dateOnly.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) return "오늘";
     if (diffDays === 1) return "어제";
     if (diffDays < 7) return `${diffDays}일 전`;
     return date.toLocaleDateString("ko-KR");
-  };
-
-  // 최근 3일 이내면 NEW 뱃지
-  const isNew = () => {
-    const date = new Date(link.createdAt);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 3;
   };
 
   return (
@@ -37,7 +59,7 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
         <div className="w-full h-full flex items-center justify-center">
           <Image className="w-12 h-12 text-blue-400" />
         </div>
-        {isNew() && (
+        {!isVisited && (
           <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
             NEW
           </span>
@@ -46,9 +68,22 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
 
       {/* 콘텐츠 */}
       <div className="p-5">
-        <h3 className="font-bold text-lg mb-2 line-clamp-2">{link.title}</h3>
+        <h3 className="font-bold text-lg mb-2 line-clamp-2">
+          <a
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full h-full"
+            onClick={handleLinkClick}
+            onAuxClick={handleAuxClick}
+          >
+            <span className={`transition-colors rounded-lg px-2 py-1 hover:bg-blue-50 focus:bg-blue-100 w-full block text-gray-900`}>
+              {link.title}
+            </span>
+          </a>
+        </h3>
 
-        <p className="text-sm text-gray-600 mb-4 line-clamp-2 leading-relaxed">
+        <p className="text-sm text-gray-600 px-2 py-1 mb-4 line-clamp-10 leading-relaxed">
           {link.summary}
         </p>
 
@@ -100,7 +135,7 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
             )}
             <button
               onClick={() => window.open(link.url, "_blank")}
-              className="p-2 hover:bg-blue-50 rounded-lg transition-colors group cursor-pointer"
+              className="hidden p-2 hover:bg-blue-50 rounded-lg transition-colors group cursor-pointer"
               title="새 탭에서 열기"
             >
               <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />

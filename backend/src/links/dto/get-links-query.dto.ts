@@ -8,4 +8,8 @@ export class GetLinksQueryDto {
   @IsOptional()
   @IsString()
   tags?: string;
+
+  @IsOptional()
+  @IsString()
+  createdAfter?: string;
 }

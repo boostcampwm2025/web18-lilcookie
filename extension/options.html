@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>확장프로그램 설정</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <h1>확장프로그램 설정 페이지</h1>
+    
+    <div class="form-group">
+      <label for="camperId">나의 캠퍼 ID</label>
+      <input type="text" id="camperId" placeholder="J001, K001, S001 형식">
+    </div>
+
+    <div class="form-group">
+      <label for="teamId">나의 팀 ID</label>
+      <select id="teamId">
+        <option value="" disabled selected>목록에서 선택하세요</option>
+        <option value="web01">web01</option>
+        <option value="web02">web02</option>
+        <option value="web03">web03</option>
+        <option value="web04">web04</option>
+        <option value="web05">web05</option>
+        <option value="web06">web06</option>
+        <option value="web07">web07</option>
+        <option value="web08">web08</option>
+        <option value="web09">web09</option>
+        <option value="web10">web10</option>
+        <option value="web11">web11</option>
+        <option value="web12">web12</option>
+        <option value="web13">web13</option>
+        <option value="web14">web14</option>
+        <option value="web15">web15</option>
+        <option value="web16">web16</option>
+        <option value="web17">web17</option>
+        <option value="web18">web18</option>
+        <option value="web19">web19</option>
+        <option value="web20">web20</option>
+        <option value="web21">web21</option>
+        <option value="web22">web22</option>
+        <option value="web23">web23</option>
+        <option value="web24">web24</option>
+        <option value="web25">web25</option>
+        <option value="web26">web26</option>
+        <option value="web27">web27</option>
+        <option value="web28">web28</option>
+        <option value="web29">web29</option>
+        <option value="web30">web30</option>
+        <option value="and01">and01</option>
+        <option value="and02">and02</option>
+        <option value="and03">and03</option>
+        <option value="ios01">ios01</option>
+        <option value="ios02">ios02</option>
+        <option value="ios03">ios03</option>
+        <option value="ios04">ios04</option>
+        <option value="ios05">ios05</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="aiPassword">AI 비밀번호</label>
+      <input type="password" id="aiPassword" placeholder="비밀번호를 입력하세요">
+    </div>
+
+    <div id="status" class="status"></div>
+    
+    <button id="saveBtn">저장하기</button>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>

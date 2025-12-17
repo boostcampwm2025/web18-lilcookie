@@ -45,9 +45,11 @@ export class LinksController {
   // 목록 조회 (전체 또는 조건)
   @Get()
   findAll(@Query() requestDto: GetLinksQueryDto) {
-    this.logger.log(`GET /api/links - 링크 목록 조회: teamId=${requestDto.teamId}, tags=${requestDto.tags}`);
+    this.logger.log(
+      `GET /api/links - 링크 목록 조회: teamId=${requestDto.teamId}, tags=${requestDto.tags}, createdAfter=${requestDto.createdAfter}`,
+    );
 
-    const links = this.linksService.findAll(requestDto.teamId, requestDto.tags);
+    const links = this.linksService.findAll(requestDto.teamId, requestDto.tags, requestDto.createdAfter);
     const responseDtos = links.map((link) => LinkResponseDto.from(link));
 
     return ResponseBuilder.success<LinkResponseDto[]>()

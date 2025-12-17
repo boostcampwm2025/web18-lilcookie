@@ -2,7 +2,7 @@ import axios from "axios";
 import type { ApiResponse, Link } from "../types";
 
 // API 베이스 URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 // axios 인스턴스
 const api = axios.create({
