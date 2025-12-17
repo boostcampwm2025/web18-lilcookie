@@ -3,19 +3,20 @@ FROM node:lts-alpine3.22 AS builder
 
 WORKDIR /app
 
-# Copy workspace root package files
-COPY package*.json ./
+# better-sqlite3 빌드를 위한 빌드 도구 설치
+RUN apk add --no-cache \
+  python3 \
+  make \
+  g++ \
+  libc-dev
 
-# Copy backend package.json
+COPY package*.json ./
 COPY backend/package*.json ./backend/
 
-# Install backend workspace dependencies
-RUN npm ci -w backend
+RUN npm ci
 
-# Copy backend source code
 COPY backend ./backend
 
-# Build the application
 WORKDIR /app/backend
 RUN npm run build
 
@@ -24,18 +25,10 @@ FROM node:lts-alpine3.22
 
 WORKDIR /app
 
-# Copy workspace root package files
-COPY package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
 
-# Copy backend package.json
-COPY backend/package*.json ./backend/
-
-# Install only production dependencies for backend workspace
-RUN npm ci --only=production -w backend
-
-# Copy built application from builder
 COPY --from=builder /app/backend/dist ./backend/dist
+COPY --from=builder /app/backend/package*.json ./backend/
 
-# Start the application
 WORKDIR /app/backend
 CMD ["node", "dist/main"]

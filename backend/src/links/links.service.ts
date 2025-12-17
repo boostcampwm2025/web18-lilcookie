@@ -1,22 +1,44 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { randomUUID } from "crypto";
 import { Link } from "./entities/link.entity";
 import { CreateLinkRequestDto } from "./dto/create-link.request.dto";
+import { ConfigService } from "@nestjs/config";
+import { DatabaseService } from "../database/database.service";
+
+// MVP라서 일단 서비스 상단에 인터페이스 정의했음
+interface LinkRow {
+  link_id: string;
+  team_id: string;
+  url: string;
+  title: string;
+  tags: string;
+  summary: string;
+  created_at: string;
+  created_by: string;
+}
 
 @Injectable()
-export class LinksService {
-  // MVP 인메모리 저장소 (Map 사용)
-  private readonly links: Map<string, Link> = new Map();
+export class LinksService implements OnModuleInit {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly databaseService: DatabaseService,
+  ) {}
 
-  constructor() {
-    // 초기 mock data 추가
+  onModuleInit() {
     this.initMockData();
   }
 
   // 초기 mock data 생성
   private initMockData(): void {
+    if (this.configService.get<string>("NODE_ENV") === "production") {
+      return;
+    }
 
-    if (process.env.NODE_ENV === "production") {
+    const db = this.databaseService.getDatabase();
+
+    // 이미 데이터가 있으면 추가하지 않음
+    const count = db.prepare("SELECT COUNT(*) as count FROM links").get() as { count: number };
+    if (count.count > 0) {
       return;
     }
 
@@ -109,12 +131,27 @@ export class LinksService {
         createdBy: mockLink.userId,
       });
 
-      this.links.set(linkId, link);
+      const insertStmt = db.prepare(`
+        INSERT INTO links (link_id, team_id, url, title, tags, summary, created_at, created_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      insertStmt.run(
+        link.linkId,
+        link.teamId,
+        link.url,
+        link.title,
+        JSON.stringify(link.tags),
+        link.summary,
+        link.createdAt,
+        link.createdBy,
+      );
     });
   }
 
   // 새로운 Link 생성
   create(requestDto: CreateLinkRequestDto): Link {
+    const db = this.databaseService.getDatabase();
     const linkId = randomUUID();
     const createdAt = new Date().toISOString();
 
@@ -129,54 +166,106 @@ export class LinksService {
       createdBy: requestDto.userId,
     });
 
-    this.links.set(linkId, link);
+    const insertStmt = db.prepare(`
+      INSERT INTO links (link_id, team_id, url, title, tags, summary, created_at, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    insertStmt.run(
+      link.linkId,
+      link.teamId,
+      link.url,
+      link.title,
+      JSON.stringify(link.tags),
+      link.summary,
+      link.createdAt,
+      link.createdBy,
+    );
+
     return link;
   }
 
   // 목록 조회 (전체 또는 조건)
   findAll(teamId?: string, tagsQuery?: string, createdAfter?: string): Link[] {
-    let links = Array.from(this.links.values());
+    const db = this.databaseService.getDatabase();
+    // 동적 쿼리 (AND) 위해 WHERE 절 구성
+    let query = "SELECT * FROM links WHERE 1=1";
+    const params: string[] = [];
 
     // teamId 필터링 (lowercase 비교)
     if (teamId) {
-      links = links.filter((link) => link.teamId === teamId.toLowerCase());
+      query += " AND team_id = ?";
+      params.push(teamId.toLowerCase());
     }
 
     // tags 필터링 (쉼표로 구분된 태그들이 전부 매칭되어야 함)
     if (tagsQuery) {
       const queryTags = tagsQuery.split(",").map((tag) => tag.trim());
-      links = links.filter((link) => queryTags.every((queryTag) => link.tags.includes(queryTag)));
+      queryTags.forEach((tag) => {
+        query += " AND tags LIKE ?";
+        params.push(`%"${tag}"%`); // JSON 배열 내 검색
+      });
     }
 
     // createdAfter 필터링
     if (createdAfter) {
       const afterDate = new Date(createdAfter);
       if (!isNaN(afterDate.getTime())) {
-        links = links.filter((link) => {
-          const linkDate = new Date(link.createdAt);
-          return !isNaN(linkDate.getTime()) && linkDate > afterDate;
-        });
+        query += " AND created_at > ?";
+        params.push(afterDate.toISOString());
       }
     }
 
-    return links;
+    query += " ORDER BY created_at DESC";
+
+    const stmt = db.prepare(query);
+    const rows = stmt.all(...params) as LinkRow[];
+
+    return rows.map(
+      (row) =>
+        new Link({
+          linkId: row.link_id,
+          teamId: row.team_id,
+          url: row.url,
+          title: row.title,
+          tags: JSON.parse(row.tags) as string[],
+          summary: row.summary,
+          createdAt: row.created_at,
+          createdBy: row.created_by,
+        }),
+    );
   }
 
   // 단건 조회
   findOne(linkId: string): Link {
-    const link = this.links.get(linkId);
-    if (!link) {
+    const db = this.databaseService.getDatabase();
+    const stmt = db.prepare("SELECT * FROM links WHERE link_id = ?");
+    const row = stmt.get(linkId) as LinkRow | undefined;
+
+    if (!row) {
       throw new NotFoundException(`링크를 찾을 수 없습니다: ${linkId}`);
     }
-    return link;
+
+    return new Link({
+      linkId: row.link_id,
+      teamId: row.team_id,
+      url: row.url,
+      title: row.title,
+      tags: JSON.parse(row.tags) as string[],
+      summary: row.summary,
+      createdAt: row.created_at,
+      createdBy: row.created_by,
+    });
   }
 
   // 단건 삭제
   remove(linkId: string): void {
-    const exists = this.links.has(linkId);
-    if (!exists) {
+    const db = this.databaseService.getDatabase();
+    const stmt = db.prepare("DELETE FROM links WHERE link_id = ?");
+    const result = stmt.run(linkId);
+
+    if (result.changes === 0) {
       throw new NotFoundException(`링크를 찾을 수 없습니다: ${linkId}`);
     }
-    this.links.delete(linkId);
   }
 }
