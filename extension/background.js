@@ -3,6 +3,8 @@ const BASE_URL = isDev ? 'http://localhost:3000' : 'https://link-repository.eupt
 const FE_BASE_URL = isDev ? 'http://localhost:5173' : 'https://link-repository.eupthere.uk';
 const POST_URL = BASE_URL + '/api/links';
 
+const MAX_AI_INPUT_CHARACTER_COUNT = 300;
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'saveLink') {
     saveLink(request.data).then(sendResponse);
@@ -20,7 +22,7 @@ async function summarizeContent(content, aiPassword) {
   try {
     const response = await fetch(BASE_URL + '/api/ai/summary', {
       method: 'POST',
-      body: JSON.stringify({ content, aiPassword }),
+      body: JSON.stringify({ content: content.slice(0, MAX_AI_INPUT_CHARACTER_COUNT), aiPassword }),
       headers: {
         'Content-type': 'application/json; charset=UTF-8',
       },
@@ -117,8 +119,8 @@ async function checkNewLinks() {
           message: `${totalNewLinks}개의 새로운 링크가 등록되었습니다.`,
           priority: 2
         });
-        
-        chrome.storage.local.set({ 
+
+        chrome.storage.local.set({
           unseenLinkCount: totalNewLinks
         });
       }
@@ -152,10 +154,10 @@ async function checkDashboardVisit(tabId) {
     if (!teamId) return;
 
     const dashboardUrl = `${FE_BASE_URL}/${teamId.toLowerCase()}`;
-    
+
     if (tab.url.startsWith(dashboardUrl)) {
-       await chrome.storage.local.set({ unseenLinkCount: 0 });
-       chrome.notifications.clear('teamstash-new-links');
+      await chrome.storage.local.set({ unseenLinkCount: 0 });
+      chrome.notifications.clear('teamstash-new-links');
     }
   } catch (error) {
     console.debug('Error checking dashboard visit:', error);
