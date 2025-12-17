@@ -124,8 +124,6 @@ ${content}
       }
 
       const data = (await response.json()) as ClovaStudioResponse;
-      console.log("Clova Studio API 응답:", JSON.stringify(data, null, 2));
-
       if (data.status.code !== "20000") {
         throw new InternalServerErrorException(`Clova Studio API 오류: ${data.status.message}`);
       }
