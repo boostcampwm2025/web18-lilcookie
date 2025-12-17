@@ -1,0 +1,16 @@
+{
+  "name": "extension",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^29.0.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "msw": "^2.12.4",
+    "rollup": "^4.53.5"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0"
+  }
+}
