@@ -94,8 +94,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
 
-        // 로딩 표시 등 UI 처리 필요시 추가
-
         const response = await chrome.runtime.sendMessage({
           action: 'summarize',
           content: pageContent.textContent,
@@ -113,11 +111,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateTagCount();
           }
           checkFields(); // 저장 버튼 활성화 상태 업데이트
+
+          // 버튼에 "AI 생성 완료" 표시 및 비활성화
+          const svg = button.querySelector('svg');
+          if (svg) {
+            button.innerHTML = svg.outerHTML + ' AI 생성 완료';
+          } else {
+            button.textContent = 'AI 생성 완료';
+          }
+          
+          button.disabled = true;
         } else {
           alert('AI 요약 실패: ' + (response?.error || '응답이 없습니다.'));
+          button.disabled = false;
         }
+        
         button.classList.remove('loading');
-        button.disabled = false;
         commentInput.disabled = false;
         tagsInput.disabled = false;
         commentInput.classList.remove('loading');
@@ -342,15 +351,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (response && response.success) {
         console.log('저장 성공:', response.data);
         form.reset();
-        checkFields();
+        // show success text on the button for 1 second
+        saveButton.textContent = '저장 성공!';
+        // keep button disabled while showing success
+        saveButton.disabled = true;
+        commentInput.disabled = true;
+        commentInput.placeholder = '';
+        tagsInput.disabled = true;
+        tagsInput.placeholder = '';
+        aiButton.disabled = true;
+        tagCount.textContent = '';
+        commentCount.textContent = '';
       } else {
-        throw new Error(response?.error || '저장 실패');
+        saveButton.textContent = '저장 실패';
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        saveButton.innerHTML = originalBtnText;
+        checkFields();
       }
     } catch (error) {
       console.error('Error:', error);
-    } finally {
-      saveButton.innerHTML = originalBtnText;
-      checkFields();
     }
   });
 });
