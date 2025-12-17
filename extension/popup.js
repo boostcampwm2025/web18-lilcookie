@@ -104,7 +104,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (response && response.success) {
           const { summary, tags } = response.data;
           if (summary) commentInput.value = summary;
-          if (tags && Array.isArray(tags)) tagsInput.value = tags.slice(0, MAX_TAG_COUNT).join(', ');
+          if (tags && Array.isArray(tags)) {
+            tagsInput.value = tags.slice(0, MAX_TAG_COUNT).join(', ');
+            updateTagCount();
+          }
           checkFields(); // 저장 버튼 활성화 상태 업데이트
         } else {
           alert('AI 요약 실패: ' + (response?.error || '응답이 없습니다.'));
@@ -169,23 +172,78 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 인풋에 이벤트 리스너 등록
   commentInput.addEventListener('input', checkFields);
-  tagsInput.addEventListener('input', checkFields);
 
   const tagError = document.getElementById('tagError');
+  const tagCount = document.getElementById('tagCount');
+
+  function updateTagCount() {
+    const raw = tagsInput.value || '';
+    const count = raw
+      .split(',')
+      .map((v) => v.trim())
+      .filter((v) => v !== '').length;
+    if (tagCount) tagCount.textContent = `(${Math.min(count, MAX_TAG_COUNT)}/${MAX_TAG_COUNT})`;
+
+    // Show error state if over limit
+    if (count > MAX_TAG_COUNT) {
+      tagsInput.classList.add('error');
+      if (tagError) {
+        tagError.classList.add('visible');
+      }
+    } else {
+      tagsInput.classList.remove('error');
+      if (tagError) {
+        tagError.classList.remove('visible');
+      }
+    }
+  }
+
+  // keep counter updated while typing
+  tagsInput.addEventListener('input', (e) => {
+    checkFields();
+    updateTagCount();
+  });
+
+  // initialize counter
+  updateTagCount();
 
   tagsInput.addEventListener('keydown', (e) => {
     // 에러 상태 초기화
     tagsInput.classList.remove('error');
-    tagError.classList.remove('visible');
-    tagError.textContent = '';
 
     if (e.key === ',') {
+      // 1. Check max tags
       const commaCount = (tagsInput.value.match(/,/g) || []).length;
       if (commaCount >= MAX_TAG_COUNT - 1) {
         e.preventDefault();
-        tagsInput.classList.add('error');
-        tagError.textContent = `태그는 최대 ${MAX_TAG_COUNT}개까지만 입력 가능합니다.`;
-        tagError.classList.add('visible');
+        return;
+      }
+
+      // 2. Check for empty tags (prevent ,, or , , or leading ,)
+      const cursor = tagsInput.selectionStart;
+      const val = tagsInput.value;
+      const before = val.slice(0, cursor);
+      const after = val.slice(cursor);
+
+      // Check left side
+      const trimmedBefore = before.trim();
+
+      // 1. Is there at least one valid tag on left? (non whitespace character)
+      if (trimmedBefore.length === 0) {
+        e.preventDefault();
+        return;
+      }
+
+      // 2. Is there already comma on the left? (ignoring whitespace)
+      if (trimmedBefore.endsWith(',')) {
+        e.preventDefault();
+        return;
+      }
+
+      // Check right side: if the segment after cursor starts with comma (ignoring whitespace)
+      if (after.trim().startsWith(',')) {
+        e.preventDefault();
+        return;
       }
     }
   });
