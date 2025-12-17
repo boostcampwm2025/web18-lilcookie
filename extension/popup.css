@@ -237,6 +237,27 @@ input[type="text"]::placeholder {
   color: #9ca3af;
 }
 
+.tag-input-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tag counter */
+.tag-count {
+  font-size: 12px;
+  color: #6b7280;
+  margin-left: 6px;
+  font-weight: 500;
+}
+/* Char counter */
+.char-count {
+  font-size: 12px;
+  color: #6b7280;
+  margin-left: 6px;
+  font-weight: 500;
+}
+
 /* Save Button */
 .save-btn {
   width: 100%;
