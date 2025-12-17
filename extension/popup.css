@@ -237,12 +237,6 @@ input[type="text"]::placeholder {
   color: #9ca3af;
 }
 
-/* Error State */
-input[type="text"].error {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
-}
-
 .tag-input-container {
   position: relative;
   display: flex;
@@ -251,6 +245,13 @@ input[type="text"].error {
 
 /* Tag counter */
 .tag-count {
+  font-size: 12px;
+  color: #6b7280;
+  margin-left: 6px;
+  font-weight: 500;
+}
+/* Char counter */
+.char-count {
   font-size: 12px;
   color: #6b7280;
   margin-left: 6px;

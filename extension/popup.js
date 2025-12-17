@@ -2,6 +2,7 @@ const isDev = true;
 const BASE_URL = isDev ? 'http://localhost:5173' : 'https://link-repository.eupthere.uk';
 
 const MAX_TAG_COUNT = 10;
+const MAX_CHARACTER_COUNT = 200;
 
 document.addEventListener('DOMContentLoaded', async () => {
   // 정보 입력 및 제출할 폼 부분
@@ -103,7 +104,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (response && response.success) {
           const { summary, tags } = response.data;
-          if (summary) commentInput.value = summary;
+          if (summary) {
+            commentInput.value = String(summary).slice(0, MAX_CHARACTER_COUNT);
+            if (typeof updateCommentCount === 'function') updateCommentCount();
+          }
           if (tags && Array.isArray(tags)) {
             tagsInput.value = tags.slice(0, MAX_TAG_COUNT).join(', ');
             updateTagCount();
@@ -175,6 +179,67 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const tagError = document.getElementById('tagError');
   const tagCount = document.getElementById('tagCount');
+  const commentCount = document.getElementById('commentCount');
+  const commentError = document.getElementById('commentError');
+
+  function updateCommentCount() {
+    const val = commentInput.value || '';
+    const len = val.length; // whitespace counts
+    if (commentCount) commentCount.textContent = `(${Math.min(len, MAX_CHARACTER_COUNT)}/${MAX_CHARACTER_COUNT})`;
+  }
+
+  // keep comment counter updated while typing
+  commentInput.addEventListener('input', (e) => {
+    checkFields();
+    updateCommentCount();
+  });
+
+  // initialize comment counter
+  updateCommentCount();
+
+  // Prevent typing beyond max (handles selection replacement)
+  commentInput.addEventListener('keydown', (e) => {
+    const key = e.key;
+    const allowedControls = ['Backspace','Delete','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','Tab'];
+    if (allowedControls.includes(key)) return;
+
+    const selStart = commentInput.selectionStart;
+    const selEnd = commentInput.selectionEnd;
+    const selectionLength = Math.max(0, selEnd - selStart);
+    const currentLength = commentInput.value.length;
+
+    // treat Enter as a single character
+    const charLength = (key === 'Enter') ? 1 : (key.length === 1 ? 1 : 0);
+    if (charLength === 0) return;
+
+    const newLength = currentLength - selectionLength + charLength;
+    if (newLength > MAX_CHARACTER_COUNT) {
+      e.preventDefault();
+    }
+  });
+
+  // Handle paste: truncate pasted content to fit
+  commentInput.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const paste = (e.clipboardData || window.clipboardData).getData('text') || '';
+    const selStart = commentInput.selectionStart;
+    const selEnd = commentInput.selectionEnd;
+    const selectionLength = Math.abs(selEnd - selStart);
+    const currentLength = commentInput.value.length;
+    const allowed = MAX_CHARACTER_COUNT - (currentLength - selectionLength);
+    if (allowed <= 0) {
+      // nothing to paste
+      return;
+    }
+    const toInsert = paste.slice(0, allowed);
+    const before = commentInput.value.slice(0, selStart);
+    const after = commentInput.value.slice(selEnd);
+    commentInput.value = before + toInsert + after;
+    const newCursor = before.length + toInsert.length;
+    commentInput.setSelectionRange(newCursor, newCursor);
+    updateCommentCount();
+    checkFields();
+  });
 
   function updateTagCount() {
     const raw = tagsInput.value || '';
@@ -186,15 +251,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Show error state if over limit
     if (count > MAX_TAG_COUNT) {
-      tagsInput.classList.add('error');
-      if (tagError) {
-        tagError.classList.add('visible');
-      }
+      // Limit reached
     } else {
-      tagsInput.classList.remove('error');
-      if (tagError) {
-        tagError.classList.remove('visible');
-      }
+      // Limit not reached
     }
   }
 
@@ -208,9 +267,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateTagCount();
 
   tagsInput.addEventListener('keydown', (e) => {
-    // 에러 상태 초기화
-    tagsInput.classList.remove('error');
-
     if (e.key === ',') {
       // 1. Check max tags
       const commaCount = (tagsInput.value.match(/,/g) || []).length;
@@ -268,7 +324,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       url: tab.url,
       title: tab.title,
       tags: tagsInput.value.split(',').map(v => v.trim()).filter(v => v !== '').slice(0, MAX_TAG_COUNT),
-      summary: commentInput.value,
+      summary: commentInput.value.slice(0, MAX_CHARACTER_COUNT),
     };
 
     let originalBtnText;
