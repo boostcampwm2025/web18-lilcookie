@@ -201,3 +201,8 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,node
+
+# Sqlite 데이터베이스 파일
+*.db
+*.db-shm
+*.db-wal

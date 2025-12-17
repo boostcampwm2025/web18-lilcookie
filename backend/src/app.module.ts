@@ -4,8 +4,9 @@ import { LoggerModule } from "./logger/logger.module";
 import { HealthModule } from "./health/health.module";
 import { LinksModule } from "./links/links.module";
 import { AiModule } from "./ai/ai.module";
+import { DatabaseModule } from "./database/database.module";
 
 @Module({
-  imports: [AppConfigModule, LoggerModule, HealthModule, LinksModule, AiModule],
+  imports: [DatabaseModule, AppConfigModule, LoggerModule, HealthModule, LinksModule, AiModule],
 })
 export class AppModule {}
