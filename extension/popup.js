@@ -197,6 +197,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // keep comment counter updated while typing
   commentInput.addEventListener('input', (e) => {
+    if (commentInput.value.length > MAX_CHARACTER_COUNT) {
+      commentInput.value = commentInput.value.slice(0, MAX_CHARACTER_COUNT);
+    }
     checkFields();
     updateCommentCount();
   });
@@ -206,6 +209,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Prevent typing beyond max (handles selection replacement)
   commentInput.addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey) return;
+
     const key = e.key;
     const allowedControls = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Tab'];
     if (allowedControls.includes(key)) return;
