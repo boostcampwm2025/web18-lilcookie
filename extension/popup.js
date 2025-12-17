@@ -55,8 +55,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // AI 버튼 이벤트 리스너
     const handleAiClick = async (button) => {
+      const originalHTML = button.innerHTML;
       try {
-        const originalHTML = button.innerHTML;
         // button.textContent = 'AI 생성 중...'; // 텍스트 변경 대신
         button.classList.add('loading'); // 로딩 클래스 추가
         button.disabled = true;
@@ -114,18 +114,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
           // 버튼에 "AI 생성 완료" 표시 및 비활성화
           const svg = button.querySelector('svg');
-          if (svg) {
-            button.innerHTML = svg.outerHTML + ' AI 생성 완료';
-          } else {
-            button.textContent = 'AI 생성 완료';
-          }
-          
+          button.innerHTML = svg.outerHTML + 'AI 생성 완료';
+
           button.disabled = true;
         } else {
-          alert('AI 요약 실패: ' + (response?.error || '응답이 없습니다.'));
+          button.classList.remove('loading');
+          const svg = button.querySelector('svg');
+          button.innerHTML = svg.outerHTML + 'AI 생성 실패';
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          button.innerHTML = originalHTML;
           button.disabled = false;
         }
-        
+
         button.classList.remove('loading');
         commentInput.disabled = false;
         tagsInput.disabled = false;
@@ -186,10 +186,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 인풋에 이벤트 리스너 등록
   commentInput.addEventListener('input', checkFields);
 
-  const tagError = document.getElementById('tagError');
   const tagCount = document.getElementById('tagCount');
   const commentCount = document.getElementById('commentCount');
-  const commentError = document.getElementById('commentError');
 
   function updateCommentCount() {
     const val = commentInput.value || '';
@@ -209,7 +207,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Prevent typing beyond max (handles selection replacement)
   commentInput.addEventListener('keydown', (e) => {
     const key = e.key;
-    const allowedControls = ['Backspace','Delete','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','Tab'];
+    const allowedControls = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Tab'];
     if (allowedControls.includes(key)) return;
 
     const selStart = commentInput.selectionStart;
