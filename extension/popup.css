@@ -237,6 +237,30 @@ input[type="text"]::placeholder {
   color: #9ca3af;
 }
 
+/* Error State */
+input[type="text"].error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
+}
+
+.tag-input-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.error-message {
+  font-size: 11px;
+  color: #ef4444;
+  margin-top: 4px;
+  min-height: 14px;
+  display: none;
+}
+
+.error-message.visible {
+  display: block;
+}
+
 /* Save Button */
 .save-btn {
   width: 100%;

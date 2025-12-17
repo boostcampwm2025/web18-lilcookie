@@ -1,4 +1,4 @@
-const isDev = false;
+const isDev = true;
 const BASE_URL = isDev ? 'http://localhost:3000' : 'https://link-repository.eupthere.uk';
 const FE_BASE_URL = isDev ? 'http://localhost:5173' : 'https://link-repository.eupthere.uk';
 const POST_URL = BASE_URL + '/api/links';

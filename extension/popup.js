@@ -1,5 +1,7 @@
-const isDev = false;
+const isDev = true;
 const BASE_URL = isDev ? 'http://localhost:5173' : 'https://link-repository.eupthere.uk';
+
+const MAX_TAG_COUNT = 10;
 
 document.addEventListener('DOMContentLoaded', async () => {
   // 정보 입력 및 제출할 폼 부분
@@ -102,7 +104,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (response && response.success) {
           const { summary, tags } = response.data;
           if (summary) commentInput.value = summary;
-          if (tags && Array.isArray(tags)) tagsInput.value = tags.join(', ');
+          if (tags && Array.isArray(tags)) tagsInput.value = tags.slice(0, MAX_TAG_COUNT).join(', ');
           checkFields(); // 저장 버튼 활성화 상태 업데이트
         } else {
           alert('AI 요약 실패: ' + (response?.error || '응답이 없습니다.'));
@@ -169,6 +171,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   commentInput.addEventListener('input', checkFields);
   tagsInput.addEventListener('input', checkFields);
 
+  const tagError = document.getElementById('tagError');
+
+  tagsInput.addEventListener('keydown', (e) => {
+    // 에러 상태 초기화
+    tagsInput.classList.remove('error');
+    tagError.classList.remove('visible');
+    tagError.textContent = '';
+
+    if (e.key === ',') {
+      const commaCount = (tagsInput.value.match(/,/g) || []).length;
+      if (commaCount >= MAX_TAG_COUNT - 1) {
+        e.preventDefault();
+        tagsInput.classList.add('error');
+        tagError.textContent = `태그는 최대 ${MAX_TAG_COUNT}개까지만 입력 가능합니다.`;
+        tagError.classList.add('visible');
+      }
+    }
+  });
+
   // 폼 제출 처리
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -188,7 +209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       teamId: teamId,
       url: tab.url,
       title: tab.title,
-      tags: tagsInput.value.split(',').map(v => v.trim()).filter(v => v !== ''),
+      tags: tagsInput.value.split(',').map(v => v.trim()).filter(v => v !== '').slice(0, MAX_TAG_COUNT),
       summary: commentInput.value,
     };
 
