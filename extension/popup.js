@@ -1,5 +1,8 @@
-const isDev = false;
+const isDev = true;
 const BASE_URL = isDev ? 'http://localhost:5173' : 'https://link-repository.eupthere.uk';
+
+const MAX_TAG_COUNT = 10;
+const MAX_CHARACTER_COUNT = 200;
 
 document.addEventListener('DOMContentLoaded', async () => {
   // 정보 입력 및 제출할 폼 부분
@@ -52,8 +55,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // AI 버튼 이벤트 리스너
     const handleAiClick = async (button) => {
+      const originalHTML = button.innerHTML;
       try {
-        const originalHTML = button.innerHTML;
         // button.textContent = 'AI 생성 중...'; // 텍스트 변경 대신
         button.classList.add('loading'); // 로딩 클래스 추가
         button.disabled = true;
@@ -91,8 +94,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
 
-        // 로딩 표시 등 UI 처리 필요시 추가
-
         const response = await chrome.runtime.sendMessage({
           action: 'summarize',
           content: pageContent.textContent,
@@ -101,14 +102,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (response && response.success) {
           const { summary, tags } = response.data;
-          if (summary) commentInput.value = summary;
-          if (tags && Array.isArray(tags)) tagsInput.value = tags.join(', ');
+          if (summary) {
+            commentInput.value = String(summary).slice(0, MAX_CHARACTER_COUNT);
+            if (typeof updateCommentCount === 'function') updateCommentCount();
+          }
+          if (tags && Array.isArray(tags)) {
+            tagsInput.value = tags.slice(0, MAX_TAG_COUNT).join(', ');
+            updateTagCount();
+          }
           checkFields(); // 저장 버튼 활성화 상태 업데이트
+
+          // 버튼에 "AI 생성 완료" 표시 및 비활성화
+          const svg = button.querySelector('svg');
+          button.innerHTML = svg.outerHTML + 'AI 생성 완료';
+
+          button.disabled = true;
         } else {
-          alert('AI 요약 실패: ' + (response?.error || '응답이 없습니다.'));
+          button.classList.remove('loading');
+          const svg = button.querySelector('svg');
+          button.innerHTML = svg.outerHTML + 'AI 생성 실패';
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          button.innerHTML = originalHTML;
+          button.disabled = false;
         }
+
         button.classList.remove('loading');
-        button.disabled = false;
         commentInput.disabled = false;
         tagsInput.disabled = false;
         commentInput.classList.remove('loading');
@@ -167,7 +185,131 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 인풋에 이벤트 리스너 등록
   commentInput.addEventListener('input', checkFields);
-  tagsInput.addEventListener('input', checkFields);
+
+  const tagCount = document.getElementById('tagCount');
+  const commentCount = document.getElementById('commentCount');
+
+  function updateCommentCount() {
+    const val = commentInput.value || '';
+    const len = val.length; // whitespace counts
+    if (commentCount) commentCount.textContent = `(${Math.min(len, MAX_CHARACTER_COUNT)}/${MAX_CHARACTER_COUNT})`;
+  }
+
+  // keep comment counter updated while typing
+  commentInput.addEventListener('input', (e) => {
+    checkFields();
+    updateCommentCount();
+  });
+
+  // initialize comment counter
+  updateCommentCount();
+
+  // Prevent typing beyond max (handles selection replacement)
+  commentInput.addEventListener('keydown', (e) => {
+    const key = e.key;
+    const allowedControls = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Tab'];
+    if (allowedControls.includes(key)) return;
+
+    const selStart = commentInput.selectionStart;
+    const selEnd = commentInput.selectionEnd;
+    const selectionLength = Math.max(0, selEnd - selStart);
+    const currentLength = commentInput.value.length;
+
+    // treat Enter as a single character
+    const charLength = (key === 'Enter') ? 1 : (key.length === 1 ? 1 : 0);
+    if (charLength === 0) return;
+
+    const newLength = currentLength - selectionLength + charLength;
+    if (newLength > MAX_CHARACTER_COUNT) {
+      e.preventDefault();
+    }
+  });
+
+  // Handle paste: truncate pasted content to fit
+  commentInput.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const paste = (e.clipboardData || window.clipboardData).getData('text') || '';
+    const selStart = commentInput.selectionStart;
+    const selEnd = commentInput.selectionEnd;
+    const selectionLength = Math.abs(selEnd - selStart);
+    const currentLength = commentInput.value.length;
+    const allowed = MAX_CHARACTER_COUNT - (currentLength - selectionLength);
+    if (allowed <= 0) {
+      // nothing to paste
+      return;
+    }
+    const toInsert = paste.slice(0, allowed);
+    const before = commentInput.value.slice(0, selStart);
+    const after = commentInput.value.slice(selEnd);
+    commentInput.value = before + toInsert + after;
+    const newCursor = before.length + toInsert.length;
+    commentInput.setSelectionRange(newCursor, newCursor);
+    updateCommentCount();
+    checkFields();
+  });
+
+  function updateTagCount() {
+    const raw = tagsInput.value || '';
+    const count = raw
+      .split(',')
+      .map((v) => v.trim())
+      .filter((v) => v !== '').length;
+    if (tagCount) tagCount.textContent = `(${Math.min(count, MAX_TAG_COUNT)}/${MAX_TAG_COUNT})`;
+
+    // Show error state if over limit
+    if (count > MAX_TAG_COUNT) {
+      // Limit reached
+    } else {
+      // Limit not reached
+    }
+  }
+
+  // keep counter updated while typing
+  tagsInput.addEventListener('input', (e) => {
+    checkFields();
+    updateTagCount();
+  });
+
+  // initialize counter
+  updateTagCount();
+
+  tagsInput.addEventListener('keydown', (e) => {
+    if (e.key === ',') {
+      // 1. Check max tags
+      const commaCount = (tagsInput.value.match(/,/g) || []).length;
+      if (commaCount >= MAX_TAG_COUNT - 1) {
+        e.preventDefault();
+        return;
+      }
+
+      // 2. Check for empty tags (prevent ,, or , , or leading ,)
+      const cursor = tagsInput.selectionStart;
+      const val = tagsInput.value;
+      const before = val.slice(0, cursor);
+      const after = val.slice(cursor);
+
+      // Check left side
+      const trimmedBefore = before.trim();
+
+      // 1. Is there at least one valid tag on left? (non whitespace character)
+      if (trimmedBefore.length === 0) {
+        e.preventDefault();
+        return;
+      }
+
+      // 2. Is there already comma on the left? (ignoring whitespace)
+      if (trimmedBefore.endsWith(',')) {
+        e.preventDefault();
+        return;
+      }
+
+      // Check right side: if the segment after cursor starts with comma (ignoring whitespace)
+      if (after.trim().startsWith(',')) {
+        e.preventDefault();
+        return;
+      }
+    }
+  });
 
   // 폼 제출 처리
   form.addEventListener('submit', async (e) => {
@@ -188,8 +330,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       teamId: teamId,
       url: tab.url,
       title: tab.title,
-      tags: tagsInput.value.split(',').map(v => v.trim()).filter(v => v !== ''),
-      summary: commentInput.value,
+      tags: tagsInput.value.split(',').map(v => v.trim()).filter(v => v !== '').slice(0, MAX_TAG_COUNT),
+      summary: commentInput.value.slice(0, MAX_CHARACTER_COUNT),
     };
 
     let originalBtnText;
@@ -207,15 +349,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (response && response.success) {
         console.log('저장 성공:', response.data);
         form.reset();
-        checkFields();
+        // show success text on the button for 1 second
+        saveButton.textContent = '저장 성공!';
+        // keep button disabled while showing success
+        saveButton.disabled = true;
+        commentInput.disabled = true;
+        commentInput.placeholder = '';
+        tagsInput.disabled = true;
+        tagsInput.placeholder = '';
+        aiButton.disabled = true;
+        tagCount.textContent = '';
+        commentCount.textContent = '';
       } else {
-        throw new Error(response?.error || '저장 실패');
+        saveButton.textContent = '저장 실패';
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        saveButton.innerHTML = originalBtnText;
+        checkFields();
       }
     } catch (error) {
       console.error('Error:', error);
-    } finally {
-      saveButton.innerHTML = originalBtnText;
-      checkFields();
     }
   });
 });
