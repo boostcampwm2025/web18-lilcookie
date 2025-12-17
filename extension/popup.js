@@ -1,5 +1,8 @@
-const isDev = false;
+const isDev = true;
 const BASE_URL = isDev ? 'http://localhost:5173' : 'https://link-repository.eupthere.uk';
+
+const MAX_TAG_COUNT = 10;
+const MAX_CHARACTER_COUNT = 200;
 
 document.addEventListener('DOMContentLoaded', async () => {
   // 정보 입력 및 제출할 폼 부분
@@ -52,8 +55,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // AI 버튼 이벤트 리스너
     const handleAiClick = async (button) => {
+      const originalHTML = button.innerHTML;
       try {
-        const originalHTML = button.innerHTML;
         // button.textContent = 'AI 생성 중...'; // 텍스트 변경 대신
         button.classList.add('loading'); // 로딩 클래스 추가
         button.disabled = true;
@@ -91,8 +94,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
 
-        // 로딩 표시 등 UI 처리 필요시 추가
-
         const response = await chrome.runtime.sendMessage({
           action: 'summarize',
           content: pageContent.textContent,
@@ -101,14 +102,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (response && response.success) {
           const { summary, tags } = response.data;
-          if (summary) commentInput.value = summary;
-          if (tags && Array.isArray(tags)) tagsInput.value = tags.join(', ');
+          if (summary) {
+            commentInput.value = String(summary).slice(0, MAX_CHARACTER_COUNT);
+            if (typeof updateCommentCount === 'function') updateCommentCount();
+          }
+          if (tags && Array.isArray(tags)) {
+            tagsInput.value = tags.slice(0, MAX_TAG_COUNT).join(', ');
+            updateTagCount();
+          }
           checkFields(); // 저장 버튼 활성화 상태 업데이트
+
+          // 버튼에 "AI 생성 완료" 표시 및 비활성화
+          const svg = button.querySelector('svg');
+          button.innerHTML = svg.outerHTML + 'AI 생성 완료';
+
+          button.disabled = true;
         } else {
-          alert('AI 요약 실패: ' + (response?.error || '응답이 없습니다.'));
+          button.classList.remove('loading');
+          const svg = button.querySelector('svg');
+          button.innerHTML = svg.outerHTML + 'AI 생성 실패';
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          button.innerHTML = originalHTML;
+          button.disabled = false;
         }
+
         button.classList.remove('loading');
-        button.disabled = false;
         commentInput.disabled = false;
         tagsInput.disabled = false;
         commentInput.classList.remove('loading');
@@ -179,9 +197,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // keep comment counter updated while typing
   commentInput.addEventListener('input', (e) => {
-    if (commentInput.value.length > MAX_CHARACTER_COUNT) {
-      commentInput.value = commentInput.value.slice(0, MAX_CHARACTER_COUNT);
-    }
     checkFields();
     updateCommentCount();
   });
@@ -191,8 +206,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Prevent typing beyond max (handles selection replacement)
   commentInput.addEventListener('keydown', (e) => {
-    if (e.metaKey || e.ctrlKey) return;
-
     const key = e.key;
     const allowedControls = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Tab'];
     if (allowedControls.includes(key)) return;
@@ -317,8 +330,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       teamId: teamId,
       url: tab.url,
       title: tab.title,
-      tags: tagsInput.value.split(',').map(v => v.trim()).filter(v => v !== ''),
-      summary: commentInput.value,
+      tags: tagsInput.value.split(',').map(v => v.trim()).filter(v => v !== '').slice(0, MAX_TAG_COUNT),
+      summary: commentInput.value.slice(0, MAX_CHARACTER_COUNT),
     };
 
     let originalBtnText;
@@ -336,15 +349,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (response && response.success) {
         console.log('저장 성공:', response.data);
         form.reset();
-        checkFields();
+        // show success text on the button for 1 second
+        saveButton.textContent = '저장 성공!';
+        // keep button disabled while showing success
+        saveButton.disabled = true;
+        commentInput.disabled = true;
+        commentInput.placeholder = '';
+        tagsInput.disabled = true;
+        tagsInput.placeholder = '';
+        aiButton.disabled = true;
+        tagCount.textContent = '';
+        commentCount.textContent = '';
       } else {
-        throw new Error(response?.error || '저장 실패');
+        saveButton.textContent = '저장 실패';
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        saveButton.innerHTML = originalBtnText;
+        checkFields();
       }
     } catch (error) {
       console.error('Error:', error);
-    } finally {
-      saveButton.innerHTML = originalBtnText;
-      checkFields();
     }
   });
 });
