@@ -15,6 +15,22 @@ try {
   console.error('PostHog initialization failed:', error);
 }
 
+// Track extension installation and updates
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === 'install') {
+    // Track first installation
+    PostHogUtils.trackEvent('extension_installed', {
+      version: chrome.runtime.getManifest().version,
+    });
+  } else if (details.reason === 'update') {
+    // Track extension update
+    PostHogUtils.trackEvent('extension_updated', {
+      previous_version: details.previousVersion,
+      current_version: chrome.runtime.getManifest().version,
+    });
+  }
+});
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'saveLink') {
     saveLink(request.data).then(sendResponse);
