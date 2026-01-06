@@ -15,6 +15,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Track popup opened
   PostHogUtils.trackEvent('extension_popup_opened');
 
+  // Track popup closed - use visibilitychange as it's most reliable for popups
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      PostHogUtils.trackEvent('extension_popup_closed');
+    }
+  });
+
   // 정보 입력 및 제출할 폼 부분
   const form = document.getElementById('stashForm');
   const commentInput = document.getElementById('comment');
