@@ -58,6 +58,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.storage.session.get('pageContent', ({ pageContent }) => {
       const isReaderable = pageContent?.textContent;
 
+      if (!isReaderable) {
+        PostHogUtils.trackEvent('extension_ai_button_disabled');
+      }
+
       if (aiButton) {
         aiButton.disabled = !isReaderable;
         aiButton.title = isReaderable ? 'AI로 요약 생성' : '이 페이지는 요약할 수 없습니다';
