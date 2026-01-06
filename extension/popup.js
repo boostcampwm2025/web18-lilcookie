@@ -32,9 +32,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     settingsLink.addEventListener('click', (e) => {
       e.preventDefault();
       
-      // Track settings page opened
-      PostHogUtils.trackEvent('settings_page_opened');
-      
       if (chrome.runtime.openOptionsPage) {
         chrome.runtime.openOptionsPage();
       } else {
