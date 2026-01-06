@@ -11,6 +11,7 @@
     "rollup": "^4.53.5"
   },
   "dependencies": {
-    "@mozilla/readability": "^0.6.0"
+    "@mozilla/readability": "^0.6.0",
+    "posthog-js": "^1.313.0"
   }
 }
