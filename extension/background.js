@@ -1,9 +1,19 @@
-const isDev = true;
+// Import PostHog bundle
+importScripts('scripts/posthog-bundle.js');
+
+const isDev = false;
 const BASE_URL = isDev ? 'http://localhost:3000' : 'https://link-repository.eupthere.uk';
 const FE_BASE_URL = isDev ? 'http://localhost:5173' : 'https://link-repository.eupthere.uk';
 const POST_URL = BASE_URL + '/api/links';
 
 const MAX_AI_INPUT_CHARACTER_COUNT = 300;
+
+// Initialize PostHog on service worker startup
+try {
+  PostHogUtils.initPostHog();
+} catch (error) {
+  console.error('PostHog initialization failed:', error);
+}
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'saveLink') {
@@ -20,6 +30,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 async function summarizeContent(content, aiPassword) {
   try {
+    // Track AI summarize start
+    PostHogUtils.trackEvent('ai_summarize_started', {
+      content_length: content.slice(0, MAX_AI_INPUT_CHARACTER_COUNT).length,
+    });
+
     const response = await fetch(BASE_URL + '/api/ai/summary', {
       method: 'POST',
       body: JSON.stringify({ content: content.slice(0, MAX_AI_INPUT_CHARACTER_COUNT), aiPassword }),
@@ -30,18 +45,42 @@ async function summarizeContent(content, aiPassword) {
 
     if (response.ok) {
       const json = await response.json();
+      
+      // Track successful summarization
+      PostHogUtils.trackEvent('ai_summarize_success', {
+        tags_count: json.data?.tags?.length || 0,
+      });
+      
       return { success: true, data: json.data };
     } else {
       const errorJson = await response.json().catch(() => ({}));
+      
+      // Track summarization failure
+      PostHogUtils.trackEvent('ai_summarize_failed', {
+        error: errorJson.message || '요약 실패',
+      });
+      
       return { success: false, error: errorJson.message || '요약 실패' };
     }
   } catch (error) {
+    // Track summarization error
+    PostHogUtils.trackEvent('ai_summarize_error', {
+      error: error.message,
+    });
+    
     return { success: false, error: error.message };
   }
 }
 
 async function saveLink(formData) {
   try {
+    // Track link save attempt
+    PostHogUtils.trackEvent('link_save_started', {
+      tags_count: formData.tags?.length || 0,
+      has_summary: !!formData.summary,
+      team_id: formData.teamId,
+    });
+
     const response = await fetch(POST_URL, {
       method: 'POST',
       body: JSON.stringify(formData),
@@ -52,11 +91,29 @@ async function saveLink(formData) {
 
     if (response.ok) {
       const json = await response.json();
+      
+      // Track successful link save
+      PostHogUtils.trackEvent('link_save_success', {
+        tags_count: formData.tags?.length || 0,
+        has_summary: !!formData.summary,
+        team_id: formData.teamId,
+      });
+      
       return { success: true, data: json };
     } else {
+      // Track link save failure
+      PostHogUtils.trackEvent('link_save_failed', {
+        error: '저장 실패',
+      });
+      
       return { success: false, error: '저장 실패' };
     }
   } catch (error) {
+    // Track link save error
+    PostHogUtils.trackEvent('link_save_error', {
+      error: error.message,
+    });
+    
     return { success: false, error: error.message };
   }
 }
@@ -75,6 +132,12 @@ chrome.notifications.onClicked.addListener(async (notificationId) => {
   if (notificationId === 'teamstash-new-links') {
     const { teamId } = await chrome.storage.sync.get('teamId');
     if (teamId) {
+      // Track notification click
+      PostHogUtils.trackEvent('notification_clicked', {
+        notification_type: 'new_links',
+        team_id: teamId,
+      });
+      
       chrome.tabs.create({ url: `${FE_BASE_URL}/${teamId.toLowerCase()}` });
     }
     chrome.notifications.clear(notificationId);
@@ -110,6 +173,13 @@ async function checkNewLinks() {
       if (Array.isArray(newLinks) && newLinks.length > 0) {
         const { unseenLinkCount } = await chrome.storage.local.get(['unseenLinkCount']);
         const totalNewLinks = (unseenLinkCount || 0) + newLinks.length;
+
+        // Track new links notification
+        PostHogUtils.trackEvent('new_links_notification', {
+          new_links_count: newLinks.length,
+          total_unseen: totalNewLinks,
+          team_id: teamId,
+        });
 
         const notificationId = 'teamstash-new-links';
         chrome.notifications.create(notificationId, {
@@ -156,6 +226,11 @@ async function checkDashboardVisit(tabId) {
     const dashboardUrl = `${FE_BASE_URL}/${teamId.toLowerCase()}`;
 
     if (tab.url.startsWith(dashboardUrl)) {
+      // Track dashboard visit
+      PostHogUtils.trackEvent('dashboard_visited', {
+        team_id: teamId,
+      });
+      
       await chrome.storage.local.set({ unseenLinkCount: 0 });
       chrome.notifications.clear('teamstash-new-links');
     }

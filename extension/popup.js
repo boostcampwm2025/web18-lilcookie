@@ -1,10 +1,20 @@
-const isDev = true;
+const isDev = false;
 const BASE_URL = isDev ? 'http://localhost:5173' : 'https://link-repository.eupthere.uk';
 
 const MAX_TAG_COUNT = 10;
 const MAX_CHARACTER_COUNT = 200;
 
+// Initialize PostHog
+try {
+  PostHogUtils.initPostHog();
+} catch (error) {
+  console.error('PostHog 초기화 오류:', error);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+  // Track popup opened
+  PostHogUtils.trackEvent('popup_opened');
+
   // 정보 입력 및 제출할 폼 부분
   const form = document.getElementById('stashForm');
   const commentInput = document.getElementById('comment');
@@ -21,6 +31,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (settingsLink) {
     settingsLink.addEventListener('click', (e) => {
       e.preventDefault();
+      
+      // Track settings page opened
+      PostHogUtils.trackEvent('settings_page_opened');
+      
       if (chrome.runtime.openOptionsPage) {
         chrome.runtime.openOptionsPage();
       } else {
@@ -57,6 +71,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const handleAiClick = async (button) => {
       const originalHTML = button.innerHTML;
       try {
+        // Track AI button clicked
+        PostHogUtils.trackEvent('ai_button_clicked');
+        
         // button.textContent = 'AI 생성 중...'; // 텍스트 변경 대신
         button.classList.add('loading'); // 로딩 클래스 추가
         button.disabled = true;
@@ -166,6 +183,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     dashboardLink.addEventListener('click', (e) => {
       e.preventDefault();
       if (dashboardLink.href && !dashboardLink.classList.contains('disabled')) {
+        // Track dashboard link clicked
+        PostHogUtils.trackEvent('dashboard_link_clicked', {
+          from: 'popup',
+        });
+        
         chrome.tabs.create({ url: dashboardLink.href });
       }
     });
@@ -348,6 +370,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (response && response.success) {
         console.log('저장 성공:', response.data);
+        
+        // Track successful form submission
+        // https://posthog.com/docs/data/events#event-properties
+        PostHogUtils.trackEvent('link_form_submitted', {
+          tags_count: formData.tags.length,
+          has_summary: !!formData.summary,
+          summary_length: formData.summary?.length || 0,
+        });
+        
         form.reset();
         // show success text on the button for 1 second
         saveButton.textContent = '저장 성공!';
