@@ -31,7 +31,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 async function summarizeContent(content, aiPassword) {
   try {
     // Track AI summarize start
-    PostHogUtils.trackEvent('ai_summarize_started', {
+    PostHogUtils.trackEvent('extension_ai_summarize_started', {
       content_length: content.slice(0, MAX_AI_INPUT_CHARACTER_COUNT).length,
     });
 
@@ -47,7 +47,7 @@ async function summarizeContent(content, aiPassword) {
       const json = await response.json();
       
       // Track successful summarization
-      PostHogUtils.trackEvent('ai_summarize_success', {
+      PostHogUtils.trackEvent('extension_ai_summarize_success', {
         tags_count: json.data?.tags?.length || 0,
       });
       
@@ -56,7 +56,7 @@ async function summarizeContent(content, aiPassword) {
       const errorJson = await response.json().catch(() => ({}));
       
       // Track summarization failure
-      PostHogUtils.trackEvent('ai_summarize_failed', {
+      PostHogUtils.trackEvent('extension_ai_summarize_failed', {
         error: errorJson.message || '요약 실패',
       });
       
@@ -64,7 +64,7 @@ async function summarizeContent(content, aiPassword) {
     }
   } catch (error) {
     // Track summarization error
-    PostHogUtils.trackEvent('ai_summarize_error', {
+    PostHogUtils.trackEvent('extension_ai_summarize_error', {
       error: error.message,
     });
     
@@ -75,7 +75,7 @@ async function summarizeContent(content, aiPassword) {
 async function saveLink(formData) {
   try {
     // Track link save attempt
-    PostHogUtils.trackEvent('link_save_started', {
+    PostHogUtils.trackEvent('extension_link_save_started', {
       tags_count: formData.tags?.length || 0,
       has_summary: !!formData.summary,
       team_id: formData.teamId,
@@ -93,7 +93,7 @@ async function saveLink(formData) {
       const json = await response.json();
       
       // Track successful link save
-      PostHogUtils.trackEvent('link_save_success', {
+      PostHogUtils.trackEvent('extension_link_save_success', {
         tags_count: formData.tags?.length || 0,
         has_summary: !!formData.summary,
         team_id: formData.teamId,
@@ -102,7 +102,7 @@ async function saveLink(formData) {
       return { success: true, data: json };
     } else {
       // Track link save failure
-      PostHogUtils.trackEvent('link_save_failed', {
+      PostHogUtils.trackEvent('extension_link_save_failed', {
         error: '저장 실패',
       });
       
@@ -110,7 +110,7 @@ async function saveLink(formData) {
     }
   } catch (error) {
     // Track link save error
-    PostHogUtils.trackEvent('link_save_error', {
+    PostHogUtils.trackEvent('extension_link_save_error', {
       error: error.message,
     });
     
@@ -133,7 +133,7 @@ chrome.notifications.onClicked.addListener(async (notificationId) => {
     const { teamId } = await chrome.storage.sync.get('teamId');
     if (teamId) {
       // Track notification click
-      PostHogUtils.trackEvent('notification_clicked', {
+      PostHogUtils.trackEvent('extension_notification_clicked', {
         notification_type: 'new_links',
         team_id: teamId,
       });
@@ -175,7 +175,7 @@ async function checkNewLinks() {
         const totalNewLinks = (unseenLinkCount || 0) + newLinks.length;
 
         // Track new links notification
-        PostHogUtils.trackEvent('new_links_notification', {
+        PostHogUtils.trackEvent('extension_new_links_notification', {
           new_links_count: newLinks.length,
           total_unseen: totalNewLinks,
           team_id: teamId,
@@ -227,7 +227,7 @@ async function checkDashboardVisit(tabId) {
 
     if (tab.url.startsWith(dashboardUrl)) {
       // Track dashboard visit
-      PostHogUtils.trackEvent('dashboard_visited', {
+      PostHogUtils.trackEvent('extension_dashboard_visited', {
         team_id: teamId,
       });
       

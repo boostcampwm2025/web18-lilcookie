@@ -13,7 +13,7 @@ try {
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Track popup opened
-  PostHogUtils.trackEvent('popup_opened');
+  PostHogUtils.trackEvent('extension_popup_opened');
 
   // 정보 입력 및 제출할 폼 부분
   const form = document.getElementById('stashForm');
@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const originalHTML = button.innerHTML;
       try {
         // Track AI button clicked
-        PostHogUtils.trackEvent('ai_button_clicked');
+        PostHogUtils.trackEvent('extension_ai_button_clicked');
         
         // button.textContent = 'AI 생성 중...'; // 텍스트 변경 대신
         button.classList.add('loading'); // 로딩 클래스 추가
@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       e.preventDefault();
       if (dashboardLink.href && !dashboardLink.classList.contains('disabled')) {
         // Track dashboard link clicked
-        PostHogUtils.trackEvent('dashboard_link_clicked', {
+        PostHogUtils.trackEvent('extension_dashboard_link_clicked', {
           from: 'popup',
         });
         
@@ -353,6 +353,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       summary: commentInput.value.slice(0, MAX_CHARACTER_COUNT),
     };
 
+    // Track form submission attempt
+    PostHogUtils.trackEvent('extension_link_form_submitted', {
+      tags_count: formData.tags.length,
+      has_summary: !!formData.summary,
+      summary_length: formData.summary?.length || 0,
+    });
+
     let originalBtnText;
 
     try {
@@ -367,14 +374,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (response && response.success) {
         console.log('저장 성공:', response.data);
-        
-        // Track successful form submission
-        // https://posthog.com/docs/data/events#event-properties
-        PostHogUtils.trackEvent('link_form_submitted', {
-          tags_count: formData.tags.length,
-          has_summary: !!formData.summary,
-          summary_length: formData.summary?.length || 0,
-        });
         
         form.reset();
         // show success text on the button for 1 second

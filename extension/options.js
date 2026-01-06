@@ -22,7 +22,7 @@ const saveOptions = () => {
       saveBtn.disabled = true;
 
       // Track settings saved and identify user
-      PostHogUtils.trackEvent('settings_saved', {
+      PostHogUtils.trackEvent('extension_settings_saved', {
         has_camper_id: !!camperId,
         has_team_id: !!teamId,
         has_ai_password: !!aiPassword,
@@ -47,7 +47,7 @@ const saveOptions = () => {
 // 저장된 설정 표시
 const restoreOptions = () => {
   // Track options page opened
-  PostHogUtils.trackEvent('options_page_opened');
+  PostHogUtils.trackEvent('extension_settings_page_opened');
   
   chrome.storage.sync.get(
     { camperId: '', teamId: '', aiPassword: '' },
