@@ -9,6 +9,7 @@ export class LinkResponseDto {
   summary: string;
   createdAt: string;
   createdBy: string;
+  folderId: string | null;
 
   constructor(partial: Partial<LinkResponseDto>) {
     Object.assign(this, partial);
@@ -24,6 +25,7 @@ export class LinkResponseDto {
       summary: link.summary,
       createdAt: link.createdAt,
       createdBy: link.createdBy,
+      folderId: link.folderId,
     });
   }
 }
