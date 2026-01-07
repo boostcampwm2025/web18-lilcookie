@@ -206,3 +206,6 @@ $RECYCLE.BIN/
 *.db
 *.db-shm
 *.db-wal
+
+# Backend data directory
+backend/data/
