@@ -33,9 +33,7 @@ function App() {
 
   // 현재 탭 정보 가져오기
   useEffect(() => {
-    console.log("🔷 Firefox 디버깅: useEffect 시작");
     chrome.tabs.query({ active: true, currentWindow: true }, ([activeTab]) => {
-      console.log("🔷 Firefox 디버깅: 활성 탭 정보", activeTab);
       if (activeTab) {
         setTab({
           title: activeTab.title || "Loading...",
@@ -45,9 +43,7 @@ function App() {
 
         // 페이지 내용이 있는지 확인하여 AI 버튼 활성화 여부 결정
         chrome.storage.local.get("pageContent", ({ pageContent }) => {
-          console.log("🔷 Firefox 디버깅: pageContent from storage:", pageContent);
           const isReaderable = pageContent?.textContent;
-          console.log("🔷 Firefox 디버깅: isReaderable:", isReaderable);
           setIsAiDisabled(!isReaderable);
         });
       }
@@ -55,17 +51,14 @@ function App() {
 
     // 대시보드 링크 설정
     chrome.storage.sync.get("teamId", ({ teamId }) => {
-      console.log("🔷 Firefox 디버깅: teamId from storage:", teamId);
       if (teamId) {
         setDashboardUrl(`${BASE_URL}/${teamId.toLowerCase()}`);
         setIsDashboardDisabled(false);
         setShowDashboardNotice(false);
-        console.log("🔷 Firefox 디버깅: 대시보드 활성화됨");
       } else {
         setDashboardUrl("");
         setIsDashboardDisabled(true);
         setShowDashboardNotice(true);
-        console.log("🔷 Firefox 디버깅: teamId 없음 - 대시보드 비활성화");
       }
     });
   }, []);
@@ -95,7 +88,6 @@ function App() {
 
   // AI 요약 생성
   const handleAiClick = () => {
-    console.log("🔵 AI 버튼 클릭됨");
     if (!aiButtonRef.current) return;
 
     const originalHTML = aiButtonRef.current.innerHTML;
@@ -104,24 +96,18 @@ function App() {
     setIsAiDisabled(true);
 
     chrome.storage.local.get("pageContent", (result) => {
-      console.log("📄 storage result:", result);
       const pageContent = result?.pageContent as any;
-      console.log("📄 pageContent:", pageContent);
 
       if (!pageContent || !pageContent.textContent) {
-        console.warn("⚠️ pageContent가 없음. AI 버튼 비활성화");
         setIsAiLoading(false);
         setIsAiDisabled(false);
         return;
       }
 
       chrome.storage.sync.get("aiPassword", (aiResult) => {
-        console.log("🔑 aiPassword result:", aiResult);
         const aiPassword = aiResult?.aiPassword;
-        console.log("🔑 aiPassword 확인:", !!aiPassword);
 
         if (!aiPassword) {
-          console.warn("⚠️ AI 비밀번호 없음");
           if (
             confirm(
               "AI 기능을 사용하려면 설정에서 비밀번호를 입력해야 합니다. 설정 페이지로 이동하시겠습니까?"
@@ -138,7 +124,6 @@ function App() {
           return;
         }
 
-        console.log("📤 Background로 메시지 전송 중...");
         // Firefox MV2: sendMessage also needs callback pattern
         chrome.runtime.sendMessage(
           {
@@ -147,10 +132,7 @@ function App() {
             aiPassword,
           },
           (response) => {
-            console.log("📥 Background로부터 응답 받음:", response);
-
             if (chrome.runtime.lastError) {
-              console.error("📥 메시지 응답 에러:", chrome.runtime.lastError);
               alert("오류가 발생했습니다: " + chrome.runtime.lastError.message);
               setIsAiLoading(false);
               setIsAiDisabled(false);
@@ -310,10 +292,7 @@ function App() {
 
     // Firefox MV2: storage.sync.get also needs callback pattern
     chrome.storage.sync.get(["camperId", "teamId"], (storageData) => {
-      console.log("💾 저장용 설정 불러오기:", storageData);
-
       if (chrome.runtime.lastError) {
-        console.error("💾 설정 읽기 에러:", chrome.runtime.lastError);
         alert("설정을 불러오는데 실패했습니다.");
         return;
       }
@@ -322,7 +301,6 @@ function App() {
       const teamId = storageData?.teamId;
 
       if (!camperId || !teamId) {
-        console.warn("💾 설정 없음:", { camperId, teamId });
         alert("사용자 설정에서 캠퍼 ID와 팀 ID를 입력해주세요.");
         if (chrome.runtime.openOptionsPage) {
           chrome.runtime.openOptionsPage();
@@ -351,14 +329,14 @@ function App() {
         { action: "saveLink", data: formData },
         (response) => {
           if (chrome.runtime.lastError) {
-            console.error("💾 링크 저장 메시지 에러:", chrome.runtime.lastError);
-            alert("저장 중 오류가 발생했습니다: " + chrome.runtime.lastError.message);
+            alert(
+              "저장 중 오류가 발생했습니다: " + chrome.runtime.lastError.message
+            );
             setIsSaving(false);
             return;
           }
 
           if (response && response.success) {
-            console.log("저장 성공:", response.data);
             setIsSaveSuccess(true);
             // 필드 초기화는 하지 않고 버튼만 "저장 성공!" 표시
           } else {

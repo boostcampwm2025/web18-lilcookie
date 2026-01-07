@@ -14,35 +14,28 @@ export default defineBackground(() => {
     if (request.action === "saveLink") {
       saveLink(request.data)
         .then((response) => {
-          console.log("💾 링크 저장 응답:", response);
           sendResponse(response);
         })
         .catch((error) => {
-          console.error("💾 링크 저장 에러:", error);
           sendResponse({
             success: false,
-            error: error instanceof Error ? error.message : "알 수 없는 에러"
+            error: error instanceof Error ? error.message : "알 수 없는 에러",
           });
         });
       return true; // Will respond asynchronously
     } else if (request.action === "summarize") {
-      console.log("🤖 AI 요약 요청 받음:", {
-        contentLength: request.content?.length,
-        hasPassword: !!request.aiPassword
-      });
-
       // Firefox MV2 compatibility: explicitly handle async response
       (async () => {
         try {
-          const response = await summarizeContent(request.content, request.aiPassword);
-          console.log("✅ AI 요약 응답:", response);
-          console.log("📤 sendResponse 호출 중:", response);
+          const response = await summarizeContent(
+            request.content,
+            request.aiPassword
+          );
           sendResponse(response);
         } catch (error) {
-          console.error("❌ AI 요약 에러:", error);
           sendResponse({
             success: false,
-            error: error instanceof Error ? error.message : "알 수 없는 에러"
+            error: error instanceof Error ? error.message : "알 수 없는 에러",
           });
         }
       })();
@@ -53,7 +46,6 @@ export default defineBackground(() => {
 
   async function summarizeContent(content, aiPassword) {
     try {
-      console.log("🌐 API 요청 시작:", BASE_URL + "/api/ai/summary");
       const response = await fetch(BASE_URL + "/api/ai/summary", {
         method: "POST",
         body: JSON.stringify({
@@ -65,19 +57,14 @@ export default defineBackground(() => {
         },
       });
 
-      console.log("📡 API 응답 상태:", response.status, response.statusText);
-
       if (response.ok) {
         const json = await response.json();
-        console.log("📦 응답 데이터:", json);
         return { success: true, data: json.data };
       } else {
         const errorJson = await response.json().catch(() => ({}));
-        console.error("🚫 API 에러 응답:", errorJson);
         return { success: false, error: errorJson.message || "요약 실패" };
       }
     } catch (error) {
-      console.error("💥 Fetch 에러:", error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "알 수 없는 에러",
@@ -162,7 +149,8 @@ export default defineBackground(() => {
           const { unseenLinkCount } = await chrome.storage.local.get([
             "unseenLinkCount",
           ]);
-          const totalNewLinks = (Number(unseenLinkCount) || 0) + newLinks.length;
+          const totalNewLinks =
+            (Number(unseenLinkCount) || 0) + newLinks.length;
 
           const notificationId = "teamstash-new-links";
           chrome.notifications.create(notificationId, {
@@ -180,26 +168,20 @@ export default defineBackground(() => {
 
         await chrome.storage.sync.set({ lastCheck: formattedNow });
       }
-    } catch (error) {
-      console.error("Error checking links:", error);
-    }
+    } catch (error) {}
   }
 
   chrome.tabs.onActivated.addListener(async (activeInfo) => {
-    console.log("🔶 Firefox 백그라운드: 탭 활성화됨", activeInfo.tabId);
     try {
       const tab = await chrome.tabs.get(activeInfo.tabId);
       if (tab) {
         showSummary(tab);
         checkDashboardVisit(tab);
       }
-    } catch (error) {
-      console.error("🔶 탭 활성화 에러:", error);
-    }
+    } catch (error) {}
   });
   chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     if (changeInfo.status === "complete" && tab) {
-      console.log("🔶 Firefox 백그라운드: 페이지 로드 완료", tabId, tab.url);
       showSummary(tab);
       checkDashboardVisit(tab);
     }
@@ -218,44 +200,30 @@ export default defineBackground(() => {
         await chrome.storage.local.set({ unseenLinkCount: 0 });
         chrome.notifications.clear("teamstash-new-links");
       }
-    } catch (error) {
-      console.debug("Error checking dashboard visit:", error);
-    }
+    } catch (error) {}
   }
 
   async function showSummary(tab: chrome.tabs.Tab) {
     try {
       if (!tab || !tab.id) {
-        console.log("🔶 탭 정보 없음");
         return;
       }
 
-      console.log("🔶 showSummary 시작:", tab.id);
-      console.log("🔶 탭 URL:", tab.url);
-
       if (!tab.url?.startsWith("http")) {
-        console.log("🔶 HTTP 아님, 건너뜀");
         chrome.storage.local.set({ pageContent: null });
         return;
       }
 
-      console.log("🔶 content script에 메시지 전송 중...");
       chrome.tabs.sendMessage(
         tab.id,
         { action: "extractContent" },
         (response) => {
-          console.log("🔶 content script 응답:", response);
           if (chrome.runtime.lastError) {
-            console.error("🔶 메시지 전송 에러:", chrome.runtime.lastError);
           }
           chrome.storage.local.set({ pageContent: response || null });
         }
       );
     } catch (error) {
-      console.error(
-        "🔶 showSummary 에러:",
-        error instanceof Error ? error.message : String(error)
-      );
       chrome.storage.local.set({ pageContent: null });
     }
   }
