@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import Header from "../components/layout/Header";
 import LinkGrid from "../components/dashboard/LinkGrid";
+import FolderTree from "../components/folders/FolderTree";
 import type { Link } from "../types";
 import { linkApi } from "../services/api";
 
@@ -14,6 +15,7 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null); // 선택된 폴더
 
   const getTeamName = (id: string) => {
     // web01~30, ios01~04 표시
@@ -50,9 +52,14 @@ const Dashboard = () => {
     }
   }, [teamId, fetchLinks]);
 
-  // 검색 및 태그 필터링
+  // 검색, 태그, 폴더 필터링
   useEffect(() => {
     let result = [...links];
+
+    // 폴더 필터링 (가장 먼저)
+    if (selectedFolderId !== null) {
+      result = result.filter((link) => link.folderId === selectedFolderId);
+    }
 
     // 태그 필터링
     if (selectedTags.length > 0) {
@@ -74,7 +81,7 @@ const Dashboard = () => {
     }
 
     setFilteredLinks(result);
-  }, [links, selectedTags, searchQuery]);
+  }, [links, selectedTags, searchQuery, selectedFolderId]);
 
   // 링크 삭제 (204 No Content 처리)
   const handleDeleteLink = async (linkId: string) => {
@@ -175,7 +182,7 @@ const Dashboard = () => {
             </p>
           </div>
 
-          <button 
+          <button
             onClick={handleMarkAllAsRead}
             className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-lg hover:shadow-xl cursor-pointer"
           >
@@ -219,12 +226,27 @@ const Dashboard = () => {
           </div>
         )}
 
-        <LinkGrid
-          links={filteredLinks}
-          loading={loading}
-          onDeleteLink={handleDeleteLink}
-          onTagClick={handleTagClick}
-        />
+        {/* 폴더 트리와 링크 그리드 - 2단 레이아웃 */}
+        <div className="grid grid-cols-12 gap-6">
+          {/* 왼쪽: 폴더 트리 */}
+          <div className="col-span-3">
+            <FolderTree
+              teamId={teamId || ""}
+              selectedFolderId={selectedFolderId}
+              onFolderClick={setSelectedFolderId}
+            />
+          </div>
+
+          {/* 오른쪽: 링크 그리드 */}
+          <div className="col-span-9">
+            <LinkGrid
+              links={filteredLinks}
+              loading={loading}
+              onDeleteLink={handleDeleteLink}
+              onTagClick={handleTagClick}
+            />
+          </div>
+        </div>
       </main>
     </div>
   );

@@ -1,4 +1,4 @@
-import { IsString, IsArray, IsNotEmpty, IsUrl } from "class-validator";
+import { IsString, IsArray, IsNotEmpty, IsUrl, IsOptional } from "class-validator";
 
 export class CreateLinkRequestDto {
   @IsString()
@@ -24,4 +24,8 @@ export class CreateLinkRequestDto {
   @IsString()
   @IsNotEmpty()
   summary: string;
+
+  @IsString()
+  @IsOptional() // 폴더는 선택사항
+  folderId?: string; // 폴더 ID (없으면 null)
 }

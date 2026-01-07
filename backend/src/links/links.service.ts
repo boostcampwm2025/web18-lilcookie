@@ -15,6 +15,7 @@ interface LinkRow {
   summary: string;
   created_at: string;
   created_by: string;
+  folder_id: string | null;
 }
 
 @Injectable()
@@ -164,11 +165,12 @@ export class LinksService implements OnModuleInit {
       summary: requestDto.summary,
       createdAt,
       createdBy: requestDto.userId,
+      folderId: requestDto.folderId || null,
     });
 
     const insertStmt = db.prepare(`
-      INSERT INTO links (link_id, team_id, url, title, tags, summary, created_at, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO links (link_id, team_id, url, title, tags, summary, created_at, created_by, folder_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     insertStmt.run(
@@ -180,6 +182,7 @@ export class LinksService implements OnModuleInit {
       link.summary,
       link.createdAt,
       link.createdBy,
+      link.folderId,
     );
 
     return link;
@@ -232,6 +235,7 @@ export class LinksService implements OnModuleInit {
           summary: row.summary,
           createdAt: row.created_at,
           createdBy: row.created_by,
+          folderId: row.folder_id,
         }),
     );
   }
@@ -255,6 +259,7 @@ export class LinksService implements OnModuleInit {
       summary: row.summary,
       createdAt: row.created_at,
       createdBy: row.created_by,
+      folderId: row.folder_id,
     });
   }
 
