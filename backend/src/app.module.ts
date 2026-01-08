@@ -5,9 +5,8 @@ import { HealthModule } from "./health/health.module";
 import { LinksModule } from "./links/links.module";
 import { AiModule } from "./ai/ai.module";
 import { DatabaseModule } from "./database/database.module";
-import { NotificationModule } from "./notification/notification.module";
 
 @Module({
-  imports: [DatabaseModule, AppConfigModule, LoggerModule, HealthModule, LinksModule, AiModule, NotificationModule],
+  imports: [DatabaseModule, AppConfigModule, LoggerModule, HealthModule, LinksModule, AiModule],
 })
 export class AppModule {}
