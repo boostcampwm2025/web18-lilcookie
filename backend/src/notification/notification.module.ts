@@ -5,7 +5,6 @@ import { NotificationService } from "./notification.service";
 @Module({
   imports: [
     HttpModule.register({
-      timeout: 5000,
       maxRedirects: 5,
     }),
   ],
