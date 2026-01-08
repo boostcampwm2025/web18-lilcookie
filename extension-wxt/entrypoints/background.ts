@@ -12,35 +12,15 @@ export default defineBackground(() => {
 
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "saveLink") {
-      saveLink(request.data)
-        .then((response) => {
-          sendResponse(response);
-        })
-        .catch((error) => {
-          sendResponse({
-            success: false,
-            error: error instanceof Error ? error.message : "알 수 없는 에러",
-          });
-        });
-      return true; // Will respond asynchronously
+      saveLink(request.data).then(sendResponse);
+      return true;
     } else if (request.action === "summarize") {
-      // Firefox MV2 compatibility: explicitly handle async response
-      (async () => {
-        try {
-          const response = await summarizeContent(
-            request.content,
-            request.aiPassword
-          );
-          sendResponse(response);
-        } catch (error) {
-          sendResponse({
-            success: false,
-            error: error instanceof Error ? error.message : "알 수 없는 에러",
-          });
-        }
-      })();
-
-      return true; // Keep message channel open for async response
+      summarizeContent(request.content, request.aiPassword)
+        .then(sendResponse)
+        .catch((error) =>
+          sendResponse({ success: false, error: error.message })
+        );
+      return true;
     }
   });
 
@@ -143,7 +123,9 @@ export default defineBackground(() => {
       if (response.ok) {
         const json = await response.json();
         const links = json.data || [];
-        const newLinks = links.filter((link: any) => link.createdBy !== camperId);
+        const newLinks = links.filter(
+          (link: any) => link.createdBy !== camperId
+        );
 
         if (Array.isArray(newLinks) && newLinks.length > 0) {
           const { unseenLinkCount } = await chrome.storage.local.get([
@@ -210,21 +192,16 @@ export default defineBackground(() => {
       }
 
       if (!tab.url?.startsWith("http")) {
-        chrome.storage.local.set({ pageContent: null });
+        chrome.storage.session.set({ pageContent: null });
         return;
       }
 
-      chrome.tabs.sendMessage(
-        tab.id,
-        { action: "extractContent" },
-        (response) => {
-          if (chrome.runtime.lastError) {
-          }
-          chrome.storage.local.set({ pageContent: response || null });
-        }
-      );
+      const response = await chrome.tabs.sendMessage(tab.id, {
+        action: "extractContent",
+      });
+      chrome.storage.session.set({ pageContent: response || null });
     } catch (error) {
-      chrome.storage.local.set({ pageContent: null });
+      chrome.storage.session.set({ pageContent: null });
     }
   }
 });

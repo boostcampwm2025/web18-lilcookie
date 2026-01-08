@@ -33,7 +33,12 @@ function App() {
 
   // 현재 탭 정보 가져오기
   useEffect(() => {
-    chrome.tabs.query({ active: true, currentWindow: true }, ([activeTab]) => {
+    (async () => {
+      const [activeTab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+
       if (activeTab) {
         setTab({
           title: activeTab.title || "Loading...",
@@ -42,17 +47,15 @@ function App() {
         });
 
         // 페이지 내용이 있는지 확인하여 AI 버튼 활성화 여부 결정
-        chrome.storage.local.get("pageContent", ({ pageContent }: any) => {
-          const isReaderable = pageContent?.textContent;
-          setIsAiDisabled(!isReaderable);
-        });
+        const { pageContent } = await chrome.storage.session.get("pageContent");
+        const isReaderable = (pageContent as any)?.textContent;
+        setIsAiDisabled(!isReaderable);
       }
-    });
 
-    // 대시보드 링크 설정
-    chrome.storage.sync.get("teamId", ({ teamId }: any) => {
+      // 대시보드 링크 설정
+      const { teamId } = await chrome.storage.sync.get("teamId");
       if (teamId) {
-        setDashboardUrl(`${BASE_URL}/${teamId.toLowerCase()}`);
+        setDashboardUrl(`${BASE_URL}/${(teamId as string).toLowerCase()}`);
         setIsDashboardDisabled(false);
         setShowDashboardNotice(false);
       } else {
@@ -60,7 +63,7 @@ function App() {
         setIsDashboardDisabled(true);
         setShowDashboardNotice(true);
       }
-    });
+    })();
   }, []);
 
   // 댓글 글자 수 계산
@@ -87,90 +90,82 @@ function App() {
   };
 
   // AI 요약 생성
-  const handleAiClick = () => {
+  const handleAiClick = async () => {
     if (!aiButtonRef.current) return;
 
     const originalHTML = aiButtonRef.current.innerHTML;
 
-    setIsAiLoading(true);
-    setIsAiDisabled(true);
+    try {
+      setIsAiLoading(true);
+      setIsAiDisabled(true);
 
-    chrome.storage.local.get("pageContent", (result) => {
-      const pageContent = result?.pageContent as any;
+      const { pageContent } = await chrome.storage.session.get("pageContent");
 
-      if (!pageContent || !pageContent.textContent) {
+      if (!pageContent || !(pageContent as any)?.textContent) {
         setIsAiLoading(false);
         setIsAiDisabled(false);
         return;
       }
 
-      chrome.storage.sync.get("aiPassword", (aiResult) => {
-        const aiPassword = aiResult?.aiPassword;
+      const { aiPassword } = await chrome.storage.sync.get("aiPassword");
 
-        if (!aiPassword) {
-          if (
-            confirm(
-              "AI 기능을 사용하려면 설정에서 비밀번호를 입력해야 합니다. 설정 페이지로 이동하시겠습니까?"
-            )
-          ) {
-            if (chrome.runtime.openOptionsPage) {
-              chrome.runtime.openOptionsPage();
-            } else {
-              window.open(chrome.runtime.getURL("options.html"));
-            }
+      if (!aiPassword) {
+        if (
+          confirm(
+            "AI 기능을 사용하려면 설정에서 비밀번호를 입력해야 합니다. 설정 페이지로 이동하시겠습니까?"
+          )
+        ) {
+          if (chrome.runtime.openOptionsPage) {
+            chrome.runtime.openOptionsPage();
+          } else {
+            window.open(chrome.runtime.getURL("options.html"));
           }
-          setIsAiLoading(false);
-          setIsAiDisabled(false);
-          return;
         }
+        setIsAiLoading(false);
+        setIsAiDisabled(false);
+        return;
+      }
 
-        // Firefox MV2: sendMessage also needs callback pattern
-        chrome.runtime.sendMessage(
-          {
-            action: "summarize",
-            content: pageContent.textContent,
-            aiPassword,
-          },
-          (response) => {
-            if (chrome.runtime.lastError) {
-              alert("오류가 발생했습니다: " + chrome.runtime.lastError.message);
-              setIsAiLoading(false);
-              setIsAiDisabled(false);
-              if (aiButtonRef.current) {
-                aiButtonRef.current.innerHTML = originalHTML;
-              }
-              return;
-            }
-
-            if (response && response.success) {
-              const { summary, tags: aiTags } = response.data;
-              if (summary) {
-                setComment(String(summary).slice(0, MAX_CHARACTER_COUNT));
-              }
-              if (aiTags && Array.isArray(aiTags)) {
-                setTags(aiTags.slice(0, MAX_TAG_COUNT).join(", "));
-              }
-              setIsAiCompleted(true);
-              setIsAiLoading(false);
-            } else {
-              // 실패 시 2초 후 원래 버튼으로 복구
-              if (aiButtonRef.current) {
-                const svg = aiButtonRef.current.querySelector("svg");
-                aiButtonRef.current.innerHTML =
-                  (svg?.outerHTML || "") + "AI 생성 실패";
-              }
-              setTimeout(() => {
-                if (aiButtonRef.current) {
-                  aiButtonRef.current.innerHTML = originalHTML;
-                }
-                setIsAiDisabled(false);
-                setIsAiLoading(false);
-              }, 2000);
-            }
-          }
-        );
+      const response = await chrome.runtime.sendMessage({
+        action: "summarize",
+        content: (pageContent as any).textContent,
+        aiPassword,
       });
-    });
+
+      if (response && response.success) {
+        const { summary, tags: aiTags } = response.data;
+        if (summary) {
+          setComment(String(summary).slice(0, MAX_CHARACTER_COUNT));
+        }
+        if (aiTags && Array.isArray(aiTags)) {
+          setTags(aiTags.slice(0, MAX_TAG_COUNT).join(", "));
+        }
+        setIsAiCompleted(true);
+        setIsAiLoading(false);
+      } else {
+        // 실패 시 2초 후 원래 버튼으로 복구
+        if (aiButtonRef.current) {
+          const svg = aiButtonRef.current.querySelector("svg");
+          aiButtonRef.current.innerHTML =
+            (svg?.outerHTML || "") + "AI 생성 실패";
+        }
+        setTimeout(() => {
+          if (aiButtonRef.current) {
+            aiButtonRef.current.innerHTML = originalHTML;
+          }
+          setIsAiDisabled(false);
+          setIsAiLoading(false);
+        }, 2000);
+      }
+    } catch (error) {
+      console.error("AI Error:", error);
+      alert("오류가 발생했습니다: " + (error as Error).message);
+      setIsAiLoading(false);
+      setIsAiDisabled(false);
+      if (aiButtonRef.current) {
+        aiButtonRef.current.innerHTML = originalHTML;
+      }
+    }
   };
 
   // 댓글 입력 처리
@@ -287,18 +282,14 @@ function App() {
   };
 
   // 저장 처리
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Firefox MV2: storage.sync.get also needs callback pattern
-    chrome.storage.sync.get(["camperId", "teamId"], (storageData) => {
-      if (chrome.runtime.lastError) {
-        alert("설정을 불러오는데 실패했습니다.");
-        return;
-      }
-
-      const camperId = storageData?.camperId;
-      const teamId = storageData?.teamId;
+    try {
+      const { camperId, teamId } = await chrome.storage.sync.get([
+        "camperId",
+        "teamId",
+      ]);
 
       if (!camperId || !teamId) {
         alert("사용자 설정에서 캠퍼 ID와 팀 ID를 입력해주세요.");
@@ -325,27 +316,23 @@ function App() {
 
       setIsSaving(true);
 
-      chrome.runtime.sendMessage(
-        { action: "saveLink", data: formData },
-        (response) => {
-          if (chrome.runtime.lastError) {
-            alert(
-              "저장 중 오류가 발생했습니다: " + chrome.runtime.lastError.message
-            );
-            setIsSaving(false);
-            return;
-          }
+      const response = await chrome.runtime.sendMessage({
+        action: "saveLink",
+        data: formData,
+      });
 
-          if (response && response.success) {
-            setIsSaveSuccess(true);
-            // 필드 초기화는 하지 않고 버튼만 "저장 성공!" 표시
-          } else {
-            alert("저장 실패: " + (response?.error || "알 수 없는 오류"));
-            setIsSaving(false);
-          }
-        }
-      );
-    });
+      if (response && response.success) {
+        setIsSaveSuccess(true);
+        // 필드 초기화는 하지 않고 버튼만 "저장 성공!" 표시
+      } else {
+        alert("저장 실패: " + (response?.error || "알 수 없는 오류"));
+        setIsSaving(false);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("저장 중 오류가 발생했습니다: " + (error as Error).message);
+      setIsSaving(false);
+    }
   };
 
   // 대시보드 열기

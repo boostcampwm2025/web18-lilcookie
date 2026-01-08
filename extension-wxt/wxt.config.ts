@@ -3,6 +3,7 @@ import { defineConfig } from "wxt";
 // See https://wxt.dev/api/config.html
 export default defineConfig({
   modules: ["@wxt-dev/module-react"],
+  manifestVersion: 3, // Chrome와 Firefox 모두 MV3로 빌드
   manifest: {
     name: "TeamStash",
     version: "1.0",
