@@ -4,6 +4,8 @@ import { Link } from "./entities/link.entity";
 import { CreateLinkRequestDto } from "./dto/create-link.request.dto";
 import { ConfigService } from "@nestjs/config";
 import { DatabaseService } from "../database/database.service";
+import { NotificationService } from "../notification/notification.service";
+import { LinkNotificationDto } from "../notification/dto/link-notification.dto";
 
 // MVP라서 일단 서비스 상단에 인터페이스 정의했음
 interface LinkRow {
@@ -22,6 +24,7 @@ export class LinksService implements OnModuleInit {
   constructor(
     private readonly configService: ConfigService,
     private readonly databaseService: DatabaseService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   onModuleInit() {
@@ -181,6 +184,9 @@ export class LinksService implements OnModuleInit {
       link.createdAt,
       link.createdBy,
     );
+
+    // 임시로 슬랙 채널 ID는 하드코딩(C0A6S6AM1K7)
+    this.notificationService.notifyLinkCreated(LinkNotificationDto.fromLink(link, "C0A6S6AM1K7")).catch(() => {});
 
     return link;
   }
