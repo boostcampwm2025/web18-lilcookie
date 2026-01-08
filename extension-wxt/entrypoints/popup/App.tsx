@@ -42,7 +42,7 @@ function App() {
         });
 
         // 페이지 내용이 있는지 확인하여 AI 버튼 활성화 여부 결정
-        chrome.storage.local.get("pageContent", ({ pageContent }) => {
+        chrome.storage.local.get("pageContent", ({ pageContent }: any) => {
           const isReaderable = pageContent?.textContent;
           setIsAiDisabled(!isReaderable);
         });
@@ -50,7 +50,7 @@ function App() {
     });
 
     // 대시보드 링크 설정
-    chrome.storage.sync.get("teamId", ({ teamId }) => {
+    chrome.storage.sync.get("teamId", ({ teamId }: any) => {
       if (teamId) {
         setDashboardUrl(`${BASE_URL}/${teamId.toLowerCase()}`);
         setIsDashboardDisabled(false);

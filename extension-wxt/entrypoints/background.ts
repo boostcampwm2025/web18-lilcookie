@@ -44,7 +44,7 @@ export default defineBackground(() => {
     }
   });
 
-  async function summarizeContent(content, aiPassword) {
+  async function summarizeContent(content: string, aiPassword: string) {
     try {
       const response = await fetch(BASE_URL + "/api/ai/summary", {
         method: "POST",
@@ -72,7 +72,7 @@ export default defineBackground(() => {
     }
   }
 
-  async function saveLink(formData) {
+  async function saveLink(formData: any) {
     try {
       const response = await fetch(POST_URL, {
         method: "POST",
@@ -143,7 +143,7 @@ export default defineBackground(() => {
       if (response.ok) {
         const json = await response.json();
         const links = json.data || [];
-        const newLinks = links.filter((link) => link.createdBy !== camperId);
+        const newLinks = links.filter((link: any) => link.createdBy !== camperId);
 
         if (Array.isArray(newLinks) && newLinks.length > 0) {
           const { unseenLinkCount } = await chrome.storage.local.get([
