@@ -15,7 +15,7 @@ export default defineConfig({
       "notifications",
       "scripting",
     ],
-    host_permissions: ["http://*/*", "https://*/*"],
+    host_permissions: [],
     icons: {
       "16": "images/icon-16.png",
       "32": "images/icon-32.png",
