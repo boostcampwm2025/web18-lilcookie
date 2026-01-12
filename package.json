@@ -3,17 +3,16 @@
   "version": "1.0.0",
   "description": "URL 원클릭 저장 기획 사용자 테스트를 위한 프로토타입",
   "private": true,
-  "workspaces": [
-    "frontend",
-    "backend",
-    "extension",
-    "extension-wxt"
-  ],
   "scripts": {
-    "start:dev": "concurrently \"npm run -w backend start:dev\" \"npm run -w frontend dev\" \"npm run -w extension-wxt dev\"",
-    "build": "npm run build -w frontend && npm run build -w backend"
+    "start:dev": "concurrently \"pnpm --filter backend start:dev\" \"pnpm --filter frontend dev\" \"pnpm --filter extension-wxt dev\"",
+    "build": "pnpm --filter frontend build && pnpm --filter backend build"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
   }
 }
