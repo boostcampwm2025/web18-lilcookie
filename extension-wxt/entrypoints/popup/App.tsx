@@ -2,10 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
 // 상수 정의
-const isDev = false;
-const BASE_URL = isDev
-  ? "http://localhost:5173"
-  : "https://link-repository.eupthere.uk";
+const BASE_URL = import.meta.env.VITE_FE_BASE_URL;
 const MAX_TAG_COUNT = 10;
 const MAX_CHARACTER_COUNT = 200;
 

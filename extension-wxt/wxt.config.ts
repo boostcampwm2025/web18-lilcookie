@@ -4,6 +4,11 @@ import { defineConfig } from "wxt";
 export default defineConfig({
   modules: ["@wxt-dev/module-react"],
   manifestVersion: 3, // Chrome와 Firefox 모두 MV3로 빌드
+  dev: {
+    server: {
+      port: 3001, // 백엔드(3000)와 충돌 방지
+    },
+  },
   manifest: {
     name: "TeamStash",
     version: "1.0",

@@ -1,11 +1,6 @@
 export default defineBackground(() => {
-  const isDev = false;
-  const BASE_URL = isDev
-    ? "http://localhost:3000"
-    : "https://link-repository.eupthere.uk";
-  const FE_BASE_URL = isDev
-    ? "http://localhost:5173"
-    : "https://link-repository.eupthere.uk";
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  const FE_BASE_URL = import.meta.env.VITE_FE_BASE_URL;
   const POST_URL = BASE_URL + "/api/links";
 
   const MAX_AI_INPUT_CHARACTER_COUNT = 300;
