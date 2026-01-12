@@ -30,13 +30,13 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
     this.db = new Database(dbPath);
 
+    // SQLite에서 외래 키 제약 조건을 활성화
+    this.db.pragma("foreign_keys = ON");
+
     this.createTables();
   }
 
   private createTables(): void {
-    // Enable foreign key constraints
-    this.db.pragma('foreign_keys = ON');
-
     const createFoldersTable = `
       CREATE TABLE IF NOT EXISTS folders (
         folder_id TEXT PRIMARY KEY,
