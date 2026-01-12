@@ -6,10 +6,11 @@
   "workspaces": [
     "frontend",
     "backend",
-    "extension"
+    "extension",
+    "extension-wxt"
   ],
   "scripts": {
-    "start:dev": "concurrently \"npm run -w backend start:dev\" \"npm run -w frontend dev\"",
+    "start:dev": "concurrently \"npm run -w backend start:dev\" \"npm run -w frontend dev\" \"npm run -w extension-wxt dev\"",
     "build": "npm run build -w frontend && npm run build -w backend"
   },
   "devDependencies": {
