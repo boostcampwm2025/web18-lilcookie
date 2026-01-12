@@ -135,7 +135,7 @@ const FolderTree = ({
   const handleDeleteFolder = async (folderId: string, folderName: string) => {
     if (
       !window.confirm(
-        `"${folderName}" 폴더를 삭제하시겠습니까?\n하위 폴더와 링크도 함께 삭제됩니다.`
+        `"${folderName}" 폴더를 삭제하시겠습니까?\n하위 폴더는 함께 삭제되고, 링크는 폴더에서 제거됩니다.`
       )
     ) {
       return;
