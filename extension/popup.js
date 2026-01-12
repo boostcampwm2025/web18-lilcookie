@@ -1,10 +1,27 @@
-const isDev = true;
+const isDev = false;
 const BASE_URL = isDev ? 'http://localhost:5173' : 'https://link-repository.eupthere.uk';
 
 const MAX_TAG_COUNT = 10;
 const MAX_CHARACTER_COUNT = 200;
 
+// Initialize PostHog
+try {
+  PostHogUtils.initPostHog();
+} catch (error) {
+  console.error('PostHog 초기화 오류:', error);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+  // Track popup opened
+  PostHogUtils.trackEvent('extension_popup_opened');
+
+  // Track popup closed - use visibilitychange as it's most reliable for popups
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      PostHogUtils.trackEvent('extension_popup_closed');
+    }
+  });
+
   // 정보 입력 및 제출할 폼 부분
   const form = document.getElementById('stashForm');
   const commentInput = document.getElementById('comment');
@@ -21,6 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (settingsLink) {
     settingsLink.addEventListener('click', (e) => {
       e.preventDefault();
+      
       if (chrome.runtime.openOptionsPage) {
         chrome.runtime.openOptionsPage();
       } else {
@@ -47,6 +65,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.storage.session.get('pageContent', ({ pageContent }) => {
       const isReaderable = pageContent?.textContent;
 
+      if (!isReaderable) {
+        PostHogUtils.trackEvent('extension_ai_button_disabled');
+      }
+
       if (aiButton) {
         aiButton.disabled = !isReaderable;
         aiButton.title = isReaderable ? 'AI로 요약 생성' : '이 페이지는 요약할 수 없습니다';
@@ -57,6 +79,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const handleAiClick = async (button) => {
       const originalHTML = button.innerHTML;
       try {
+        // Track AI button clicked
+        PostHogUtils.trackEvent('extension_ai_button_clicked');
+        
         // button.textContent = 'AI 생성 중...'; // 텍스트 변경 대신
         button.classList.add('loading'); // 로딩 클래스 추가
         button.disabled = true;
@@ -166,6 +191,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     dashboardLink.addEventListener('click', (e) => {
       e.preventDefault();
       if (dashboardLink.href && !dashboardLink.classList.contains('disabled')) {
+        // Track dashboard link clicked
+        PostHogUtils.trackEvent('extension_dashboard_link_clicked', {
+          from: 'popup',
+        });
+        
         chrome.tabs.create({ url: dashboardLink.href });
       }
     });
@@ -334,6 +364,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       summary: commentInput.value.slice(0, MAX_CHARACTER_COUNT),
     };
 
+    // Track form submission attempt
+    PostHogUtils.trackEvent('extension_link_form_submitted', {
+      tags_count: formData.tags.length,
+      has_summary: !!formData.summary,
+      summary_length: formData.summary?.length || 0,
+    });
+
     let originalBtnText;
 
     try {
@@ -348,6 +385,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (response && response.success) {
         console.log('저장 성공:', response.data);
+        
         form.reset();
         // show success text on the button for 1 second
         saveButton.textContent = '저장 성공!';
