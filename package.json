@@ -6,7 +6,8 @@
   "workspaces": [
     "frontend",
     "backend",
-    "extension"
+    "extension",
+    "extension-wxt"
   ],
   "scripts": {
     "start:dev": "concurrently \"npm run -w backend start:dev\" \"npm run -w frontend dev\"",
