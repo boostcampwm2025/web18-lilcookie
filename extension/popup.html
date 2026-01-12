@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TeamStash Popup</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-content">
+          <div class="logo-icon">
+            <!-- 북마크 모양 아이콘 -->
+            <svg
+              width="36"
+              height="36"
+              viewBox="0 0 36 36"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M0 11.0341C0 4.94016 4.94015 0 11.0341 0H24.2751C30.3691 0 35.3092 4.94015 35.3092 11.0341V24.2751C35.3092 30.3691 30.3691 35.3092 24.2751 35.3092H11.0341C4.94016 35.3092 0 30.3691 0 24.2751V11.0341Z"
+                fill="#E0E7FF"
+              />
+              <path
+                d="M22.8032 24.275L17.6539 21.3326L12.5046 24.275V12.5053C12.5046 12.1151 12.6596 11.7409 12.9355 11.465C13.2115 11.1891 13.5857 11.0341 13.9759 11.0341H21.3319C21.7221 11.0341 22.0963 11.1891 22.3723 11.465C22.6482 11.7409 22.8032 12.1151 22.8032 12.5053V24.275Z"
+                stroke="#4F39F6"
+                stroke-width="1.47122"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+          <div class="header-text">
+            <h1 class="app-name">TeamStash</h1>
+            <p class="tagline">링크를 빠르게 저장하세요</p>
+          </div>
+        </div>
+        <a href="#" id="settingsLink" class="settings-link">사용자 설정</a>
+      </header>
+
+      <!-- Page Info Card -->
+      <div class="page-info-card">
+        <div class="page-icon">
+          <img id="pageFavicon" src="" alt="favicon" class="favicon" />
+        </div>
+        <div class="page-details">
+          <h2 id="pageTitle" class="page-title">Loading...</h2>
+          <p id="pageUrl" class="page-url"> Loading... </p>
+        </div>
+      </div>
+
+      <!-- Form Section -->
+      <form class="form-section" id="stashForm">
+        <!-- Comment Field -->
+        <div class="input-group">
+          <div class="label-row">
+            <label>코멘트 <span id="commentCount" class="char-count">(0/200)</span></label>
+            <button id="aiGen" type="button" class="ai-badge-btn">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <g clip-path="url(#clip0_81_172)">
+                  <path
+                    d="M6.08104 1.55246C6.10468 1.4259 6.17184 1.31159 6.27088 1.22934C6.36992 1.14708 6.49462 1.10205 6.62337 1.10205C6.75212 1.10205 6.87681 1.14708 6.97585 1.22934C7.0749 1.31159 7.14206 1.4259 7.16569 1.55246L7.74554 4.61885C7.78672 4.83685 7.89267 5.03738 8.04954 5.19426C8.20642 5.35114 8.40695 5.45708 8.62496 5.49827L11.6913 6.07811C11.8179 6.10175 11.9322 6.16891 12.0145 6.26795C12.0967 6.367 12.1418 6.49169 12.1418 6.62044C12.1418 6.74919 12.0967 6.87388 12.0145 6.97292C11.9322 7.07197 11.8179 7.13913 11.6913 7.16276L8.62496 7.74261C8.40695 7.78379 8.20642 7.88974 8.04954 8.04662C7.89267 8.20349 7.78672 8.40402 7.74554 8.62203L7.16569 11.6884C7.14206 11.815 7.0749 11.9293 6.97585 12.0115C6.87681 12.0938 6.75212 12.1388 6.62337 12.1388C6.49462 12.1388 6.36992 12.0938 6.27088 12.0115C6.17184 11.9293 6.10468 11.815 6.08104 11.6884L5.5012 8.62203C5.46001 8.40402 5.35407 8.20349 5.19719 8.04662C5.04031 7.88974 4.83978 7.78379 4.62178 7.74261L1.55539 7.16276C1.42883 7.13913 1.31452 7.07197 1.23227 6.97292C1.15001 6.87388 1.10498 6.74919 1.10498 6.62044C1.10498 6.49169 1.15001 6.367 1.23227 6.26795C1.31452 6.16891 1.42883 6.10175 1.55539 6.07811L4.62178 5.49827C4.83978 5.45708 5.04031 5.35114 5.19719 5.19426C5.35407 5.03738 5.46001 4.83685 5.5012 4.61885L6.08104 1.55246Z"
+                    stroke="#9810FA"
+                    stroke-width="1.10341"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M11.0388 1.10327V3.3101"
+                    stroke="#9810FA"
+                    stroke-width="1.10341"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M12.1414 2.20679H9.93457"
+                    stroke="#9810FA"
+                    stroke-width="1.10341"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M2.21206 12.1375C2.82145 12.1375 3.31547 11.6435 3.31547 11.0341C3.31547 10.4247 2.82145 9.93066 2.21206 9.93066C1.60266 9.93066 1.10864 10.4247 1.10864 11.0341C1.10864 11.6435 1.60266 12.1375 2.21206 12.1375Z"
+                    stroke="#9810FA"
+                    stroke-width="1.10341"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </g>
+                <defs>
+                  <clipPath id="clip0_81_172">
+                    <rect width="13.241" height="13.241" fill="white" />
+                  </clipPath>
+                </defs>
+              </svg>
+              AI 생성
+            </button>
+          </div>
+          <textarea
+            id="comment"
+            name="comment"
+            placeholder="URL에 대한 설명을 입력하세요."
+          ></textarea>
+        </div>
+
+        <!-- Tag Field -->
+        <div class="input-group">
+          <div class="label-row">
+            <label>태그 <span id="tagCount" class="tag-count">(0/10)</span></label>
+          </div>
+          <div class="tag-input-container">
+            <input
+              id="tags"
+              type="text"
+              name="tags"
+              placeholder="태그를 입력하세요. 콤마(,)로 구분됩니다."
+            />
+          </div>
+        </div>
+
+        <!-- Save Button -->
+        <button type="submit" id="saveButton" class="save-btn" disabled>
+          <!-- 북마크 모양 아이콘 -->
+          <svg
+            width="23"
+            height="23"
+            viewBox="0 0 23 23"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M17.4711 19.3097L11.0345 15.6317L4.5979 19.3097V4.59757C4.5979 4.10983 4.79165 3.64207 5.13654 3.29718C5.48142 2.9523 5.94918 2.75854 6.43692 2.75854H15.632C16.1198 2.75854 16.5875 2.9523 16.9324 3.29718C17.2773 3.64207 17.4711 4.10983 17.4711 4.59757V19.3097Z"
+              stroke="#A1A1A1"
+              stroke-width="1.83902"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          스태시에 저장
+        </button>
+      </form>
+      <!-- Footer -->
+      <footer class="footer">
+        <a href="#" id="dashboardLink" class="dashboard-link">대시보드 열기 →</a>
+        <p id="dashboardNotice" class="dashboard-notice" style="display: none;">사용자 설정을 먼저 해주세요</p>
+      </footer>
+    </div>
+    <script src="scripts/posthog-bundle.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
