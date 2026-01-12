@@ -14,7 +14,6 @@
     "build": "npm run build -w frontend && npm run build -w backend"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1",
-    "wxt": "^0.20.13"
+    "concurrently": "^9.2.1"
   }
 }
