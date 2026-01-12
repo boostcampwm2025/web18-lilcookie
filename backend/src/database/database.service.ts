@@ -34,6 +34,9 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   }
 
   private createTables(): void {
+    // Enable foreign key constraints
+    this.db.pragma('foreign_keys = ON');
+
     const createFoldersTable = `
       CREATE TABLE IF NOT EXISTS folders (
         folder_id TEXT PRIMARY KEY,
