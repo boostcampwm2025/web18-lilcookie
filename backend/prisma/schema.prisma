@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// 폴더 테이블
+model Folder {
+  folderId       String    @id @map("folder_id")
+  teamId         String    @map("team_id")
+  folderName     String    @map("folder_name")
+  parentFolderId String?   @map("parent_folder_id")
+  createdAt      String    @map("created_at")
+  createdBy      String    @map("created_by")
+
+  // 관계 설정
+  parentFolder   Folder?   @relation("FolderHierarchy", fields: [parentFolderId], references: [folderId], onDelete: Cascade)
+  subfolders     Folder[]  @relation("FolderHierarchy")
+  links          Link[]
+
+  @@index([teamId])
+  @@index([parentFolderId])
+  @@map("folders")
+}
+
+// 링크 테이블
+model Link {
+  linkId    String  @id @map("link_id")
+  teamId    String  @map("team_id")
+  url       String
+  title     String
+  tags      String  // JSON 문자열로 저장
+  summary   String
+  createdAt String  @map("created_at")
+  createdBy String  @map("created_by")
+  folderId  String? @map("folder_id")
+
+  // 관계 설정
+  folder    Folder? @relation(fields: [folderId], references: [folderId], onDelete: SetNull)
+
+  @@index([teamId])
+  @@index([createdAt])
+  @@index([folderId])
+  @@map("links")
+}
+
