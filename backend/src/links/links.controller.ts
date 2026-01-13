@@ -29,10 +29,10 @@ export class LinksController {
   // 새로운 Link 생성
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() requestDto: CreateLinkRequestDto) {
+  async create(@Body() requestDto: CreateLinkRequestDto) {
     this.logger.log(`POST /api/links - 링크 생성 요청: ${requestDto.title}`);
 
-    const link = this.linksService.create(requestDto);
+    const link = await this.linksService.create(requestDto);
     const responseDto = CreateLinkResponseDto.from(link.linkId, link.createdAt);
 
     return ResponseBuilder.success<CreateLinkResponseDto>()
@@ -44,12 +44,12 @@ export class LinksController {
 
   // 목록 조회 (전체 또는 조건)
   @Get()
-  findAll(@Query() requestDto: GetLinksQueryDto) {
+  async findAll(@Query() requestDto: GetLinksQueryDto) {
     this.logger.log(
       `GET /api/links - 링크 목록 조회: teamId=${requestDto.teamId}, tags=${requestDto.tags}, createdAfter=${requestDto.createdAfter}`,
     );
 
-    const links = this.linksService.findAll(requestDto.teamId, requestDto.tags, requestDto.createdAfter);
+    const links = await this.linksService.findAll(requestDto.teamId, requestDto.tags, requestDto.createdAfter);
     const responseDtos = links.map((link) => LinkResponseDto.from(link));
 
     return ResponseBuilder.success<LinkResponseDto[]>()
@@ -61,10 +61,10 @@ export class LinksController {
 
   // 단건 조회
   @Get(":linkId")
-  findOne(@Param("linkId") linkId: string) {
+  async findOne(@Param("linkId") linkId: string) {
     this.logger.log(`GET /api/links/${linkId} - 링크 단건 조회`);
 
-    const link = this.linksService.findOne(linkId);
+    const link = await this.linksService.findOne(linkId);
     const responseDto = LinkResponseDto.from(link);
 
     return ResponseBuilder.success<LinkResponseDto>()
@@ -77,10 +77,10 @@ export class LinksController {
   // 단건 삭제
   @Delete(":linkId")
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param("linkId") linkId: string) {
+  async remove(@Param("linkId") linkId: string) {
     this.logger.log(`DELETE /api/links/${linkId} - 링크 단건 삭제`);
 
-    this.linksService.remove(linkId);
+    await this.linksService.remove(linkId);
 
     // 204 No Content는 Response Body 없음
     return;
