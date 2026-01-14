@@ -85,7 +85,7 @@ export class AuthService {
   private async saveRefreshToken(userId: number, refreshToken: string): Promise<void> {
     const tokenHash = await bcrypt.hash(refreshToken, 10);
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    expiresAt.setDate(expiresAt.getDate() + 30);
 
     const refreshTokenEntity = new RefreshToken({
       id: 0,
