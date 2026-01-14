@@ -29,10 +29,10 @@ export class FoldersController {
   // 폴더 생성
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() requestDto: CreateFolderRequestDto) {
+  async create(@Body() requestDto: CreateFolderRequestDto) {
     this.logger.log(`POST /api/folders - 폴더 생성 요청: ${requestDto.folderName}`);
 
-    const folder = this.foldersService.create(requestDto);
+    const folder = await this.foldersService.create(requestDto);
     const responseDto = FolderResponseDto.from(folder);
 
     return ResponseBuilder.success<FolderResponseDto>()
@@ -44,10 +44,10 @@ export class FoldersController {
 
   // 팀의 모든 폴더 조회
   @Get()
-  findAllByTeam(@Query("teamId") teamId: string) {
+  async findAllByTeam(@Query("teamId") teamId: string) {
     this.logger.log(`GET /api/folders?teamId=${teamId} - 폴더 목록 조회`);
 
-    const folders = this.foldersService.findAllByTeam(teamId);
+    const folders = await this.foldersService.findAllByTeam(teamId);
     const responseDtos = folders.map((folder) => FolderResponseDto.from(folder));
 
     return ResponseBuilder.success<FolderResponseDto[]>()
@@ -59,10 +59,10 @@ export class FoldersController {
 
   // 특정 폴더 조회
   @Get(":folderId")
-  findOne(@Param("folderId") folderId: string) {
+  async findOne(@Param("folderId") folderId: string) {
     this.logger.log(`GET /api/folders/${folderId} - 폴더 단건 조회`);
 
-    const folder = this.foldersService.findOne(folderId);
+    const folder = await this.foldersService.findOne(folderId);
     const responseDto = FolderResponseDto.from(folder);
 
     return ResponseBuilder.success<FolderResponseDto>()
@@ -74,10 +74,10 @@ export class FoldersController {
 
   // 폴더의 하위 폴더 조회
   @Get(":folderId/subfolders")
-  findSubfolders(@Param("folderId") folderId: string) {
+  async findSubfolders(@Param("folderId") folderId: string) {
     this.logger.log(`GET /api/folders/${folderId}/subfolders - 하위 폴더 조회`);
 
-    const subfolders = this.foldersService.findSubfolders(folderId);
+    const subfolders = await this.foldersService.findSubfolders(folderId);
     const responseDtos = subfolders.map((folder) => FolderResponseDto.from(folder));
 
     return ResponseBuilder.success<FolderResponseDto[]>()
@@ -89,10 +89,10 @@ export class FoldersController {
 
   // 폴더 이름 수정
   @Put(":folderId")
-  update(@Param("folderId") folderId: string, @Body() requestDto: UpdateFolderRequestDto) {
+  async update(@Param("folderId") folderId: string, @Body() requestDto: UpdateFolderRequestDto) {
     this.logger.log(`PUT /api/folders/${folderId} - 폴더 수정`);
 
-    const folder = this.foldersService.update(folderId, requestDto);
+    const folder = await this.foldersService.update(folderId, requestDto);
     const responseDto = FolderResponseDto.from(folder);
 
     return ResponseBuilder.success<FolderResponseDto>()
@@ -105,10 +105,10 @@ export class FoldersController {
   // 폴더 삭제
   @Delete(":folderId")
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param("folderId") folderId: string) {
+  async remove(@Param("folderId") folderId: string) {
     this.logger.log(`DELETE /api/folders/${folderId} - 폴더 삭제`);
 
-    this.foldersService.remove(folderId);
+    await this.foldersService.remove(folderId);
 
     // 204 No Content는 Response Body 없음
     return;

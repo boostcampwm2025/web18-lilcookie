@@ -1,49 +1,36 @@
 import { Injectable, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { randomUUID } from "crypto";
-import { DatabaseService } from "../database/database.service";
 import { Folder } from "./entities/folder.entity";
 import { CreateFolderRequestDto } from "./dto/create-folder.request.dto";
 import { UpdateFolderRequestDto } from "./dto/update-folder.request.dto";
 import { ConfigService } from "@nestjs/config";
-
-// DB에서 가져온 폴더 데이터 타입
-interface FolderRow {
-  folder_id: string;
-  team_id: string;
-  folder_name: string;
-  parent_folder_id: string | null;
-  created_at: string;
-  created_by: string;
-}
+import { FolderRepository } from "./repositories/folder.repository";
 
 @Injectable()
 export class FoldersService implements OnModuleInit {
   constructor(
-    private readonly databaseService: DatabaseService,
+    private readonly folderRepository: FolderRepository,
     private readonly configService: ConfigService,
   ) {}
 
   onModuleInit() {
-    this.initMockData();
+    this.initMockData().catch(() => {});
   }
 
   // 초기 mock data 생성
-  private initMockData(): void {
+  private async initMockData(): Promise<void> {
     if (this.configService.get<string>("NODE_ENV") === "production") {
       return;
     }
 
-    const db = this.databaseService.getDatabase();
-
     // 이미 데이터가 있으면 추가하지 않음
-    const count = db.prepare("SELECT COUNT(*) as count FROM folders").get() as { count: number };
-    if (count.count > 0) {
+    const existingFolders = await this.folderRepository.findAll();
+    if (existingFolders.length > 0) {
       return;
     }
 
     // Mock 폴더 데이터
     const mockFolders = [
-      // web01 팀의 폴더들
       {
         folderId: "folder-web01-frontend",
         teamId: "web01",
@@ -64,7 +51,7 @@ export class FoldersService implements OnModuleInit {
         folderId: "folder-web01-react",
         teamId: "web01",
         folderName: "React",
-        parentFolderId: "folder-web01-frontend", // 프론트엔드의 하위 폴더
+        parentFolderId: "folder-web01-frontend",
         createdBy: "J002",
         createdAt: "2025-12-01T02:00:00.000Z",
       },
@@ -78,34 +65,28 @@ export class FoldersService implements OnModuleInit {
       },
     ];
 
-    mockFolders.forEach((mockFolder) => {
-      const insertStmt = db.prepare(`
-        INSERT INTO folders (folder_id, team_id, folder_name, parent_folder_id, created_at, created_by)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `);
-
-      insertStmt.run(
-        mockFolder.folderId,
-        mockFolder.teamId,
-        mockFolder.folderName,
-        mockFolder.parentFolderId,
-        mockFolder.createdAt,
-        mockFolder.createdBy,
+    for (const mockFolder of mockFolders) {
+      await this.folderRepository.create(
+        new Folder({
+          folderId: mockFolder.folderId,
+          teamId: mockFolder.teamId,
+          folderName: mockFolder.folderName,
+          parentFolderId: mockFolder.parentFolderId,
+          createdAt: mockFolder.createdAt,
+          createdBy: mockFolder.createdBy,
+        }),
       );
-    });
+    }
   }
 
   // 폴더 생성
-  create(requestDto: CreateFolderRequestDto): Folder {
-    const db = this.databaseService.getDatabase();
+  async create(requestDto: CreateFolderRequestDto): Promise<Folder> {
     const folderId = randomUUID();
     const createdAt = new Date().toISOString();
 
     // 부모 폴더가 있으면 존재하는지 확인
     if (requestDto.parentFolderId) {
-      const parentExists = db
-        .prepare("SELECT folder_id FROM folders WHERE folder_id = ?")
-        .get(requestDto.parentFolderId);
+      const parentExists = await this.folderRepository.findOne(requestDto.parentFolderId);
 
       if (!parentExists) {
         throw new NotFoundException(`부모 폴더를 찾을 수 없습니다: ${requestDto.parentFolderId}`);
@@ -121,116 +102,53 @@ export class FoldersService implements OnModuleInit {
       createdBy: requestDto.userId,
     });
 
-    const insertStmt = db.prepare(`
-      INSERT INTO folders (folder_id, team_id, folder_name, parent_folder_id, created_at, created_by)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
+    return this.folderRepository.create(folder);
+  }
 
-    insertStmt.run(
-      folder.folderId,
-      folder.teamId,
-      folder.folderName,
-      folder.parentFolderId,
-      folder.createdAt,
-      folder.createdBy,
-    );
+  // 팀의 모든 폴더 조회
+  async findAllByTeam(teamId: string): Promise<Folder[]> {
+    return this.folderRepository.findAllByTeam(teamId);
+  }
+
+  // 특정 폴더 조회
+  async findOne(folderId: string): Promise<Folder> {
+    const folder = await this.folderRepository.findOne(folderId);
+
+    if (!folder) {
+      throw new NotFoundException(`폴더를 찾을 수 없습니다: ${folderId}`);
+    }
 
     return folder;
   }
 
-  // 팀의 모든 폴더 조회
-  findAllByTeam(teamId: string): Folder[] {
-    const db = this.databaseService.getDatabase();
-    const stmt = db.prepare("SELECT * FROM folders WHERE team_id = ? ORDER BY created_at ASC");
-    const rows = stmt.all(teamId) as FolderRow[];
-
-    return rows.map(
-      (row) =>
-        new Folder({
-          folderId: row.folder_id,
-          teamId: row.team_id,
-          folderName: row.folder_name,
-          parentFolderId: row.parent_folder_id,
-          createdAt: row.created_at,
-          createdBy: row.created_by,
-        }),
-    );
-  }
-
-  // 특정 폴더 조회
-  findOne(folderId: string): Folder {
-    const db = this.databaseService.getDatabase();
-    const stmt = db.prepare("SELECT * FROM folders WHERE folder_id = ?");
-    const row = stmt.get(folderId) as FolderRow | undefined;
-
-    if (!row) {
-      throw new NotFoundException(`폴더를 찾을 수 없습니다: ${folderId}`);
-    }
-
-    return new Folder({
-      folderId: row.folder_id,
-      teamId: row.team_id,
-      folderName: row.folder_name,
-      parentFolderId: row.parent_folder_id,
-      createdAt: row.created_at,
-      createdBy: row.created_by,
-    });
-  }
-
   // 폴더 이름 수정
-  update(folderId: string, requestDto: UpdateFolderRequestDto): Folder {
-    const db = this.databaseService.getDatabase();
-
+  async update(folderId: string, requestDto: UpdateFolderRequestDto): Promise<Folder> {
     // 폴더 존재 확인
-    this.findOne(folderId);
+    await this.findOne(folderId);
 
-    const updateStmt = db.prepare(`
-      UPDATE folders
-      SET folder_name = ?
-      WHERE folder_id = ?
-    `);
+    const updated = await this.folderRepository.update(folderId, requestDto.folderName);
 
-    const result = updateStmt.run(requestDto.folderName, folderId);
-
-    if (result.changes === 0) {
+    if (!updated) {
       throw new NotFoundException(`폴더를 찾을 수 없습니다: ${folderId}`);
     }
 
-    // 수정된 폴더 반환
-    return this.findOne(folderId);
+    return updated;
   }
 
   // 폴더 삭제 (하위 폴더와 링크도 함께 처리됨)
-  remove(folderId: string): void {
-    const db = this.databaseService.getDatabase();
-
+  async remove(folderId: string): Promise<void> {
     // 폴더 존재 확인
-    this.findOne(folderId);
+    await this.findOne(folderId);
 
-    const deleteStmt = db.prepare("DELETE FROM folders WHERE folder_id = ?");
-    const result = deleteStmt.run(folderId);
+    const removed = await this.folderRepository.remove(folderId);
 
-    if (result.changes === 0) {
+    if (!removed) {
       throw new NotFoundException(`폴더를 찾을 수 없습니다: ${folderId}`);
     }
   }
 
   // 특정 폴더의 하위 폴더 조회
-  findSubfolders(parentFolderId: string): Folder[] {
-    const db = this.databaseService.getDatabase();
-    const stmt = db.prepare("SELECT * FROM folders WHERE parent_folder_id = ? ORDER BY created_at ASC");
-    const rows = stmt.all(parentFolderId) as FolderRow[];
-
-    return rows.map(
-      (row) =>
-        new Folder({
-          folderId: row.folder_id,
-          teamId: row.team_id,
-          folderName: row.folder_name,
-          parentFolderId: row.parent_folder_id,
-          createdAt: row.created_at,
-          createdBy: row.created_by,
-        }),
-    );
+  async findSubfolders(parentFolderId: string): Promise<Folder[]> {
+    return this.folderRepository.findSubfolders(parentFolderId);
   }
 }
