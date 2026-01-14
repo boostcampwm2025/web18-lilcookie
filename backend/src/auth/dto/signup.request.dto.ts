@@ -3,11 +3,11 @@ import { Type } from "class-transformer";
 
 class AgreementsDto {
   @IsBoolean()
-  @Equals(true)
+  @Equals(true, { message: "서비스 이용약관 동의는 필수입니다." })
   termsOfService: boolean;
 
   @IsBoolean()
-  @Equals(true)
+  @Equals(true, { message: "개인정보 처리방침 동의는 필수입니다." })
   privacyPolicy: boolean;
 
   @IsBoolean()
