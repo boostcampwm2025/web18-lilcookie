@@ -16,8 +16,8 @@ import { RefreshTokenRepository } from "./repositories/refresh-token.repository"
         const requiredEnvVars = [
           "JWT_ACCESS_SECRET",
           "JWT_REFRESH_SECRET",
-          "JWT_ACCESS_EXPIRES_IN",
-          "JWT_REFRESH_EXPIRES_IN",
+          "JWT_ACCESS_EXP_SEC",
+          "JWT_REFRESH_EXP_SEC",
         ];
 
         for (const key of requiredEnvVars) {

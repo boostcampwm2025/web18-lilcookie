@@ -11,12 +11,24 @@ import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class AuthService {
+  private readonly accessSecret: string;
+  private readonly refreshSecret: string;
+  private readonly accessExpSec: number;
+  private readonly refreshExpSec: number;
+
   constructor(
     private readonly userRepository: UserRepository,
     private readonly refreshTokenRepository: RefreshTokenRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-  ) {}
+  ) {
+    this.accessSecret = this.configService.getOrThrow<string>("JWT_ACCESS_SECRET");
+    this.refreshSecret = this.configService.getOrThrow<string>("JWT_REFRESH_SECRET");
+
+    // 환경변수에 설정된 만료시간(String -> Number) (단위: 초)
+    this.accessExpSec = Number(this.configService.getOrThrow<number>("JWT_ACCESS_EXP_SEC"));
+    this.refreshExpSec = Number(this.configService.getOrThrow<number>("JWT_REFRESH_EXP_SEC"));
+  }
 
   async signup(dto: SignupRequestDto): Promise<{ user: User; accessToken: string; refreshToken: string }> {
     await this.validateSignup(dto);
@@ -67,13 +79,13 @@ export class AuthService {
     const payload = { sub: user.uuid };
 
     const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get("JWT_ACCESS_SECRET"),
-      expiresIn: this.configService.get("JWT_ACCESS_EXPIRES_IN"),
+      secret: this.accessSecret,
+      expiresIn: this.accessExpSec,
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get("JWT_REFRESH_SECRET"),
-      expiresIn: this.configService.get("JWT_REFRESH_EXPIRES_IN"),
+      secret: this.refreshSecret,
+      expiresIn: this.refreshExpSec,
     });
 
     await this.saveRefreshToken(user.id, refreshToken);
@@ -84,8 +96,9 @@ export class AuthService {
   // Refresh Token DB 저장
   private async saveRefreshToken(userId: number, refreshToken: string): Promise<void> {
     const tokenHash = await bcrypt.hash(refreshToken, 10);
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30);
+
+    // Date.now()는 밀리초 단위기에 refreshExpSec를 1000으로 곱해줘야 함
+    const expiresAt = new Date(Date.now() + this.refreshExpSec * 1000);
 
     const refreshTokenEntity = new RefreshToken({
       id: 0,
