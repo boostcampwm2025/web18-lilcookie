@@ -46,3 +46,39 @@ model Link {
   @@map("links")
 }
 
+// 회원 테이블
+model User {
+  id                   Int             @id @default(autoincrement())
+  uuid                 String          @unique @map("uuid")
+  email                String          @unique
+  nickname             String
+  passwordHash         String          @map("password_hash")
+  createdAt            DateTime        @default(now()) @map("created_at")
+  termsOfService       Boolean         @map("terms_of_service")
+  privacyPolicy        Boolean         @map("privacy_policy")
+  marketingConsent     Boolean         @map("marketing_consent")
+  termsOfServiceAt     DateTime        @map("terms_of_service_at")
+  privacyPolicyAt      DateTime        @map("privacy_policy_at")
+  marketingConsentAt   DateTime?       @map("marketing_consent_at")
+
+  // 관계 설정
+  refreshTokens        RefreshToken[]
+
+  @@map("users")
+}
+
+// 리프레시 토큰 테이블
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  tokenHash String   @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 관계 설정
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
