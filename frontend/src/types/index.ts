@@ -56,7 +56,7 @@ export interface LoginRequest {
 
 // 인증 응답 타입
 export interface AuthResponse {
-  userId: string;
+  uuid: string;
   email: string;
   nickname?: string;
 }

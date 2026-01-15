@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const response = await authApi.checkAuth();
       if (response.success) {
         setUser({
-          uuid: response.data.userId,
+          uuid: response.data.uuid,
           email: response.data.email,
           nickname: response.data.nickname,
         });
@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // 회원가입 성공 시 토큰이 쿠키에 저장되므로
       // user 상태를 업데이트하여 즉시 로그인 상태로 전환
       setUser({
-        uuid: response.data.userId,
+        uuid: response.data.uuid,
         email: response.data.email,
         nickname: response.data.nickname,
       });
@@ -87,7 +87,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const response = await authApi.login(data);
     if (response.success) {
       setUser({
-        uuid: response.data.userId,
+        uuid: response.data.uuid,
         email: response.data.email,
         nickname: response.data.nickname,
       });
