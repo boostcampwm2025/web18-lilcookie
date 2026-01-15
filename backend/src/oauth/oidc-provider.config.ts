@@ -1,6 +1,7 @@
 import { ConfigService } from "@nestjs/config";
 import { Configuration } from "oidc-provider";
 import { PrismaService } from "../database/prisma.service";
+import { createAdapterFactory } from "./oidc-adapter";
 
 // 개발용 기본 JWKS (환경변수 없을 때 사용)
 const DEV_JWKS = {
@@ -33,6 +34,8 @@ export function getOidcConfig(prisma: PrismaService, config: ConfigService): Con
   const jwksString = config.get<string>("OIDC_JWKS");
   const jwks = jwksString ? (JSON.parse(jwksString) as typeof DEV_JWKS) : DEV_JWKS;
   return {
+    adapter: createAdapterFactory(prisma),
+
     /**
      * 클라이언트 설정
      * clients: 초기 클라이언트 목록
@@ -174,7 +177,7 @@ export function getOidcConfig(prisma: PrismaService, config: ConfigService): Con
         accountId: sub,
         claims() {
           return {
-            sub,
+            sub: user.uuid,
             nickname: user.nickname,
             email: user.email,
           };

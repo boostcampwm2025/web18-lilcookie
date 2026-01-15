@@ -4,6 +4,7 @@ import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { ConfigService } from "@nestjs/config";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 import { ValidationPipe, type LoggerService } from "@nestjs/common";
+import { OAuthService } from "./oauth/oauth.service";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -36,6 +37,11 @@ async function bootstrap() {
 
   // api 접두어 추가 설정
   app.setGlobalPrefix("api");
+
+  // OAuth (oidc-provider) 마운트 - /oauth 경로는 api prefix 없이 처리
+  const oauthService = app.get(OAuthService);
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.use("/oauth", oauthService.getProvider().callback());
 
   // ConfigService를 통한 환경변수 접근
   const configService = app.get(ConfigService);

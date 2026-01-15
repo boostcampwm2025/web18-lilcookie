@@ -7,6 +7,7 @@ import { AiModule } from "./ai/ai.module";
 import { DatabaseModule } from "./database/database.module";
 import { FoldersModule } from "./folders/folders.module";
 import { AuthModule } from "./auth/auth.module";
+import { OAuthModule } from "./oauth/oauth.module";
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AuthModule } from "./auth/auth.module";
     AiModule,
     FoldersModule,
     AuthModule,
+    OAuthModule,
   ],
 })
 export class AppModule {}
