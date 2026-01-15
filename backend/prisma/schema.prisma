@@ -55,7 +55,8 @@ model User {
   nickname             String
   passwordHash         String          @map("password_hash")
   createdAt            DateTime        @default(now()) @map("created_at")
-  updatedAt            DateTime        @updatedAt
+  updatedAt            DateTime        @updatedAt @map("updated_at")
+  deletedAt            DateTime?       @map("deleted_at")
   termsOfService       Boolean         @map("terms_of_service")
   privacyPolicy        Boolean         @map("privacy_policy")
   marketingConsent     Boolean         @map("marketing_consent")
@@ -79,6 +80,7 @@ model RefreshToken {
   tokenHash String   @map("token_hash")
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
 
   // 관계 설정
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -150,6 +152,7 @@ model OAuthGrant {
   scope         String    // 승인된 scope들
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
+  revokedAt     DateTime? @map("revoked_at")
 
   // 관계
   user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -173,7 +176,6 @@ model OAuthRefreshToken {
   grantId     String?   @map("grant_id") // 연결된 grant
   expiresAt   DateTime  @map("expires_at")
   createdAt   DateTime  @default(now()) @map("created_at")
-  revoked     Boolean   @default(false) // 취소 여부
   revokedAt   DateTime? @map("revoked_at")
 
   // 관계
@@ -210,6 +212,7 @@ model OAuthSession {
   payload     String    // JSON으로 저장된 세션 데이터
   expiresAt   DateTime  @map("expires_at")
   createdAt   DateTime  @default(now()) @map("created_at")
+  revokedAt   DateTime? @map("revoked_at")
 
   @@index([userId])
   @@index([expiresAt])
