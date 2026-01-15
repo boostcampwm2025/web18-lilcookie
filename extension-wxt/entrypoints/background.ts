@@ -7,7 +7,7 @@ export default defineBackground(() => {
   // OIDC Discovery: fetch endpoints for OAuth flow
   async function getOAuthEndpoints() {
     try {
-      const response = await fetch(`${OAUTH_BASE_URL}/oauth/.well-known/openid-configuration`);
+      const response = await fetch(`${OAUTH_BASE_URL}/.well-known/openid-configuration`);
       if (!response.ok) {
         throw new Error(`Discovery failed: ${response.status}`);
       }

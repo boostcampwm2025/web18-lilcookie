@@ -89,34 +89,6 @@ export class OAuthController {
     return mockResponse;
   }
 
-  @Get('.well-known/openid-configuration')
-  getOpenIdConfiguration() {
-    this.logger.log('GET /.well-known/openid-configuration - OIDC Discovery');
-
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3002';
-
-    return {
-      issuer: baseUrl,
-      authorization_endpoint: `${baseUrl}/oauth/authorize`,
-      token_endpoint: `${baseUrl}/oauth/token`,
-      userinfo_endpoint: `${baseUrl}/oauth/userinfo`,
-      jwks_uri: `${baseUrl}/oauth/.well-known/jwks.json`,
-      response_types_supported: ['code'],
-      subject_types_supported: ['public'],
-      id_token_signing_alg_values_supported: ['RS256'],
-      scopes_supported: [
-        'openid',
-        'profile',
-        'email',
-        'links:read',
-        'links:write',
-      ],
-      token_endpoint_auth_methods_supported: ['none', 'client_secret_post'],
-      code_challenge_methods_supported: ['S256', 'plain'],
-      grant_types_supported: ['authorization_code', 'refresh_token'],
-    };
-  }
-
   @Get('userinfo')
   getUserInfo() {
     this.logger.log('GET /oauth/userinfo - Mock UserInfo endpoint');
