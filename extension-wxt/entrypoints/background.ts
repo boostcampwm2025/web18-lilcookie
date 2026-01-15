@@ -1,7 +1,35 @@
 export default defineBackground(() => {
   const BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const FE_BASE_URL = import.meta.env.VITE_FE_BASE_URL;
+  const OAUTH_BASE_URL = import.meta.env.VITE_OAUTH_BASE_URL;
   const POST_URL = BASE_URL + "/api/links";
+
+  // OIDC Discovery: fetch endpoints for OAuth flow
+  async function getOAuthEndpoints() {
+    try {
+      const response = await fetch(`${OAUTH_BASE_URL}/oauth/.well-known/openid-configuration`);
+      if (!response.ok) {
+        throw new Error(`Discovery failed: ${response.status}`);
+      }
+      const config = await response.json();
+      console.log('[Extension] OIDC Discovery Response:', config);
+      return {
+        issuer: config.issuer,
+        authorizationEndpoint: config.authorization_endpoint,
+        tokenEndpoint: config.token_endpoint,
+        userInfoEndpoint: config.userinfo_endpoint,
+      };
+    } catch (error) {
+      console.error('[Extension] Failed to fetch OIDC discovery:', error);
+      console.log('[Extension] OAuth Base URL was:', OAUTH_BASE_URL);
+      throw error;
+    }
+  }
+
+  // Initialize: test OIDC discovery on startup
+  getOAuthEndpoints().catch(() => {
+    console.warn('[Extension] OAuth endpoints not available at startup');
+  });
 
   const MAX_AI_INPUT_CHARACTER_COUNT = 300;
 
