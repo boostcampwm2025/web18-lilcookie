@@ -31,7 +31,7 @@ export interface ApiResponse<T> {
 
 // 사용자 타입
 export interface User {
-  userId: string;
+  uuid: string;
   email: string;
   nickname?: string;
 }
