@@ -1,5 +1,12 @@
 import axios from "axios";
-import type { ApiResponse, Link, Folder } from "../types";
+import type {
+  ApiResponse,
+  Link,
+  Folder,
+  SignupRequest,
+  LoginRequest,
+  AuthResponse,
+} from "../types";
 
 // API 베이스 URL
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
@@ -10,6 +17,7 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true, // HttpOnly 쿠키를 포함하기 위해 필요
 });
 
 // 대시보드용 API 함수들
@@ -90,6 +98,32 @@ export const folderApi = {
   // DELETE /api/folders/:folderId - 폴더 삭제
   deleteFolder: async (folderId: string): Promise<void> => {
     await api.delete(`/folders/${folderId}`);
+  },
+};
+
+// 인증 API 함수들
+export const authApi = {
+  // POST /api/auth/signup - 회원가입
+  signup: async (data: SignupRequest): Promise<ApiResponse<AuthResponse>> => {
+    const response = await api.post("/auth/signup", data);
+    return response.data;
+  },
+
+  // POST /api/auth/login - 로그인
+  login: async (data: LoginRequest): Promise<ApiResponse<AuthResponse>> => {
+    const response = await api.post("/auth/login", data);
+    return response.data;
+  },
+
+  // POST /api/auth/logout - 로그아웃
+  logout: async (): Promise<void> => {
+    await api.post("/auth/logout");
+  },
+
+  // GET /api/auth/me - 인증 상태 확인
+  checkAuth: async (): Promise<ApiResponse<AuthResponse>> => {
+    const response = await api.get("/auth/me");
+    return response.data;
   },
 };
 
