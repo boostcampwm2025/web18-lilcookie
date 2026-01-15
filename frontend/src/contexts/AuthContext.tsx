@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import { authApi } from "../services/api";
+import { authApi, setAuthErrorCallback } from "../services/api";
 import type { User, SignupRequest, LoginRequest } from "../types";
 
 interface AuthContextType {
@@ -35,20 +35,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // HttpOnly 쿠키에 토큰이 있으면 자동으로 인증됨
   const checkAuth = async () => {
     try {
-      // TODO: 백엔드 API 구현 대기 중
-      // const response = await authApi.checkAuth();
-      // if (response.success) {
-      //   setUser({
-      //     userId: response.data.userId,
-      //     email: response.data.email,
-      //     nickname: response.data.nickname,
-      //   });
-      // } else {
-      //   setUser(null);
-      // }
-
-      // 임시: 백엔드 API가 준비될 때까지 로그인 안 된 상태로 처리
-      setUser(null);
+      const response = await authApi.checkAuth();
+      if (response.success) {
+        setUser({
+          uuid: response.data.userId,
+          email: response.data.email,
+          nickname: response.data.nickname,
+        });
+      } else {
+        setUser(null);
+      }
     } catch {
       setUser(null);
     } finally {
@@ -60,6 +56,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // 브라우저에 HttpOnly 쿠키가 남아있으면 자동 로그인됨
   useEffect(() => {
     checkAuth();
+
+    // 토큰 갱신 실패 시 자동 로그아웃 처리를 위한 콜백 등록
+    setAuthErrorCallback(() => {
+      setUser(null);
+    });
   }, []);
 
   // 회원가입
@@ -71,7 +72,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // 회원가입 성공 시 토큰이 쿠키에 저장되므로
       // user 상태를 업데이트하여 즉시 로그인 상태로 전환
       setUser({
-        userId: response.data.userId,
+        uuid: response.data.userId,
         email: response.data.email,
         nickname: response.data.nickname,
       });
@@ -86,7 +87,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const response = await authApi.login(data);
     if (response.success) {
       setUser({
-        userId: response.data.userId,
+        uuid: response.data.userId,
         email: response.data.email,
         nickname: response.data.nickname,
       });
@@ -98,8 +99,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // 로그아웃
   // 백엔드에서 HttpOnly 쿠키를 삭제함
   const logout = async () => {
-    // TODO: 백엔드 API 구현 대기 중
-    // await authApi.logout();
+    await authApi.logout();
 
     // 로그아웃 시 클라이언트 상태 초기화
     setUser(null);
