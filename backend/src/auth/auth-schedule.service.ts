@@ -12,7 +12,7 @@ export class AuthScheduleService {
 
   // 테스트용 5초 간격 | CronExpression.EVERY_5_SECONDS)
   // 배포용 매일 새벽 4시 | CronExpression.EVERY_DAY_AT_4AM)
-  @Cron(CronExpression.EVERY_DAY_AT_4AM)
+  @Cron(CronExpression.EVERY_DAY_AT_4AM, { name: "cleanupExpiredTokens" })
   async cleanupExpiredTokens(): Promise<void> {
     this.logger.log("--- [AuthScheduleService] 만료된 리프레시 토큰 정리 시작 ---");
 
