@@ -1,16 +1,19 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { v4 as uuidv4 } from "uuid";
 import * as bcrypt from "bcryptjs";
 import { UserRepository } from "./repositories/user.repository";
 import { RefreshTokenRepository } from "./repositories/refresh-token.repository";
 import { SignupRequestDto } from "./dto/signup.request.dto";
+import { LoginRequestDto } from "./dto/login.request.dto";
 import { User } from "./entities/user.entity";
 import { RefreshToken } from "./entities/refresh-token.entity";
 import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class AuthService {
+  private readonly SALT_ROUNDS = 10;
+
   private readonly accessSecret: string;
   private readonly refreshSecret: string;
   private readonly accessExpSec: number;
@@ -39,6 +42,13 @@ export class AuthService {
     return { user, ...tokens };
   }
 
+  async login(dto: LoginRequestDto): Promise<{ user: User; accessToken: string; refreshToken: string }> {
+    const user = await this.verifyUser(dto);
+    const tokens = await this.generateTokens(user);
+
+    return { user, ...tokens };
+  }
+
   private async validateSignup(dto: SignupRequestDto): Promise<void> {
     const existingUser = await this.userRepository.findByEmail(dto.email);
     if (existingUser) {
@@ -53,8 +63,19 @@ export class AuthService {
     }
   }
 
+  private async verifyUser(dto: LoginRequestDto): Promise<User> {
+    const user = await this.userRepository.findByEmail(dto.email);
+    const isPasswordValid = user ? await this.compareValue(dto.password, user.passwordHash) : false;
+    if (!user || !isPasswordValid) {
+      // 유저 존재 여부 및 비밀번호 일치 확인
+      throw new UnauthorizedException("이메일 또는 비밀번호가 올바르지 않습니다.");
+    }
+
+    return user;
+  }
+
   private async registerUser(dto: SignupRequestDto): Promise<User> {
-    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const passwordHash = await this.hashValue(dto.password);
     const now = new Date();
 
     const user = new User({
@@ -95,7 +116,7 @@ export class AuthService {
 
   // Refresh Token DB 저장
   private async saveRefreshToken(userId: number, refreshToken: string): Promise<void> {
-    const tokenHash = await bcrypt.hash(refreshToken, 10);
+    const tokenHash = await this.hashValue(refreshToken);
 
     // Date.now()는 밀리초 단위기에 refreshExpSec를 1000으로 곱해줘야 함
     const expiresAt = new Date(Date.now() + this.refreshExpSec * 1000);
@@ -109,5 +130,15 @@ export class AuthService {
     });
 
     await this.refreshTokenRepository.create(refreshTokenEntity);
+  }
+
+  // --- 해싱 관련 ---
+
+  private async hashValue(value: string): Promise<string> {
+    return bcrypt.hash(value, this.SALT_ROUNDS);
+  }
+
+  private async compareValue(plain: string, hashed: string): Promise<boolean> {
+    return bcrypt.compare(plain, hashed);
   }
 }
