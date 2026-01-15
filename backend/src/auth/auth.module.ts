@@ -1,15 +1,17 @@
 import { Module } from "@nestjs/common";
+import { ScheduleModule } from "@nestjs/schedule";
 import { JwtModule } from "@nestjs/jwt";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { UserRepository } from "./repositories/user.repository";
 import { RefreshTokenRepository } from "./repositories/refresh-token.repository";
+import { AuthScheduleService } from "./auth-schedule.service";
 
 @Module({
   imports: [
     JwtModule.registerAsync({
-      imports: [ConfigModule],
+      imports: [ConfigModule, ScheduleModule.forRoot()],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
         // 필수 환경변수 목록
@@ -37,7 +39,7 @@ import { RefreshTokenRepository } from "./repositories/refresh-token.repository"
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, UserRepository, RefreshTokenRepository],
+  providers: [AuthService, UserRepository, RefreshTokenRepository, AuthScheduleService],
   exports: [AuthService],
 })
 export class AuthModule {}
