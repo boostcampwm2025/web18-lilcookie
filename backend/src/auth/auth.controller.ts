@@ -5,6 +5,8 @@ import { AuthService } from "./auth.service";
 import { ResponseBuilder } from "../common/builders/response.builder";
 import { SignupRequestDto } from "./dto/signup.request.dto";
 import { SignupResponseDto } from "./dto/signup.response.dto";
+import { LoginRequestDto } from "./dto/login.request.dto";
+import { LoginResponseDto } from "./dto/login.response.dto";
 
 @Controller("auth")
 export class AuthController {
@@ -25,6 +27,20 @@ export class AuthController {
     const responseDto = SignupResponseDto.from(user.uuid, user.email, user.nickname);
 
     return ResponseBuilder.success<SignupResponseDto>().status(HttpStatus.OK).data(responseDto).build();
+  }
+
+  @Post("login")
+  @HttpCode(HttpStatus.OK)
+  async login(@Body() loginDto: LoginRequestDto, @Res({ passthrough: true }) res: Response) {
+    this.logger.log(`POST /api/auth/login - 로그인 요청: ${loginDto.email}`);
+
+    const { user, accessToken, refreshToken } = await this.authService.login(loginDto);
+
+    this.setAuthCookies(res, accessToken, refreshToken);
+
+    const responseDto = LoginResponseDto.from(user.uuid, user.email, user.nickname);
+
+    return ResponseBuilder.success<LoginResponseDto>().status(HttpStatus.OK).data(responseDto).build();
   }
 
   // 쿠키 설정

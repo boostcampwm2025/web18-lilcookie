@@ -1,11 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { authApi } from "../services/api";
 import type { User, SignupRequest, LoginRequest } from "../types";
 
@@ -89,21 +83,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // 로그인
   // 로그인 성공 시 JWT 토큰이 HttpOnly 쿠키로 발급됨
   const login = async (data: LoginRequest) => {
-    // TODO: 백엔드 API 구현 대기 중
-    // const response = await authApi.login(data);
-    // if (response.success) {
-    //   setUser({
-    //     userId: response.data.userId,
-    //     email: response.data.email,
-    //     nickname: response.data.nickname,
-    //   });
-    // } else {
-    //   throw new Error(response.message || "로그인에 실패했습니다.");
-    // }
-
-    // 임시: 백엔드 API가 준비될 때까지 에러 throw
-    void data;
-    throw new Error("로그인 API가 아직 구현되지 않았습니다.");
+    const response = await authApi.login(data);
+    if (response.success) {
+      setUser({
+        userId: response.data.userId,
+        email: response.data.email,
+        nickname: response.data.nickname,
+      });
+    } else {
+      throw new Error(response.message || "로그인에 실패했습니다.");
+    }
   };
 
   // 로그아웃
