@@ -1,4 +1,3 @@
-// src/auth/guards/access-token.guard.ts
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
@@ -23,7 +22,6 @@ export class RefreshTokenGuard implements CanActivate {
         secret: this.configService.getOrThrow<string>("JWT_REFRESH_SECRET"),
       });
 
-      // 요청 객체에 페이로드 추가
       request.refreshTokenPayload = payload;
       request.rawRefreshToken = token;
 
