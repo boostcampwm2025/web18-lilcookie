@@ -3,3 +3,4 @@ packages:
   - "backend"
   - "extension"
   - "extension-wxt"
+  - "backend-mock"
