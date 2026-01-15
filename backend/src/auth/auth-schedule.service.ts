@@ -10,9 +10,12 @@ export class AuthScheduleService {
     @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService,
   ) {}
 
-  // 테스트용: 5초 간격 -> CronExpression.EVERY_5_SECONDS)
-  // 배포용: 매일 새벽 4시 (UTC) -> CronExpression.EVERY_DAY_AT_4AM)
-  @Cron(CronExpression.EVERY_DAY_AT_4AM, { name: "cleanupExpiredTokens" })
+  /**
+   * UTC기준 매일 오후 7시에 만료된 리프레시 토큰을 정리합니다.
+   * (한국시간 기준 매일 오전 4시)
+   * 테스트를 위한 5초 간격 표현식 -> CronExpression.EVERY_5_SECONDS
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_7PM, { name: "cleanupExpiredTokens" })
   async cleanupExpiredTokens(): Promise<void> {
     this.logger.log("--- [AuthScheduleService] 만료된 리프레시 토큰 정리 시작 ---");
 
