@@ -51,9 +51,11 @@ model User {
   id                   Int             @id @default(autoincrement())
   uuid                 String          @unique @map("uuid")
   email                String          @unique
+  emailVerified        Boolean         @default(false) @map("email_verified")
   nickname             String
   passwordHash         String          @map("password_hash")
   createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt
   termsOfService       Boolean         @map("terms_of_service")
   privacyPolicy        Boolean         @map("privacy_policy")
   marketingConsent     Boolean         @map("marketing_consent")
@@ -138,6 +140,28 @@ model OAuthAuthorizationCode {
   @@map("oauth_authorization_codes")
 }
 
+// OAuth Grant 테이블
+// 사용자가 특정 클라이언트에게 부여한 권한의 기록
+// "동의" 화면에서 한 번 승인하면, 이후에는 동의 화면을 건너뛸 수 있음
+model OAuthGrant {
+  id            String    @id @default(uuid())
+  userId        Int       @map("user_id")
+  clientId      String    @map("client_id")
+  scope         String    // 승인된 scope들
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // 관계
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client        OAuthClient       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  refreshTokens OAuthRefreshToken[]
+
+  @@unique([userId, clientId]) // 사용자-클라이언트 조합은 유일
+  @@index([userId])
+  @@index([clientId])
+  @@map("oauth_grants")
+}
+
 // OAuth Refresh Token 테이블
 // Access Token 재발급용 장기 토큰 (수명: 30일~)
 // 보안상 DB에 저장하여 revoke(취소) 가능하게 함
@@ -164,27 +188,6 @@ model OAuthRefreshToken {
   @@map("oauth_refresh_tokens")
 }
 
-// OAuth Grant 테이블
-// 사용자가 특정 클라이언트에게 부여한 권한의 기록
-// "동의" 화면에서 한 번 승인하면, 이후에는 동의 화면을 건너뛸 수 있음
-model OAuthGrant {
-  id            String    @id @default(uuid())
-  userId        Int       @map("user_id")
-  clientId      String    @map("client_id")
-  scope         String    // 승인된 scope들
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-
-  // 관계
-  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  client        OAuthClient       @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  refreshTokens OAuthRefreshToken[]
-
-  @@unique([userId, clientId]) // 사용자-클라이언트 조합은 유일
-  @@index([userId])
-  @@index([clientId])
-  @@map("oauth_grants")
-}
 
 // OAuth Interaction 테이블
 // oidc-provider가 사용자 인증 및 동의 과정을 처리할 때 사용하는 세션
