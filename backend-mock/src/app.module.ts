@@ -6,7 +6,7 @@ import { WellKnownController } from './well-known.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: '.env.development',
+      envFilePath: '.env.mock',
       isGlobal: true,
     }),
     OAuthModule,
