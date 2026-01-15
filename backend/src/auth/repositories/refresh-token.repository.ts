@@ -32,7 +32,7 @@ export class RefreshTokenRepository implements IRefreshTokenRepository {
       where: {
         uuid: jti,
         user: {
-          uuid: userUuid, // 해당 jti가 이 유저의 것인지 확인하며 삭제
+          uuid: userUuid,
         },
       },
     });
@@ -43,7 +43,7 @@ export class RefreshTokenRepository implements IRefreshTokenRepository {
       where: {
         uuid: jti,
         user: {
-          uuid: userUuid, // 해당 jti가 이 유저의 것인지 확인하며 삭제
+          uuid: userUuid,
         },
       },
     });
