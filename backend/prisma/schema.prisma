@@ -51,9 +51,12 @@ model User {
   id                   Int             @id @default(autoincrement())
   uuid                 String          @unique @map("uuid")
   email                String          @unique
+  emailVerified        Boolean         @default(false) @map("email_verified")
   nickname             String
   passwordHash         String          @map("password_hash")
   createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt @map("updated_at")
+  deletedAt            DateTime?       @map("deleted_at")
   termsOfService       Boolean         @map("terms_of_service")
   privacyPolicy        Boolean         @map("privacy_policy")
   marketingConsent     Boolean         @map("marketing_consent")
@@ -63,6 +66,9 @@ model User {
 
   // 관계 설정
   refreshTokens        RefreshToken[]
+  oauthAuthCodes       OAuthAuthorizationCode[]
+  oauthRefreshTokens   OAuthRefreshToken[]      @relation("OAuthRefreshTokens")
+  oauthGrants          OAuthGrant[]
 
   @@map("users")
 }
@@ -74,11 +80,142 @@ model RefreshToken {
   tokenHash String   @map("token_hash")
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
 
   // 관계 설정
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+// ============================================
+// OAuth 2.0 / OIDC 관련 테이블
+// ============================================
+
+// OAuth 클라이언트 테이블
+// 익스텐션, 외부 플러그인 등 OAuth를 사용하는 애플리케이션 정보
+model OAuthClient {
+  id                      String   @id // client_id로 사용
+  clientSecret            String?  @map("client_secret") // public client는 null
+  clientName              String   @map("client_name")
+  redirectUris            String   @map("redirect_uris") // JSON 배열로 저장 (SQLite는 배열 타입 없음)
+  grantTypes              String   @map("grant_types") // JSON 배열: ["authorization_code", "refresh_token"]
+  responseTypes           String   @map("response_types") // JSON 배열: ["code"]
+  scopes                  String   // JSON 배열: ["openid", "profile", "links:read", "links:write", ...]
+  tokenEndpointAuthMethod String   @default("none") @map("token_endpoint_auth_method") // "none" for public clients
+  applicationType         String   @default("web") @map("application_type") // "web" or "native"
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  // 관계
+  authorizationCodes      OAuthAuthorizationCode[]
+  refreshTokens           OAuthRefreshToken[]
+  grants                  OAuthGrant[]
+
+  @@map("oauth_clients")
+}
+
+// OAuth 인가 코드 테이블
+// Authorization Code Flow에서 사용하는 임시 코드 (수명: ~10분)
+// 사용자 인증 후 발급되며, 이 코드를 Access Token으로 교환
+model OAuthAuthorizationCode {
+  id                String    @id // 인가 코드 값
+  clientId          String    @map("client_id")
+  userId            Int       @map("user_id")
+  redirectUri       String    @map("redirect_uri")
+  scope             String    // 공백으로 구분된 scope 문자열: "openid profile links:read"
+  codeChallenge     String?   @map("code_challenge") // PKCE용
+  codeChallengeMethod String? @map("code_challenge_method") // "S256" or "plain"
+  expiresAt         DateTime  @map("expires_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  consumed          Boolean   @default(false) // 사용 여부 (재사용 방지)
+  consumedAt        DateTime? @map("consumed_at")
+
+  // 관계
+  client            OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("oauth_authorization_codes")
+}
+
+// OAuth Grant 테이블
+// 사용자가 특정 클라이언트에게 부여한 권한의 기록
+// "동의" 화면에서 한 번 승인하면, 이후에는 동의 화면을 건너뛸 수 있음
+model OAuthGrant {
+  id            String    @id @default(uuid())
+  userId        Int       @map("user_id")
+  clientId      String    @map("client_id")
+  scope         String    // 승인된 scope들
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  revokedAt     DateTime? @map("revoked_at")
+
+  // 관계
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client        OAuthClient       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  refreshTokens OAuthRefreshToken[]
+
+  @@unique([userId, clientId]) // 사용자-클라이언트 조합은 유일
+  @@index([userId])
+  @@index([clientId])
+  @@map("oauth_grants")
+}
+
+// OAuth Refresh Token 테이블
+// Access Token 재발급용 장기 토큰 (수명: 30일~)
+// 보안상 DB에 저장하여 revoke(취소) 가능하게 함
+model OAuthRefreshToken {
+  id          String    @id // refresh token 값의 해시
+  clientId    String    @map("client_id")
+  userId      Int       @map("user_id")
+  scope       String    // 공백으로 구분된 scope
+  grantId     String?   @map("grant_id") // 연결된 grant
+  expiresAt   DateTime  @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  revokedAt   DateTime? @map("revoked_at")
+
+  // 관계
+  client      OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user        User        @relation("OAuthRefreshTokens", fields: [userId], references: [id], onDelete: Cascade)
+  grant       OAuthGrant? @relation(fields: [grantId], references: [id], onDelete: SetNull)
+
+  @@index([clientId])
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([grantId])
+  @@map("oauth_refresh_tokens")
+}
+
+
+// OAuth Interaction 테이블
+// oidc-provider가 사용자 인증 및 동의 과정을 처리할 때 사용하는 세션
+// 로그인 화면, 동의 화면 등의 상태를 저장
+model OAuthInteraction {
+  id          String    @id // interaction uid
+  payload     String    // JSON으로 저장된 interaction 데이터
+  expiresAt   DateTime  @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([expiresAt])
+  @@map("oauth_interactions")
+}
+
+// OAuth Session 테이블
+// oidc-provider의 세션 관리용 (브라우저 세션)
+model OAuthSession {
+  id          String    @id // session uid
+  userId      Int?      @map("user_id") // 로그인한 사용자
+  payload     String    // JSON으로 저장된 세션 데이터
+  expiresAt   DateTime  @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  revokedAt   DateTime? @map("revoked_at")
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("oauth_sessions")
 }
 
