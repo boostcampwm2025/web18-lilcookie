@@ -76,6 +76,7 @@ model User {
 // 리프레시 토큰 테이블
 model RefreshToken {
   id        Int      @id @default(autoincrement())
+  uuid      String   @unique @map("uuid")
   userId    Int      @map("user_id")
   tokenHash String   @map("token_hash")
   expiresAt DateTime @map("expires_at")
