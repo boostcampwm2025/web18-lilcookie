@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "start:dev": "concurrently \"pnpm --filter backend start:dev\" \"pnpm --filter frontend dev\" \"pnpm --filter extension-wxt dev\"",
+    "start:mock": "concurrently \"pnpm --filter backend-mock start:dev\" \"pnpm --filter extension-wxt dev\"",
     "build": "pnpm --filter frontend build && pnpm --filter backend build"
   },
   "devDependencies": {
