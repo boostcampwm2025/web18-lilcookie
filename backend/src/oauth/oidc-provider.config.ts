@@ -25,7 +25,7 @@ const DEV_JWKS = {
 
 export function getOidcConfig(prisma: PrismaService, config: ConfigService): Configuration {
   // 환경변수에서 값 읽기 (없으면 기본값 사용)
-  const resourceServer = config.get<string>("OIDC_RESOURCE_SERVER") || "http://localhost:3000";
+  // const resourceServer = config.get<string>("OIDC_RESOURCE_SERVER") || "http://localhost:3000";
   const redirectUris = config.get<string>("OIDC_REDIRECT_URIS")?.split(",") || [
     "http://localhost:3000/auth/callback",
     "https://localhost:3000/auth/callback",
@@ -58,6 +58,10 @@ export function getOidcConfig(prisma: PrismaService, config: ConfigService): Con
       },
     ],
 
+    // Interaction Policy: 기본 정책 사용
+    // devInteractions 사용 시 login -> consent 순서로 진행됨
+    // consent 화면에서 승인하면 Grant가 생성되어 토큰 발급 가능
+
     // 지원하는 기능
     features: {
       /**
@@ -71,16 +75,11 @@ export function getOidcConfig(prisma: PrismaService, config: ConfigService): Con
 
       /**
        * resourceIndicators: Resource Server 식별
-       * 여러 API 서버가 있을 때 어떤 서버에 접근할지 지정합니다.
-       * 우리는 하나의 백엔드만 있으므로 간단하게 설정합니다.
+       * 개발용 테스트에서는 비활성화 (Grant 관련 이슈 회피)
+       * 실제 서비스에서는 활성화하고 커스텀 consent UI와 함께 사용
        */
       resourceIndicators: {
-        enabled: true,
-        defaultResource: () => resourceServer,
-        getResourceServerInfo: () => ({
-          scope: "openid profile email links:read links:write folders:read folders:write",
-          audience: resourceServer,
-        }),
+        enabled: false,
       },
 
       /**
@@ -157,6 +156,46 @@ export function getOidcConfig(prisma: PrismaService, config: ConfigService): Con
     },
 
     /**
+     * loadExistingGrant: 기존 Grant 로드 또는 새로 생성
+     * consent prompt에서 Grant를 찾을 때 호출됩니다.
+     *
+     * 개발용: devInteractions 테스트를 위해 자동으로 Grant 생성
+     * 실제 서비스에서는 사용자 동의 화면을 통해 Grant를 생성해야 함
+     */
+    loadExistingGrant: async (ctx) => {
+      // Session이 아직 로드되지 않을 수 있으므로 interaction result에서도 accountId를 가져옴
+      const accountId = ctx.oidc.session?.accountId || ctx.oidc.result?.login?.accountId;
+      const clientId = ctx.oidc.client?.clientId;
+
+      // accountId나 clientId가 없으면 undefined 반환
+      if (!accountId || !clientId) {
+        return undefined;
+      }
+
+      const grantId = ctx.oidc.result?.consent?.grantId || ctx.oidc.session?.grantIdFor(clientId);
+
+      if (grantId) {
+        const grant = await ctx.oidc.provider.Grant.find(grantId);
+        if (grant) return grant;
+      }
+
+      // Grant가 없으면 새로 생성 (개발용 - 자동 동의)
+      const grant = new ctx.oidc.provider.Grant({
+        accountId,
+        clientId,
+      });
+
+      // 요청된 scope 자동 허용
+      const requestedScopes = ctx.oidc.params?.scope as string | undefined;
+      if (requestedScopes) {
+        grant.addOIDCScope(requestedScopes);
+      }
+
+      await grant.save();
+      return grant;
+    },
+
+    /**
      * findAccount: 사용자 정보 조회 함수
      * oidc-provider가 사용자 정보를 요청할 때 이 함수를 호출합니다.
      * /oauth/userinfo 엔드포인트에서 사용됩니다.
@@ -171,7 +210,20 @@ export function getOidcConfig(prisma: PrismaService, config: ConfigService): Con
         where: { uuid: sub }, // uuid로 조회
       });
 
-      if (!user) return undefined;
+      // 개발용: DB에 사용자가 없어도 devInteractions 테스트를 위해 기본 account 반환
+      // 실제 서비스에서는 이 부분을 제거하고 user가 없으면 undefined 반환해야 함
+      if (!user) {
+        return {
+          accountId: sub,
+          claims() {
+            return {
+              sub,
+              nickname: `dev-user-${sub}`,
+              email: `${sub}@dev.local`,
+            };
+          },
+        };
+      }
 
       return {
         accountId: sub,
@@ -203,9 +255,22 @@ export function getOidcConfig(prisma: PrismaService, config: ConfigService): Con
     /**
      * cookies: 세션 쿠키 설정
      * oidc-provider가 브라우저에 세션 쿠키를 저장할 때 사용합니다.
+     *
+     * 개발 환경에서는 HTTP localhost를 사용하므로 secure: false 설정 필요
+     * 운영 환경에서는 반드시 secure: true로 변경해야 함
      */
     cookies: {
       keys: cookieKeys,
+      short: {
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax" as const,
+        path: "/",
+      },
+      long: {
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax" as const,
+        path: "/",
+      },
     },
 
     /**

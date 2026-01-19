@@ -41,6 +41,11 @@ async function bootstrap() {
   // OAuth (oidc-provider) 마운트 - /oauth 경로는 api prefix 없이 처리
   const oauthService = app.get(OAuthService);
   const expressApp = app.getHttpAdapter().getInstance();
+
+  // oidc-provider 쿠키 처리를 위한 설정
+  expressApp.set("trust proxy", true);
+
+  // oidc-provider 마운트
   expressApp.use("/oauth", oauthService.getProvider().callback());
 
   // ConfigService를 통한 환경변수 접근

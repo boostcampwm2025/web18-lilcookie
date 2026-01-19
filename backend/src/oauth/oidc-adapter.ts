@@ -14,8 +14,14 @@ export class OidcPrismaAdapter implements Adapter {
     return entity?.payload as AdapterPayload | undefined;
   }
 
-  async findByUid(uid: string) {
-    return this.find(uid);
+  async findByUid(uid: string): Promise<AdapterPayload | undefined> {
+    // payload.uid 필드로 검색해야 함 (SQLite는 JSON path 쿼리 미지원)
+    const entities = await this.prisma.oidcEntity.findMany({
+      where: { type: this.name },
+    });
+
+    const entity = entities.find((e) => (e.payload as Prisma.JsonObject)?.uid === uid);
+    return entity?.payload as AdapterPayload | undefined;
   }
 
   findByUserCode(_userCode: string): Promise<AdapterPayload | undefined> {
