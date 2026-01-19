@@ -1,15 +1,15 @@
 export class SignupResponseDto {
-  userId: string;
+  uuid: string;
   email: string;
   nickname: string;
 
-  constructor(partial: Partial<SignupResponseDto>) {
+  private constructor(partial: Partial<SignupResponseDto>) {
     Object.assign(this, partial);
   }
 
-  static from(userId: string, email: string, nickname: string): SignupResponseDto {
+  static from(uuid: string, email: string, nickname: string) {
     return new SignupResponseDto({
-      userId,
+      uuid,
       email,
       nickname,
     });

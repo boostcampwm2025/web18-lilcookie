@@ -10,6 +10,7 @@ export class RefreshTokenRepository implements IRefreshTokenRepository {
   async create(refreshToken: RefreshToken): Promise<RefreshToken> {
     const created = await this.prisma.refreshToken.create({
       data: {
+        uuid: refreshToken.jti,
         userId: refreshToken.userId,
         tokenHash: refreshToken.tokenHash,
         expiresAt: refreshToken.expiresAt,
@@ -18,6 +19,7 @@ export class RefreshTokenRepository implements IRefreshTokenRepository {
 
     return new RefreshToken({
       id: created.id,
+      jti: created.uuid,
       userId: created.userId,
       tokenHash: created.tokenHash,
       expiresAt: created.expiresAt,
@@ -25,9 +27,25 @@ export class RefreshTokenRepository implements IRefreshTokenRepository {
     });
   }
 
-  async findByTokenHash(tokenHash: string): Promise<RefreshToken | null> {
-    const token = await this.prisma.refreshToken.findFirst({
-      where: { tokenHash },
+  async deleteByJtiAndUser(jti: string, userUuid: string): Promise<void> {
+    await this.prisma.refreshToken.delete({
+      where: {
+        uuid: jti,
+        user: {
+          uuid: userUuid,
+        },
+      },
+    });
+  }
+
+  async findByJtiAndUser(jti: string, userUuid: string): Promise<RefreshToken | null> {
+    const token = await this.prisma.refreshToken.findUnique({
+      where: {
+        uuid: jti,
+        user: {
+          uuid: userUuid,
+        },
+      },
     });
 
     if (!token) {
@@ -36,6 +54,7 @@ export class RefreshTokenRepository implements IRefreshTokenRepository {
 
     return new RefreshToken({
       id: token.id,
+      jti: token.uuid,
       userId: token.userId,
       tokenHash: token.tokenHash,
       expiresAt: token.expiresAt,
@@ -43,9 +62,15 @@ export class RefreshTokenRepository implements IRefreshTokenRepository {
     });
   }
 
-  async deleteByUserId(userId: number): Promise<void> {
-    await this.prisma.refreshToken.deleteMany({
-      where: { userId },
+  async deleteExpiredTokens(): Promise<number> {
+    const result = await this.prisma.refreshToken.deleteMany({
+      where: {
+        expiresAt: {
+          lt: new Date(),
+        },
+      },
     });
+
+    return result.count;
   }
 }

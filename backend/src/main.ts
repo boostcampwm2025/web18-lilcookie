@@ -4,6 +4,7 @@ import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { ConfigService } from "@nestjs/config";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 import { ValidationPipe, type LoggerService } from "@nestjs/common";
+import cookieParser from "cookie-parser";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -13,6 +14,9 @@ async function bootstrap() {
   // Winston 로거를 NestJS 전역 로거로 설정
   const logger = app.get<LoggerService>(WINSTON_MODULE_NEST_PROVIDER);
   app.useLogger(logger);
+
+  // 쿠키 파서 미들웨어 설정
+  app.use(cookieParser());
 
   // 전역 Exception Filter 등록 (ResponseBuilder 사용)
   app.useGlobalFilters(new HttpExceptionFilter(logger));

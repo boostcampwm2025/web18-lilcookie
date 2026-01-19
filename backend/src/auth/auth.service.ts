@@ -9,6 +9,7 @@ import { LoginRequestDto } from "./dto/login.request.dto";
 import { User } from "./entities/user.entity";
 import { RefreshToken } from "./entities/refresh-token.entity";
 import { ConfigService } from "@nestjs/config";
+import { AuthResult, AuthTokens, TokenInfo } from "./interfaces/auth.interface";
 
 @Injectable()
 export class AuthService {
@@ -33,32 +34,85 @@ export class AuthService {
     this.refreshExpSec = Number(this.configService.getOrThrow<number>("JWT_REFRESH_EXP_SEC"));
   }
 
-  async signup(dto: SignupRequestDto): Promise<{ user: User; accessToken: string; refreshToken: string }> {
+  // --- 메서드 ---
+  async signup(dto: SignupRequestDto): Promise<AuthResult> {
     await this.validateSignup(dto);
 
     const user = await this.registerUser(dto);
     const tokens = await this.generateTokens(user);
 
-    return { user, ...tokens };
+    return { user, tokens };
   }
 
-  async login(dto: LoginRequestDto): Promise<{ user: User; accessToken: string; refreshToken: string }> {
+  async login(dto: LoginRequestDto): Promise<AuthResult> {
     const user = await this.verifyUser(dto);
     const tokens = await this.generateTokens(user);
 
-    return { user, ...tokens };
+    return { user, tokens };
   }
 
+  async logout(userUuid: string, jti: string, rawRefreshToken: string) {
+    const token = await this.refreshTokenRepository.findByJtiAndUser(jti, userUuid);
+    if (!token) {
+      throw new UnauthorizedException("로그아웃에 실패했습니다.");
+    }
+
+    const isMatch = await this.compareValue(rawRefreshToken, token.tokenHash);
+    if (!isMatch) {
+      throw new UnauthorizedException("로그아웃에 실패했습니다.");
+    }
+
+    try {
+      await this.refreshTokenRepository.deleteByJtiAndUser(jti, userUuid);
+    } catch {
+      throw new UnauthorizedException("로그아웃에 실패했습니다.");
+    }
+  }
+
+  async getUserByUuid(userUuid: string): Promise<User> {
+    const user = await this.userRepository.findByUuid(userUuid);
+    if (!user) {
+      throw new UnauthorizedException("유저 정보를 불러오는데 실패했습니다.");
+    }
+
+    return user;
+  }
+
+  async refreshTokens(userUuid: string, jti: string, rawRefreshToken: string): Promise<AuthTokens> {
+    const token = await this.refreshTokenRepository.findByJtiAndUser(jti, userUuid);
+    if (!token) {
+      throw new UnauthorizedException("토큰 재발급에 실패했습니다.");
+    }
+
+    const isMatch = await this.compareValue(rawRefreshToken, token.tokenHash);
+    if (!isMatch) {
+      throw new UnauthorizedException("토큰 재발급에 실패했습니다.");
+    }
+
+    const user = await this.getUserByUuid(userUuid);
+    if (!user) {
+      throw new UnauthorizedException("토큰 재발급에 실패했습니다.");
+    }
+
+    // 기존 Refresh Token 삭제 + 새 토큰 발급
+    try {
+      await this.refreshTokenRepository.deleteByJtiAndUser(jti, userUuid);
+    } catch {
+      // 삭제 실패해도 무시
+    }
+
+    return this.generateTokens(user);
+  }
+
+  // --- 검증 및 처리 ---
   private async validateSignup(dto: SignupRequestDto): Promise<void> {
     const existingUser = await this.userRepository.findByEmail(dto.email);
     if (existingUser) {
-      // 존재하는 사용자(이메일)
       throw new BadRequestException("회원가입에 실패했습니다.");
     }
 
     const { termsOfService, privacyPolicy } = dto.agreements;
     if (!termsOfService || !privacyPolicy) {
-      // 필수약관 동의안함
       throw new BadRequestException("회원가입에 실패했습니다.");
     }
   }
@@ -74,6 +128,7 @@ export class AuthService {
     return user;
   }
 
+  // --- 회원가입 처리 ---
   private async registerUser(dto: SignupRequestDto): Promise<User> {
     const passwordHash = await this.hashValue(dto.password);
     const now = new Date();
@@ -96,44 +151,54 @@ export class AuthService {
     return this.userRepository.create(user);
   }
 
-  private async generateTokens(user: User): Promise<{ accessToken: string; refreshToken: string }> {
-    const payload = { sub: user.uuid };
+  // --- 토큰 관련 ---
+  private async generateTokens(user: User): Promise<AuthTokens> {
+    const accessTokenInfo = this.createAccessToken(user);
+    const { jti, refreshTokenInfo } = this.createRefreshToken(user);
 
-    const accessToken = this.jwtService.sign(payload, {
-      secret: this.accessSecret,
-      expiresIn: this.accessExpSec,
-    });
+    // Refresh Token DB 저장
+    await this.saveRefreshToken(user.id, jti, refreshTokenInfo);
 
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: this.refreshSecret,
-      expiresIn: this.refreshExpSec,
-    });
-
-    await this.saveRefreshToken(user.id, refreshToken);
-
-    return { accessToken, refreshToken };
+    return { accessTokenInfo, refreshTokenInfo };
   }
 
-  // Refresh Token DB 저장
-  private async saveRefreshToken(userId: number, refreshToken: string): Promise<void> {
-    const tokenHash = await this.hashValue(refreshToken);
+  private createAccessToken(user: User): TokenInfo {
+    const expiresAt = Date.now() + this.accessExpSec * 1000;
+    const payload = { sub: user.uuid };
+    const token = this.jwtService.sign(payload, { secret: this.accessSecret, expiresIn: this.accessExpSec });
 
-    // Date.now()는 밀리초 단위기에 refreshExpSec를 1000으로 곱해줘야 함
-    const expiresAt = new Date(Date.now() + this.refreshExpSec * 1000);
+    return { token, expiresAt };
+  }
 
-    const refreshTokenEntity = new RefreshToken({
+  private createRefreshToken(user: User): { jti: string; refreshTokenInfo: TokenInfo } {
+    const jti = uuidv4();
+    const expiresAt = Date.now() + this.refreshExpSec * 1000;
+    const payload = { sub: user.uuid, jti };
+    const token = this.jwtService.sign(payload, { secret: this.refreshSecret, expiresIn: this.refreshExpSec });
+
+    return {
+      jti,
+      refreshTokenInfo: { token, expiresAt },
+    };
+  }
+
+  private async saveRefreshToken(userId: number, jti: string, refreshTokenInfo: TokenInfo): Promise<void> {
+    const tokenHash = await this.hashValue(refreshTokenInfo.token);
+    const expiresAt = new Date(refreshTokenInfo.expiresAt);
+
+    const refreshToken = new RefreshToken({
       id: 0,
       userId,
+      jti,
       tokenHash,
       expiresAt,
       createdAt: new Date(),
     });
 
-    await this.refreshTokenRepository.create(refreshTokenEntity);
+    await this.refreshTokenRepository.create(refreshToken);
   }
 
   // --- 해싱 관련 ---
-
   private async hashValue(value: string): Promise<string> {
     return bcrypt.hash(value, this.SALT_ROUNDS);
   }
