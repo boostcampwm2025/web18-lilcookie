@@ -9,7 +9,7 @@ terraform {
 }
 
 provider "authentik" {
-  url      = "https://auth.localhost"
+  url = "https://auth.localhost"
   # Token 분리하는 방법 조사하여 적용 필요
   # root .env.development.local에도 동일 토큰 포함
   token    = "jhb6XJIm6MZdN1d699RIL9Tqk6ARS41PswgCPulBfIM="
@@ -92,7 +92,6 @@ resource "authentik_provider_oauth2" "teamstash" {
   authorization_flow = data.authentik_flow.default_authorization.id
   invalidation_flow  = data.authentik_flow.default_invalidation.id
   signing_key        = data.authentik_certificate_key_pair.default.id
-  encryption_key     = data.authentik_certificate_key_pair.default.id
 
   allowed_redirect_uris = [
     # Needs update (must match redirect_uris in application)
@@ -100,6 +99,10 @@ resource "authentik_provider_oauth2" "teamstash" {
     {
       matching_mode = "strict",
       url           = "https://app.localhost/callback",
+    },
+    {
+      matching_mode = "strict",
+      url           = "https://app.insomnia.rest/oauth/redirect",
     }
   ]
 
