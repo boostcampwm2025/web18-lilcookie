@@ -22,15 +22,30 @@ function App() {
   const [isAiCompleted, setIsAiCompleted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaveSuccess, setIsSaveSuccess] = useState(false);
-  const [dashboardUrl, setDashboardUrl] = useState("");
-  const [isDashboardDisabled, setIsDashboardDisabled] = useState(true);
-  const [showDashboardNotice, setShowDashboardNotice] = useState(false);
+
+  // TODO: 유저-팀 연결 후 대시보드 URL 로직 추가
+  // const [dashboardUrl, setDashboardUrl] = useState("");
+  // const [isDashboardDisabled, setIsDashboardDisabled] = useState(true);
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const aiButtonRef = useRef<HTMLButtonElement>(null);
 
   // 현재 탭 정보 가져오기
   useEffect(() => {
     (async () => {
+      // 인증 상태 확인
+      const authState = await chrome.runtime.sendMessage({
+        action: "getAuthState",
+      });
+      setIsLoggedIn(authState?.isLoggedIn ?? false);
+      setIsAuthLoading(false);
+
+      // 로그인 안 됐으면 나머지 로직 스킵
+      if (!authState?.isLoggedIn) return;
+
+      // 기존 탭 정보 가져오기 로직
       const [activeTab] = await chrome.tabs.query({
         active: true,
         currentWindow: true,
@@ -48,18 +63,6 @@ function App() {
         const isReaderable = (pageContent as any)?.textContent;
         setIsAiDisabled(!isReaderable);
       }
-
-      // 대시보드 링크 설정
-      const { teamId } = await chrome.storage.sync.get("teamId");
-      if (teamId) {
-        setDashboardUrl(`${BASE_URL}/${(teamId as string).toLowerCase()}`);
-        setIsDashboardDisabled(false);
-        setShowDashboardNotice(false);
-      } else {
-        setDashboardUrl("");
-        setIsDashboardDisabled(true);
-        setShowDashboardNotice(true);
-      }
     })();
   }, []);
 
@@ -75,6 +78,24 @@ function App() {
   // 저장 버튼 활성화 여부
   const isSaveDisabled =
     !comment.trim() || !tags.trim() || isSaving || isSaveSuccess;
+
+  // 로그인 처리
+  const handleLogin = async () => {
+    const response = await chrome.runtime.sendMessage({ action: "login" });
+    if (response?.success) {
+      setIsLoggedIn(true);
+      // 페이지 새로고침해서 탭 정보 등을 다시 로드
+      window.location.reload();
+    } else {
+      alert("로그인 실패: " + (response?.error || "알 수 없는 오류"));
+    }
+  };
+
+  // 로그아웃 처리
+  const handleLogout = async () => {
+    await chrome.runtime.sendMessage({ action: "logout" });
+    setIsLoggedIn(false);
+  };
 
   // 설정 페이지 열기
   const handleSettingsClick = (e: React.MouseEvent) => {
@@ -109,7 +130,7 @@ function App() {
       if (!aiPassword) {
         if (
           confirm(
-            "AI 기능을 사용하려면 설정에서 비밀번호를 입력해야 합니다. 설정 페이지로 이동하시겠습니까?"
+            "AI 기능을 사용하려면 설정에서 비밀번호를 입력해야 합니다. 설정 페이지로 이동하시겠습니까?",
           )
         ) {
           if (chrome.runtime.openOptionsPage) {
@@ -175,7 +196,7 @@ function App() {
 
   // 댓글 키 입력 처리 (200자 제한)
   const handleCommentKeyDown = (
-    e: React.KeyboardEvent<HTMLTextAreaElement>
+    e: React.KeyboardEvent<HTMLTextAreaElement>,
   ) => {
     const key = e.key;
     const allowedControls = [
@@ -282,25 +303,10 @@ function App() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!tab) return;
+
     try {
-      const { camperId, teamId } = await chrome.storage.sync.get([
-        "camperId",
-        "teamId",
-      ]);
-
-      if (!camperId || !teamId) {
-        alert("사용자 설정에서 캠퍼 ID와 팀 ID를 입력해주세요.");
-        if (chrome.runtime.openOptionsPage) {
-          chrome.runtime.openOptionsPage();
-        }
-        return;
-      }
-
-      if (!tab) return;
-
       const formData = {
-        userId: camperId,
-        teamId: teamId,
         url: tab.url,
         title: tab.title,
         tags: tags
@@ -320,7 +326,6 @@ function App() {
 
       if (response && response.success) {
         setIsSaveSuccess(true);
-        // 필드 초기화는 하지 않고 버튼만 "저장 성공!" 표시
       } else {
         alert("저장 실패: " + (response?.error || "알 수 없는 오류"));
         setIsSaving(false);
@@ -332,14 +337,75 @@ function App() {
     }
   };
 
-  // 대시보드 열기
-  const handleDashboardClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (dashboardUrl && !isDashboardDisabled) {
-      chrome.tabs.create({ url: dashboardUrl });
-    }
-  };
+  // TODO: 유저-팀 연결 후 대시보드 열기 로직 추가
+  // const handleDashboardClick = (e: React.MouseEvent) => {
+  //   e.preventDefault();
+  //   if (dashboardUrl && !isDashboardDisabled) {
+  //     chrome.tabs.create({ url: dashboardUrl });
+  //   }
+  // };
 
+  // 로딩 중
+  if (isAuthLoading) {
+    return (
+      <div
+        className="container"
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "200px",
+        }}
+      >
+        <p>로딩 중...</p>
+      </div>
+    );
+  }
+
+  // 미로그인 상태
+  if (!isLoggedIn) {
+    return (
+      <div className="container">
+        <header className="header">
+          <div className="header-content">
+            <div className="logo-icon">
+              <svg
+                width="36"
+                height="36"
+                viewBox="0 0 36 36"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M0 11.0341C0 4.94016 4.94015 0 11.0341 0H24.2751C30.3691 0 35.3092 4.94015 35.3092 11.0341V24.2751C35.3092 30.3691 30.3691 35.3092 24.2751 35.3092H11.0341C4.94016 35.3092 0 30.3691 0 24.2751V11.0341Z"
+                  fill="#E0E7FF"
+                />
+                <path
+                  d="M22.8032 24.275L17.6539 21.3326L12.5046 24.275V12.5053C12.5046 12.1151 12.6596 11.7409 12.9355 11.465C13.2115 11.1891 13.5857 11.0341 13.9759 11.0341H21.3319C21.7221 11.0341 22.0963 11.1891 22.3723 11.465C22.6482 11.7409 22.8032 12.1151 22.8032 12.5053V24.275Z"
+                  stroke="#4F39F6"
+                  strokeWidth="1.47122"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <div className="header-text">
+              <h1 className="app-name">TeamStash</h1>
+              <p className="tagline">링크를 빠르게 저장하세요</p>
+            </div>
+          </div>
+        </header>
+        <div style={{ textAlign: "center", padding: "40px 20px" }}>
+          <p style={{ marginBottom: "20px" }}>로그인이 필요합니다</p>
+          <button className="save-btn" onClick={handleLogin}>
+            로그인하기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 로그인 된 상태
   return (
     <div className="container">
       {/* Header */}
@@ -523,8 +589,8 @@ function App() {
         </button>
       </form>
 
-      {/* Footer */}
-      <footer className="footer">
+      {/* TODO: 유저-팀 연결 후 대시보드 footer 추가 */}
+      {/* <footer className="footer">
         <a
           href="#"
           onClick={handleDashboardClick}
@@ -532,10 +598,7 @@ function App() {
         >
           대시보드 열기 →
         </a>
-        {showDashboardNotice && (
-          <p className="dashboard-notice">사용자 설정을 먼저 해주세요</p>
-        )}
-      </footer>
+      </footer> */}
     </div>
   );
 }
