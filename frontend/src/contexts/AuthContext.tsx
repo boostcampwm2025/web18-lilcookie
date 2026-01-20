@@ -104,9 +104,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // OAuth 토큰 삭제
     clearAccessToken();
 
-    // 클라이언트 상태 초기화
-    setUser(null);
-
     // Authentik 세션 종료 (로그인 페이지로 리다이렉트)
     window.location.href = getAuthentikLogoutUrl();
   };
