@@ -3,46 +3,31 @@ import { randomUUID } from "crypto";
 import { Link } from "./entities/link.entity";
 import { CreateLinkRequestDto } from "./dto/create-link.request.dto";
 import { ConfigService } from "@nestjs/config";
-import { DatabaseService } from "../database/database.service";
 import { NotificationService } from "../notification/notification.service";
 import { LinkNotificationDto } from "../notification/dto/link-notification.dto";
-
-// MVP라서 일단 서비스 상단에 인터페이스 정의했음
-interface LinkRow {
-  link_id: string;
-  team_id: string;
-  url: string;
-  title: string;
-  tags: string;
-  summary: string;
-  created_at: string;
-  created_by: string;
-  folder_id: string | null;
-}
+import { LinkRepository } from "./repositories/link.repository";
 
 @Injectable()
 export class LinksService implements OnModuleInit {
   constructor(
     private readonly configService: ConfigService,
-    private readonly databaseService: DatabaseService,
+    private readonly linkRepository: LinkRepository,
     private readonly notificationService: NotificationService,
   ) {}
 
   onModuleInit() {
-    this.initMockData();
+    this.initMockData().catch(() => {});
   }
 
   // 초기 mock data 생성
-  private initMockData(): void {
+  private async initMockData(): Promise<void> {
     if (this.configService.get<string>("NODE_ENV") === "production") {
       return;
     }
 
-    const db = this.databaseService.getDatabase();
-
     // 이미 데이터가 있으면 추가하지 않음
-    const count = db.prepare("SELECT COUNT(*) as count FROM links").get() as { count: number };
-    if (count.count > 0) {
+    const existingLinks = await this.linkRepository.findAll();
+    if (existingLinks.length > 0) {
       return;
     }
 
@@ -121,7 +106,7 @@ export class LinksService implements OnModuleInit {
       },
     ];
 
-    mockLinks.forEach((mockLink) => {
+    for (const mockLink of mockLinks) {
       const linkId = randomUUID();
 
       const link = new Link({
@@ -135,27 +120,12 @@ export class LinksService implements OnModuleInit {
         createdBy: mockLink.userId,
       });
 
-      const insertStmt = db.prepare(`
-        INSERT INTO links (link_id, team_id, url, title, tags, summary, created_at, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-
-      insertStmt.run(
-        link.linkId,
-        link.teamId,
-        link.url,
-        link.title,
-        JSON.stringify(link.tags),
-        link.summary,
-        link.createdAt,
-        link.createdBy,
-      );
-    });
+      await this.linkRepository.create(link);
+    }
   }
 
   // 새로운 Link 생성
-  create(requestDto: CreateLinkRequestDto): Link {
-    const db = this.databaseService.getDatabase();
+  async create(requestDto: CreateLinkRequestDto): Promise<Link> {
     const linkId = randomUUID();
     const createdAt = new Date().toISOString();
 
@@ -171,111 +141,38 @@ export class LinksService implements OnModuleInit {
       folderId: requestDto.folderId || null,
     });
 
-    const insertStmt = db.prepare(`
-      INSERT INTO links (link_id, team_id, url, title, tags, summary, created_at, created_by, folder_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    insertStmt.run(
-      link.linkId,
-      link.teamId,
-      link.url,
-      link.title,
-      JSON.stringify(link.tags),
-      link.summary,
-      link.createdAt,
-      link.createdBy,
-      link.folderId,
-    );
+    const created = await this.linkRepository.create(link);
 
     // 임시로 슬랙 채널 ID는 하드코딩(C0A6S6AM1K7)
-    this.notificationService.notifyLinkCreated(LinkNotificationDto.fromLink(link, "C0A6S6AM1K7")).catch(() => {});
+    this.notificationService.notifyLinkCreated(LinkNotificationDto.fromLink(created, "C0A6S6AM1K7")).catch(() => {});
+
+    return created;
+  }
+
+  // 목록 조회 (전체 또는 조건)
+  async findAll(teamId?: string, tagsQuery?: string, createdAfter?: string): Promise<Link[]> {
+    const tags = tagsQuery ? tagsQuery.split(",").map((tag) => tag.trim()) : undefined;
+    const afterDate = createdAfter ? new Date(createdAfter) : undefined;
+
+    return this.linkRepository.findAll(teamId, tags, afterDate);
+  }
+
+  // 단건 조회
+  async findOne(linkId: string): Promise<Link> {
+    const link = await this.linkRepository.findOne(linkId);
+
+    if (!link) {
+      throw new NotFoundException(`링크를 찾을 수 없습니다: ${linkId}`);
+    }
 
     return link;
   }
 
-  // 목록 조회 (전체 또는 조건)
-  findAll(teamId?: string, tagsQuery?: string, createdAfter?: string): Link[] {
-    const db = this.databaseService.getDatabase();
-    // 동적 쿼리 (AND) 위해 WHERE 절 구성
-    let query = "SELECT * FROM links WHERE 1=1";
-    const params: string[] = [];
-
-    // teamId 필터링 (lowercase 비교)
-    if (teamId) {
-      query += " AND team_id = ?";
-      params.push(teamId.toLowerCase());
-    }
-
-    // tags 필터링 (쉼표로 구분된 태그들이 전부 매칭되어야 함)
-    if (tagsQuery) {
-      const queryTags = tagsQuery.split(",").map((tag) => tag.trim());
-      queryTags.forEach((tag) => {
-        query += " AND tags LIKE ?";
-        params.push(`%"${tag}"%`); // JSON 배열 내 검색
-      });
-    }
-
-    // createdAfter 필터링
-    if (createdAfter) {
-      const afterDate = new Date(createdAfter);
-      if (!isNaN(afterDate.getTime())) {
-        query += " AND created_at > ?";
-        params.push(afterDate.toISOString());
-      }
-    }
-
-    query += " ORDER BY created_at DESC";
-
-    const stmt = db.prepare(query);
-    const rows = stmt.all(...params) as LinkRow[];
-
-    return rows.map(
-      (row) =>
-        new Link({
-          linkId: row.link_id,
-          teamId: row.team_id,
-          url: row.url,
-          title: row.title,
-          tags: JSON.parse(row.tags) as string[],
-          summary: row.summary,
-          createdAt: row.created_at,
-          createdBy: row.created_by,
-          folderId: row.folder_id,
-        }),
-    );
-  }
-
-  // 단건 조회
-  findOne(linkId: string): Link {
-    const db = this.databaseService.getDatabase();
-    const stmt = db.prepare("SELECT * FROM links WHERE link_id = ?");
-    const row = stmt.get(linkId) as LinkRow | undefined;
-
-    if (!row) {
-      throw new NotFoundException(`링크를 찾을 수 없습니다: ${linkId}`);
-    }
-
-    return new Link({
-      linkId: row.link_id,
-      teamId: row.team_id,
-      url: row.url,
-      title: row.title,
-      tags: JSON.parse(row.tags) as string[],
-      summary: row.summary,
-      createdAt: row.created_at,
-      createdBy: row.created_by,
-      folderId: row.folder_id,
-    });
-  }
-
   // 단건 삭제
-  remove(linkId: string): void {
-    const db = this.databaseService.getDatabase();
-    const stmt = db.prepare("DELETE FROM links WHERE link_id = ?");
-    const result = stmt.run(linkId);
+  async remove(linkId: string): Promise<void> {
+    const removed = await this.linkRepository.remove(linkId);
 
-    if (result.changes === 0) {
+    if (!removed) {
       throw new NotFoundException(`링크를 찾을 수 없습니다: ${linkId}`);
     }
   }
