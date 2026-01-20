@@ -254,6 +254,6 @@ terraform.rc
 backend/data/
 
 # Authentik data directory
-authentik-data
-authentik-certs
-authentik-custom-templates
+infra/authentik/data
+infra/authentik/certs
+infra/authentik/custom-templates
