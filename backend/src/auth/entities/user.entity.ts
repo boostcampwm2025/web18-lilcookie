@@ -1,10 +1,11 @@
 export class User {
   id: number;
-  uuid: string;
+  authentikId: string; // Authentik sub claim
   email: string;
   nickname: string;
-  passwordHash: string;
   createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
   termsOfService: boolean;
   privacyPolicy: boolean;
   marketingConsent: boolean;

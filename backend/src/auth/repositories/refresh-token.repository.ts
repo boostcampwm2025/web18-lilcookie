@@ -27,23 +27,23 @@ export class RefreshTokenRepository implements IRefreshTokenRepository {
     });
   }
 
-  async deleteByJtiAndUser(jti: string, userUuid: string): Promise<void> {
+  async deleteByJtiAndUser(jti: string, userAuthentikId: string): Promise<void> {
     await this.prisma.refreshToken.delete({
       where: {
         uuid: jti,
         user: {
-          uuid: userUuid,
+          authentikId: userAuthentikId,
         },
       },
     });
   }
 
-  async findByJtiAndUser(jti: string, userUuid: string): Promise<RefreshToken | null> {
+  async findByJtiAndUser(jti: string, userAuthentikId: string): Promise<RefreshToken | null> {
     const token = await this.prisma.refreshToken.findUnique({
       where: {
         uuid: jti,
         user: {
-          uuid: userUuid,
+          authentikId: userAuthentikId,
         },
       },
     });
