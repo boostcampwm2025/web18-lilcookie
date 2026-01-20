@@ -21,3 +21,16 @@
 | J123\_박준호                                                    | J193\_이수진                                                     | J204\_이윤표                                                    | J243\_정아현                                                    |
 | --------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- |
 | ![박준호](https://avatars.githubusercontent.com/u/32813311?v=4) | ![이수진](https://avatars.githubusercontent.com/u/182627132?v=4) | ![이윤표](https://avatars.githubusercontent.com/u/30365108?v=4) | ![정아현](https://avatars.githubusercontent.com/u/97656991?v=4) |
+
+
+### 개발 서버 실행 방법
+
+
+
+Authentik 실행 명령
+
+Project root에 .env.development.local 작성
+
+```
+docker compose --env-file .env.development.local -f compose.dev.yaml up -d
+```
