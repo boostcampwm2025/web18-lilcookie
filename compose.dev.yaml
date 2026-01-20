@@ -37,8 +37,8 @@ services:
     - ${COMPOSE_PORT_HTTPS:-9443}:9443
     restart: unless-stopped
     volumes:
-    - ./authentik-data:/data
-    - ./authentik-custom-templates:/templates
+    - ./infra/authentik/data:/data
+    - ./infra/authentik/custom-templates:/templates
   authentik-worker:
     command: worker
     depends_on:
@@ -59,9 +59,9 @@ services:
     user: root
     volumes:
     - /var/run/docker.sock:/var/run/docker.sock
-    - ./authentik-data:/data
-    - ./authentik-certs:/certs
-    - ./authentik-custom-templates:/templates
+    - ./infra/authentik/data:/data
+    - ./infra/authentik/certs:/certs
+    - ./infra/authentik/custom-templates:/templates
 
   caddy:
     image: caddy:2.11
@@ -71,8 +71,8 @@ services:
       - "443:443"
       - "443:443/udp"
     volumes:
-      - ./caddy-conf/Caddyfile.dev:/etc/caddy/Caddyfile
-      - ./caddy-site:/srv
+      - ./infra/caddy/caddy-conf/Caddyfile.dev:/etc/caddy/Caddyfile
+      - ./infra/caddy/caddy-site:/srv
       - caddy-data:/data
       - caddy-config:/config
 
