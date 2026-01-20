@@ -1,16 +1,36 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import { authApi, setAuthErrorCallback } from "../services/api";
-import type { User, SignupRequest, LoginRequest } from "../types";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
+import type { User } from "../types";
+import {
+  startAuthentikLogin,
+  clearAccessToken,
+  getStoredAccessToken,
+  getValidAccessToken,
+  getUserInfo,
+  getAuthentikLogoutUrl,
+} from "../services/authentikAuth";
+
+// OAuth 사용자 정보 타입
+interface OAuthUser {
+  sub: string;
+  email: string;
+  nickname: string;
+}
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (data: LoginRequest) => Promise<void>;
-  signup: (data: SignupRequest) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  loginWithAuthentik: () => Promise<void>;
+  setOAuthUser: (user: OAuthUser) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,7 +38,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error("useAuth는 AuthProvider 내부에서만 사용할 수 있습니다.");
   }
   return context;
 };
@@ -31,18 +51,40 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 인증 상태 확인
-  // HttpOnly 쿠키에 토큰이 있으면 자동으로 인증됨
+  // 인증 상태 확인 (Authentik OAuth 토큰 기반)
+  // 토큰이 만료되었으면 자동으로 refresh_token으로 갱신 시도
   const checkAuth = async () => {
     try {
-      const response = await authApi.checkAuth();
-      if (response.success) {
-        setUser({
-          uuid: response.data.uuid,
-          email: response.data.email,
-          nickname: response.data.nickname,
-        });
+      // 저장된 토큰이 있는지 먼저 확인
+      const storedToken = getStoredAccessToken();
+
+      if (!storedToken) {
+        // 토큰 없음 - 로그인 필요
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+
+      // 유효한 토큰 가져오기 (만료 시 자동 갱신)
+      const accessToken = await getValidAccessToken();
+
+      if (accessToken) {
+        try {
+          const userInfo = await getUserInfo(accessToken);
+
+          setUser({
+            uuid: userInfo.sub,
+            email: userInfo.email || "",
+            nickname: userInfo.name || userInfo.preferred_username || "",
+          });
+        } catch {
+          // userinfo 조회 실패 - 토큰 삭제 후 재로그인 필요
+          clearAccessToken();
+          setUser(null);
+        }
       } else {
+        // 토큰 갱신 실패 - 재로그인 필요
+        clearAccessToken();
         setUser(null);
       }
     } catch {
@@ -53,66 +95,45 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   // 컴포넌트 마운트 시 인증 상태 확인
-  // 브라우저에 HttpOnly 쿠키가 남아있으면 자동 로그인됨
   useEffect(() => {
     checkAuth();
-
-    // 토큰 갱신 실패 시 자동 로그아웃 처리를 위한 콜백 등록
-    setAuthErrorCallback(() => {
-      setUser(null);
-    });
   }, []);
 
-  // 회원가입
-  // 백엔드에서 회원가입 성공 시 자동으로 JWT 토큰을 HttpOnly 쿠키로 발급
-  // 따라서 회원가입 후 바로 로그인 상태가 됨
-  const signup = async (data: SignupRequest) => {
-    const response = await authApi.signup(data);
-    if (response.success) {
-      // 회원가입 성공 시 토큰이 쿠키에 저장되므로
-      // user 상태를 업데이트하여 즉시 로그인 상태로 전환
-      setUser({
-        uuid: response.data.uuid,
-        email: response.data.email,
-        nickname: response.data.nickname,
-      });
-    } else {
-      throw new Error(response.message || "회원가입에 실패했습니다.");
-    }
-  };
-
-  // 로그인
-  // 로그인 성공 시 JWT 토큰이 HttpOnly 쿠키로 발급됨
-  const login = async (data: LoginRequest) => {
-    const response = await authApi.login(data);
-    if (response.success) {
-      setUser({
-        uuid: response.data.uuid,
-        email: response.data.email,
-        nickname: response.data.nickname,
-      });
-    } else {
-      throw new Error(response.message || "로그인에 실패했습니다.");
-    }
-  };
-
-  // 로그아웃
-  // 백엔드에서 HttpOnly 쿠키를 삭제함
+  // 로그아웃 (Authentik 세션도 함께 종료)
   const logout = async () => {
-    await authApi.logout();
+    // OAuth 토큰 삭제
+    clearAccessToken();
 
-    // 로그아웃 시 클라이언트 상태 초기화
+    // 클라이언트 상태 초기화
     setUser(null);
+
+    // Authentik 세션 종료 (로그인 페이지로 리다이렉트)
+    window.location.href = getAuthentikLogoutUrl();
+  };
+
+  // Authentik OAuth 로그인 시작
+  const loginWithAuthentik = async () => {
+    await startAuthentikLogin();
+  };
+
+  // OAuth 콜백에서 사용자 정보 설정
+  const setOAuthUser = (oauthUser: OAuthUser) => {
+    setUser({
+      uuid: oauthUser.sub,
+      email: oauthUser.email,
+      nickname: oauthUser.nickname,
+    });
+    setIsLoading(false);
   };
 
   const value: AuthContextType = {
     user,
     isLoading,
     isAuthenticated: user !== null,
-    login,
-    signup,
     logout,
     checkAuth,
+    loginWithAuthentik,
+    setOAuthUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
