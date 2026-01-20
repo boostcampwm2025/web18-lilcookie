@@ -11,6 +11,7 @@ import {
   HttpCode,
   Inject,
   type LoggerService,
+  UseGuards,
 } from "@nestjs/common";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { FoldersService } from "./folders.service";
@@ -18,8 +19,12 @@ import { ResponseBuilder } from "../common/builders/response.builder";
 import { CreateFolderRequestDto } from "./dto/create-folder.request.dto";
 import { UpdateFolderRequestDto } from "./dto/update-folder.request.dto";
 import { FolderResponseDto } from "./dto/folder.response.dto";
+import { OidcGuard } from "../oidc/guards/oidc.guard";
+import { TeamGuard } from "../oidc/guards/team.guard";
+import { RequireScopes } from "../oidc/guards/scopes.decorator";
 
 @Controller("folders")
+@UseGuards(OidcGuard, TeamGuard)
 export class FoldersController {
   constructor(
     private readonly foldersService: FoldersService,
@@ -28,6 +33,7 @@ export class FoldersController {
 
   // 폴더 생성
   @Post()
+  @RequireScopes("folders:write")
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() requestDto: CreateFolderRequestDto) {
     this.logger.log(`POST /api/folders - 폴더 생성 요청: ${requestDto.folderName}`);
@@ -44,6 +50,7 @@ export class FoldersController {
 
   // 팀의 모든 폴더 조회
   @Get()
+  @RequireScopes("folders:read")
   async findAllByTeam(@Query("teamId") teamId: string) {
     this.logger.log(`GET /api/folders?teamId=${teamId} - 폴더 목록 조회`);
 
@@ -59,6 +66,7 @@ export class FoldersController {
 
   // 특정 폴더 조회
   @Get(":folderId")
+  @RequireScopes("folders:read")
   async findOne(@Param("folderId") folderId: string) {
     this.logger.log(`GET /api/folders/${folderId} - 폴더 단건 조회`);
 
@@ -74,6 +82,7 @@ export class FoldersController {
 
   // 폴더의 하위 폴더 조회
   @Get(":folderId/subfolders")
+  @RequireScopes("folders:read")
   async findSubfolders(@Param("folderId") folderId: string) {
     this.logger.log(`GET /api/folders/${folderId}/subfolders - 하위 폴더 조회`);
 
@@ -89,6 +98,7 @@ export class FoldersController {
 
   // 폴더 이름 수정
   @Put(":folderId")
+  @RequireScopes("folders:write")
   async update(@Param("folderId") folderId: string, @Body() requestDto: UpdateFolderRequestDto) {
     this.logger.log(`PUT /api/folders/${folderId} - 폴더 수정`);
 
@@ -104,6 +114,7 @@ export class FoldersController {
 
   // 폴더 삭제
   @Delete(":folderId")
+  @RequireScopes("folders:write")
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param("folderId") folderId: string) {
     this.logger.log(`DELETE /api/folders/${folderId} - 폴더 삭제`);
