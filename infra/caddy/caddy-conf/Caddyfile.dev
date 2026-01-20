@@ -3,5 +3,13 @@ auth.localhost {
 }
 
 api.localhost {
+	@all {
+		path_regexp all ^/(.*)$
+	}
+	rewrite @all /api/{re.all.1}
 	reverse_proxy host.docker.internal:3000
+}
+
+app.localhost {
+	reverse_proxy host.docker.internal:5173
 }

@@ -47,5 +47,5 @@ docker compose --env-file .env.development.local -f compose.dev.yaml up -d
 개발 과정에서 HMR을 위해 docker compose에 포함하지 않음.
 
 1. 프로젝트 루트에서 `pnpm run start:dev`
-2. 브라우저에서 `https:/api.localhost/health` 접속 시도
-3. 헬스 체크 제대로 되었으면 백엔드 reverse-proxy 정상 적용
+2. 백엔드: 브라우저에서 `https://api.localhost/health` 접속 시도
+3. 프론트엔드: 브라우저에서 `https://app.localhost` 접속 시도
