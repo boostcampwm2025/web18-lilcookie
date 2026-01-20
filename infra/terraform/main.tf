@@ -48,6 +48,38 @@ data "authentik_property_mapping_provider_scope" "offline_access" {
   name = "authentik default OAuth Mapping: OpenID 'offline_access'"
 }
 
+# --- Custom property mappings for team_id and roles ---
+
+resource "authentik_property_mapping_provider_scope" "team_id" {
+  name       = "teamstash-team-id"
+  scope_name = "team_id"
+  expression = "return { 'team_id': user.team_id if user.team_id else None }"
+}
+
+resource "authentik_property_mapping_provider_scope" "roles" {
+  name       = "teamstash-roles"
+  scope_name = "roles"
+  expression = "return { 'roles': user.roles if user.roles else [] }"
+}
+
+resource "authentik_property_mapping_provider_scope" "links_read" {
+  name       = "teamstash-links-read"
+  scope_name = "links:read"
+  expression = "return {}"
+}
+
+resource "authentik_property_mapping_provider_scope" "links_write" {
+  name       = "teamstash-links-write"
+  scope_name = "links:write"
+  expression = "return {}"
+}
+
+resource "authentik_property_mapping_provider_scope" "ai_use" {
+  name       = "teamstash-ai-use"
+  scope_name = "ai:use"
+  expression = "return {}"
+}
+
 # --- OAuth2 / OIDC Provider ---
 
 resource "authentik_provider_oauth2" "teamstash" {
@@ -75,7 +107,11 @@ resource "authentik_provider_oauth2" "teamstash" {
     data.authentik_property_mapping_provider_scope.openid.id,
     data.authentik_property_mapping_provider_scope.profile.id,
     data.authentik_property_mapping_provider_scope.email.id,
-    data.authentik_property_mapping_provider_scope.offline_access.id
+    data.authentik_property_mapping_provider_scope.offline_access.id,
+    authentik_property_mapping_provider_scope.team_id.id,
+    authentik_property_mapping_provider_scope.roles.id,
+    authentik_property_mapping_provider_scope.links_read.id,
+    authentik_property_mapping_provider_scope.links_write.id
   ]
 
   sub_mode = "hashed_user_id"
