@@ -6,7 +6,7 @@ import { LinksModule } from "./links/links.module";
 import { AiModule } from "./ai/ai.module";
 import { DatabaseModule } from "./database/database.module";
 import { FoldersModule } from "./folders/folders.module";
-import { AuthModule } from "./auth/auth.module";
+import { OidcModule } from "./oidc/oidc.module";
 
 @Module({
   imports: [
@@ -17,7 +17,7 @@ import { AuthModule } from "./auth/auth.module";
     LinksModule,
     AiModule,
     FoldersModule,
-    AuthModule,
+    OidcModule,
   ],
 })
 export class AppModule {}
