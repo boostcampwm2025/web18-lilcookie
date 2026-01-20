@@ -25,12 +25,19 @@
 
 ### 개발 서버 실행 방법
 
-
-
-Authentik 실행 명령
+## 개발용 인프라 Docker Compose
 
 Project root에 .env.development.local 작성
 
 ```
 docker compose --env-file .env.development.local -f compose.dev.yaml up -d
 ```
+
+## Terraform
+
+1. [Terraform 설치](https://developer.hashicorp.com/terraform/install)
+2. 개발용 인프라 정상 동작 확인 (https://auth.localhost 연결 시 Authentik 정상 표시되는지 확인)
+3. `cd infra/terraform`
+4. `terraform init` : terraform 초기화
+5. `terraform plan` : 어떤 작업을 실행할 것인지 미리 확인
+6. `terraform apply` : 작업 반영 (yes 타이핑 필요)
