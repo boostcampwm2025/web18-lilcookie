@@ -11,7 +11,7 @@ terraform {
 provider "authentik" {
   url      = "https://auth.localhost"
   # Token 분리하는 방법 조사하여 적용 필요
-  # root .env에도 동일 토큰 포함
+  # root .env.development.local에도 동일 토큰 포함
   token    = "jhb6XJIm6MZdN1d699RIL9Tqk6ARS41PswgCPulBfIM="
   insecure = true
 }
