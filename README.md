@@ -41,3 +41,11 @@ docker compose --env-file .env.development.local -f compose.dev.yaml up -d
 4. `terraform init` : terraform 초기화
 5. `terraform plan` : 어떤 작업을 실행할 것인지 미리 확인
 6. `terraform apply` : 작업 반영 (yes 타이핑 필요)
+
+## Frontend, backend
+
+개발 과정에서 HMR을 위해 docker compose에 포함하지 않음.
+
+1. 프로젝트 루트에서 `pnpm run start:dev`
+2. 브라우저에서 `https:/api.localhost/health` 접속 시도
+3. 헬스 체크 제대로 되었으면 백엔드 reverse-proxy 정상 적용

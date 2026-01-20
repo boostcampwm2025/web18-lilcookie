@@ -1,3 +1,7 @@
 auth.localhost {
 	reverse_proxy authentik-server:9000
 }
+
+api.localhost {
+	reverse_proxy host.docker.internal:3000
+}
