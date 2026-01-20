@@ -3,7 +3,160 @@ export default defineBackground(() => {
   const FE_BASE_URL = import.meta.env.VITE_FE_BASE_URL;
   const POST_URL = BASE_URL + "/api/links";
 
+  // Authentik OAuth 설정
+  const AUTHENTIK_URL = import.meta.env.VITE_AUTHENTIK_URL;
+  const CLIENT_ID = import.meta.env.VITE_AUTHENTIK_CLIENT_ID;
+  const REDIRECT_URI = chrome.identity.getRedirectURL();
+  const SCOPES = "openid profile email offline_access";
+
   const MAX_AI_INPUT_CHARACTER_COUNT = 300;
+
+  // OAuth 인증 관련
+
+  // 토큰 저장 타입
+  interface AuthTokens {
+    access_token: string;
+    refresh_token: string;
+    expires_at: number; // timestamp
+  }
+
+  // 로그인 함수 - OAuth 플로우 시작
+  async function login(): Promise<{ success: boolean; error?: string }> {
+    try {
+      // 1. 인가 url 생성
+      const authUrl =
+        `${AUTHENTIK_URL}/application/o/authorize/?` +
+        `client_id=${CLIENT_ID}&` +
+        `response_type=code&` +
+        `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
+        `scope=${encodeURIComponent(SCOPES)}`;
+
+      // 2. 브라우저 팝업으로 로그인
+      const responseUrl = await chrome.identity.launchWebAuthFlow({
+        url: authUrl,
+        interactive: true, // 사용자 상호작용 필요
+      });
+
+      if (!responseUrl) {
+        return { success: false, error: "로그인이 취소되었습니다." };
+      }
+
+      // 3. 리다이렉트 url에서 code 추출
+      const url = new URL(responseUrl);
+      const code = url.searchParams.get("code");
+
+      if (!code) {
+        return { success: false, error: "인가 코드를 받지 못했습니다." };
+      }
+
+      // 4. code -> token 교환
+      const tokens = await exchangeCodeForToken(code);
+
+      // 5. storage에 토큰 저장
+      await chrome.storage.local.set({
+        auth_tokens: tokens,
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error("Login Error:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "로그인 실패",
+      };
+    }
+  }
+
+  // code -> token 교환 함수
+  async function exchangeCodeForToken(code: string): Promise<AuthTokens> {
+    const response = await fetch(`${AUTHENTIK_URL}/application/o/token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        client_id: CLIENT_ID,
+        code: code,
+        redirect_uri: REDIRECT_URI,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error("토큰 교환 실패");
+    }
+
+    const data = await response.json();
+
+    return {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_at: Date.now() + data.expires_in * 1000,
+    };
+  }
+
+  // 현재 인증 상태 확인
+  async function getAuthState(): Promise<{
+    isLoggedIn: boolean;
+    accessToken?: string;
+  }> {
+    const { auth_tokens } = (await chrome.storage.local.get("auth_tokens")) as {
+      auth_tokens?: AuthTokens;
+    };
+
+    if (!auth_tokens) {
+      return { isLoggedIn: false };
+    }
+
+    // 토큰 만료 체크
+    if (auth_tokens.expires_at < Date.now()) {
+      // 만료됐으면 refresh 시도
+      if (auth_tokens.refresh_token) {
+        try {
+          const newTokens = await refreshAccessToken(auth_tokens.refresh_token);
+          await chrome.storage.local.set({ auth_tokens: newTokens });
+          return { isLoggedIn: true, accessToken: newTokens.access_token };
+        } catch {
+          // refresh 실패
+          await logout();
+          return { isLoggedIn: false };
+        }
+      }
+      return { isLoggedIn: false };
+    }
+    return { isLoggedIn: true, accessToken: auth_tokens.access_token };
+  }
+
+  // refresh token으로 access token 갱신
+  async function refreshAccessToken(refreshToken: string): Promise<AuthTokens> {
+    const response = await fetch(`${AUTHENTIK_URL}/application/o/token/`, {
+      method: "POST",
+      headers: {
+        "Content-type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        client_id: CLIENT_ID,
+        refresh_token: refreshToken,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("토큰 갱신 실패");
+    }
+
+    const data = await response.json();
+
+    return {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_at: Date.now() + data.expires_in * 1000,
+    };
+  }
+
+  // 로그아웃
+  async function logout(): Promise<void> {
+    await chrome.storage.local.remove("auth_tokens");
+  }
 
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "saveLink") {
@@ -13,8 +166,17 @@ export default defineBackground(() => {
       summarizeContent(request.content, request.aiPassword)
         .then(sendResponse)
         .catch((error) =>
-          sendResponse({ success: false, error: error.message })
+          sendResponse({ success: false, error: error.message }),
         );
+      return true;
+    } else if (request.action === "login") {
+      login().then(sendResponse);
+      return true;
+    } else if (request.action === "logout") {
+      logout().then(() => sendResponse({ success: true }));
+      return true;
+    } else if (request.action === "getAuthState") {
+      getAuthState().then(sendResponse);
       return true;
     }
   });
@@ -119,7 +281,7 @@ export default defineBackground(() => {
         const json = await response.json();
         const links = json.data || [];
         const newLinks = links.filter(
-          (link: any) => link.createdBy !== camperId
+          (link: any) => link.createdBy !== camperId,
         );
 
         if (Array.isArray(newLinks) && newLinks.length > 0) {
