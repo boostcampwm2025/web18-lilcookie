@@ -437,9 +437,14 @@ function App() {
             <p className="tagline">링크를 빠르게 저장하세요</p>
           </div>
         </div>
-        <a href="#" onClick={handleSettingsClick} className="settings-link">
-          사용자 설정
-        </a>
+        <div>
+          <a href="#" onClick={handleSettingsClick} className="settings-link">
+            사용자 설정
+          </a>
+          <button className="settings-link" onClick={handleLogout}>
+            로그아웃
+          </button>
+        </div>
       </header>
 
       {/* Page Info Card */}
