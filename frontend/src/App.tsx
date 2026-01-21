@@ -3,7 +3,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
-import Signup from "./pages/Signup";
+import AuthCallback from "./pages/AuthCallback";
 
 function App() {
   return (
@@ -15,7 +15,7 @@ function App() {
 
           {/* 인증 관련 라우트 */}
           <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
           {/* 보호된 라우트 - 대시보드 */}
           <Route

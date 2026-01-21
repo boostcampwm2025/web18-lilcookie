@@ -20,6 +20,7 @@ export default defineConfig({
       "alarms",
       "notifications",
       "scripting",
+      "identity",
     ],
     host_permissions: [],
     icons: {
