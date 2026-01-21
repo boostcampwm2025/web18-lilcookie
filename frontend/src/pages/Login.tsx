@@ -10,7 +10,9 @@ const Login = () => {
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       const teamId = getTeamIdFromToken();
-      navigate(`/${teamId || "web01"}`, { replace: true });
+      if (teamId) {
+        navigate(`/${teamId}`, { replace: true });
+      }
     }
   }, [isAuthenticated, isLoading, navigate]);
 

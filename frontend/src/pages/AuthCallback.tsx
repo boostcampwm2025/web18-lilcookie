@@ -55,7 +55,10 @@ const AuthCallback = () => {
         });
 
         const teamId = getTeamIdFromToken(tokenResponse.access_token);
-        navigate(`/${teamId || "web01"}`, { replace: true });
+        if (!teamId) {
+          throw new Error("토큰에서 팀 정보를 찾을 수 없습니다.");
+        }
+        navigate(`/${teamId}`, { replace: true });
       } catch (error) {
         setStatus("error");
         setErrorMessage(
