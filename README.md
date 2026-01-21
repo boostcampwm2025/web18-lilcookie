@@ -21,3 +21,31 @@
 | J123\_박준호                                                    | J193\_이수진                                                     | J204\_이윤표                                                    | J243\_정아현                                                    |
 | --------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- |
 | ![박준호](https://avatars.githubusercontent.com/u/32813311?v=4) | ![이수진](https://avatars.githubusercontent.com/u/182627132?v=4) | ![이윤표](https://avatars.githubusercontent.com/u/30365108?v=4) | ![정아현](https://avatars.githubusercontent.com/u/97656991?v=4) |
+
+
+### 개발 서버 실행 방법
+
+## 개발용 인프라 Docker Compose
+
+Project root에 .env.development.local 작성
+
+```
+docker compose --env-file .env.development.local -f compose.dev.yaml up -d
+```
+
+## Terraform
+
+1. [Terraform 설치](https://developer.hashicorp.com/terraform/install)
+2. 개발용 인프라 정상 동작 확인 (https://auth.localhost 연결 시 Authentik 정상 표시되는지 확인)
+3. `cd infra/terraform`
+4. `terraform init` : terraform 초기화
+5. `terraform plan` : 어떤 작업을 실행할 것인지 미리 확인
+6. `terraform apply` : 작업 반영 (yes 타이핑 필요)
+
+## Frontend, backend
+
+개발 과정에서 HMR을 위해 docker compose에 포함하지 않음.
+
+1. 프로젝트 루트에서 `pnpm run start:dev`
+2. 백엔드: 브라우저에서 `https://api.localhost/health` 접속 시도
+3. 프론트엔드: 브라우저에서 `https://app.localhost` 접속 시도
