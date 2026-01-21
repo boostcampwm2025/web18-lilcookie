@@ -98,7 +98,7 @@ resource "authentik_user" "teamstash_user" {
   username  = "testuser"
   name      = "Test User"
   email     = "testuser@example.com"
-  password  = "vYciAw0a+AA+6dbJPJQFRybB9dfJNnEmZbk69qOPvgU="
+  password  = "GVggKD7BDY43bRCa36GNfEA9dtNWtH"
   is_active = true
 
   # Arbitrary JSON attributes
