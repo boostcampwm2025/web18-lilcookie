@@ -59,7 +59,7 @@ resource "authentik_property_mapping_provider_scope" "team_id" {
 resource "authentik_property_mapping_provider_scope" "roles" {
   name       = "teamstash-roles"
   scope_name = "roles"
-  expression = "return { 'roles': user.roles if user.roles else [] }"
+  expression = "return { 'roles': user.attributes.get('roles', []) }"
 }
 
 resource "authentik_property_mapping_provider_scope" "links_read" {
@@ -104,6 +104,7 @@ resource "authentik_user" "teamstash_user" {
   # Arbitrary JSON attributes
   attributes = jsonencode({
     team_id = "web18"
+    roles   = ["admin"]
   })
 }
 
