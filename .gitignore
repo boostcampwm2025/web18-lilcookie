@@ -257,3 +257,7 @@ backend/data/
 infra/authentik/data
 infra/authentik/certs
 infra/authentik/custom-templates
+
+# Caddy data directory
+infra/caddy/data
+infra/caddy/config
