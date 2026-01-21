@@ -96,6 +96,9 @@ export async function exchangeCodeForToken(
 // state 검증(CSRF 방지)
 export function verifyState(receivedState: string): boolean {
   const { state: storedState } = getStoredOAuthParams();
+  if (!storedState) {
+    return false;
+  }
   return storedState === receivedState;
 }
 
@@ -265,7 +268,7 @@ export async function getValidAccessToken(): Promise<string | null> {
 }
 
 // 저장된 모든 토큰 삭제 (로그아웃 시)
-export function clearAccessToken(): void {
+export function clearTokens(): void {
   deleteCookie(COOKIE_NAMES.ACCESS_TOKEN);
   deleteCookie(COOKIE_NAMES.REFRESH_TOKEN);
   deleteCookie(COOKIE_NAMES.EXPIRES_AT);

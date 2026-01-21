@@ -9,7 +9,7 @@ import {
 import type { User } from "../types";
 import {
   startAuthentikLogin,
-  clearAccessToken,
+  clearTokens,
   getStoredAccessToken,
   getValidAccessToken,
   getUserInfo,
@@ -79,12 +79,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           });
         } catch {
           // userinfo 조회 실패 - 토큰 삭제 후 재로그인 필요
-          clearAccessToken();
+          clearTokens();
           setUser(null);
         }
       } else {
         // 토큰 갱신 실패 - 재로그인 필요
-        clearAccessToken();
+        clearTokens();
         setUser(null);
       }
     } catch {
@@ -102,7 +102,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // 로그아웃 (Authentik 세션도 함께 종료)
   const logout = async () => {
     // OAuth 토큰 삭제
-    clearAccessToken();
+    clearTokens();
 
     // Authentik 세션 종료 (로그인 페이지로 리다이렉트)
     window.location.href = getAuthentikLogoutUrl();
