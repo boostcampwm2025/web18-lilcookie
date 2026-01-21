@@ -63,12 +63,7 @@ export class OidcService {
       return jose.importJWK(key);
     }
 
-    const response = await fetch(this.jwksUrl);
-    if (!response.ok) {
-      throw new UnauthorizedException("Failed to fetch JWKS");
-    }
-
-    const jwks = (await response.json()) as JWKSResponse;
+    const jwks = await this.fetchJwksWithExponentialBackoff(this.jwksUrl);
     this.cachedJwks = jwks;
     this.cacheExpiry = now + this.CACHE_DURATION;
 
@@ -90,5 +85,41 @@ export class OidcService {
     }
 
     return result.data;
+  }
+
+  private async fetchJwksWithExponentialBackoff(
+    url: string,
+    maxRetries = 3,
+    baseDelayMs = 500,
+    timeoutMs = 5000,
+  ): Promise<JWKSResponse> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId); // Clear timeout if request succeeds
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return (await response.json()) as JWKSResponse;
+      } catch (error) {
+        clearTimeout(timeoutId); // Clear timeout on error
+
+        const isLastAttempt = attempt === maxRetries;
+        const errorMessage = error instanceof Error ? error.message : String(error);
+
+        if (isLastAttempt) {
+          throw new UnauthorizedException(`Failed to fetch JWKS after ${maxRetries} attempts: ${errorMessage}`);
+        }
+
+        // Exponential backoff: delay = baseDelay * 2^(attempt-1)
+        const delay = baseDelayMs * Math.pow(2, attempt - 1);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+    throw new UnauthorizedException("Unexpected error in JWKS fetch retry");
   }
 }
