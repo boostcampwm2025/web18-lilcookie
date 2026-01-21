@@ -10,6 +10,7 @@ import {
   HttpCode,
   Inject,
   type LoggerService,
+  UseGuards,
 } from "@nestjs/common";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { LinksService } from "./links.service";
@@ -18,8 +19,12 @@ import { CreateLinkRequestDto } from "./dto/create-link.request.dto";
 import { CreateLinkResponseDto } from "./dto/create-link.response.dto";
 import { LinkResponseDto } from "./dto/link.response.dto";
 import { GetLinksQueryDto } from "./dto/get-links-query.dto";
+import { OidcGuard } from "../oidc/guards/oidc.guard";
+import { TeamGuard } from "../oidc/guards/team.guard";
+import { RequireScopes } from "../oidc/guards/scopes.decorator";
 
 @Controller("links")
+@UseGuards(OidcGuard, TeamGuard)
 export class LinksController {
   constructor(
     private readonly linksService: LinksService,
@@ -28,6 +33,7 @@ export class LinksController {
 
   // 새로운 Link 생성
   @Post()
+  @RequireScopes("links:write")
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() requestDto: CreateLinkRequestDto) {
     this.logger.log(`POST /api/links - 링크 생성 요청: ${requestDto.title}`);
@@ -44,6 +50,7 @@ export class LinksController {
 
   // 목록 조회 (전체 또는 조건)
   @Get()
+  @RequireScopes("links:read")
   async findAll(@Query() requestDto: GetLinksQueryDto) {
     this.logger.log(
       `GET /api/links - 링크 목록 조회: teamId=${requestDto.teamId}, tags=${requestDto.tags}, createdAfter=${requestDto.createdAfter}`,
@@ -61,6 +68,7 @@ export class LinksController {
 
   // 단건 조회
   @Get(":linkId")
+  @RequireScopes("links:read")
   async findOne(@Param("linkId") linkId: string) {
     this.logger.log(`GET /api/links/${linkId} - 링크 단건 조회`);
 
@@ -76,6 +84,7 @@ export class LinksController {
 
   // 단건 삭제
   @Delete(":linkId")
+  @RequireScopes("links:write")
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param("linkId") linkId: string) {
     this.logger.log(`DELETE /api/links/${linkId} - 링크 단건 삭제`);
