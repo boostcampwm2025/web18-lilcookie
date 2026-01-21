@@ -24,8 +24,15 @@ export default defineBackground(() => {
     try {
       // 0.1. state 생성
       const state = crypto.randomUUID();
-      // 0.2. state를 storage에 임시 저장
-      await chrome.storage.local.set({ oauth_state: state });
+      // 0.2 pkce: code_verifier, code_challenge 생성
+      const codeVerifier = generateCodeVerifier();
+      const codeChallenge = await generateCodeChallenge(codeVerifier);
+
+      // 0.3. state와 code_verifier를 storage에 임시 저장
+      await chrome.storage.local.set({
+        oauth_state: state,
+        oauth_code_verifier: codeVerifier,
+      });
 
       // 1. 인가 url 생성
       const authUrl =
@@ -34,7 +41,9 @@ export default defineBackground(() => {
         `response_type=code&` +
         `redirect_uri=${encodeURIComponent(chrome.identity.getRedirectURL())}&` +
         `scope=${encodeURIComponent(SCOPES)}&` +
-        `state=${state}`;
+        `state=${state}&` +
+        `code_challenge=${codeChallenge}&` +
+        `code_challenge_method=S256`;
 
       // 2. 브라우저 팝업으로 로그인
       const responseUrl = await chrome.identity.launchWebAuthFlow({
@@ -52,7 +61,7 @@ export default defineBackground(() => {
       // 3-1. 응답에서 state 검증
       const returnedState = url.searchParams.get("state");
       const { oauth_state: savedState } =
-        await chrome.storage.local.get("ouath_state");
+        await chrome.storage.local.get("oauth_state");
       if (returnedState !== savedState) {
         return { success: false, error: "보안 검증 실패(state mismatch)" };
       }
@@ -74,6 +83,9 @@ export default defineBackground(() => {
         auth_tokens: tokens,
       });
 
+      // 6. 임시저장된 pkcd 데이터 정리
+      await chrome.storage.local.remove("oauth_code_verifier");
+
       return { success: true };
     } catch (error) {
       console.error("Login Error:", error);
@@ -86,6 +98,15 @@ export default defineBackground(() => {
 
   // code -> token 교환 함수
   async function exchangeCodeForToken(code: string): Promise<AuthTokens> {
+    // 저장된 code_verifier 가져오기
+    const { oauth_code_verifier } = await chrome.storage.local.get(
+      "oauth_code_verifier",
+    );
+
+    if (!oauth_code_verifier || typeof oauth_code_verifier !== "string") {
+      throw new Error("code_verifier가 없습니다.");
+    }
+
     const response = await fetch(`${AUTHENTIK_URL}/application/o/token/`, {
       method: "POST",
       headers: {
@@ -96,6 +117,7 @@ export default defineBackground(() => {
         client_id: CLIENT_ID,
         code: code,
         redirect_uri: chrome.identity.getRedirectURL(),
+        code_verifier: oauth_code_verifier,
       }),
     });
     if (!response.ok) {
@@ -391,3 +413,22 @@ export default defineBackground(() => {
     }
   }
 });
+
+// pkce 관련 헬퍼 함수들
+function generateCodeVerifier(): string {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return base64UrlEncode(array);
+}
+
+function base64UrlEncode(buffer: Uint8Array): string {
+  const base64 = btoa(String.fromCharCode(...buffer));
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function generateCodeChallenge(verifier: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(verifier);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return base64UrlEncode(new Uint8Array(hash));
+}
