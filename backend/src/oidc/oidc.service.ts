@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as jose from "jose";
-import type { OidcAccessTokenPayload } from "./interfaces/oidc.interface";
+import { OidcAccessTokenPayloadSchema, type OidcAccessTokenPayload } from "./interfaces/oidc.interface";
 
 type JWKWithKid = jose.JWK & { kid: string };
 
@@ -82,47 +82,13 @@ export class OidcService {
   }
 
   private validatePayload(payload: jose.JWTPayload): OidcAccessTokenPayload {
-    // Validate required standard claims (already verified by jwtVerify, but type-check here)
-    if (!payload.sub || typeof payload.sub !== "string") {
-      throw new UnauthorizedException("Invalid token: missing sub");
-    }
-    if (!payload.iss || typeof payload.iss !== "string") {
-      throw new UnauthorizedException("Invalid token: missing iss");
-    }
-    if (!payload.aud || (typeof payload.aud !== "string" && !Array.isArray(payload.aud))) {
-      throw new UnauthorizedException("Invalid token: missing aud");
-    }
-    if (!payload.exp || typeof payload.exp !== "number") {
-      throw new UnauthorizedException("Invalid token: missing exp");
-    }
-    if (!payload.iat || typeof payload.iat !== "number") {
-      throw new UnauthorizedException("Invalid token: missing iat");
+    const result = OidcAccessTokenPayloadSchema.safeParse(payload);
+
+    if (!result.success) {
+      const errorMessage = result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(", ");
+      throw new UnauthorizedException(`Invalid token: ${errorMessage}`);
     }
 
-    // Validate custom claims
-    if (!payload.team_id || typeof payload.team_id !== "string") {
-      throw new UnauthorizedException("Invalid token: missing team_id");
-    }
-    if (!payload.roles || !Array.isArray(payload.roles) || !payload.roles.every((role) => typeof role === "string")) {
-      throw new UnauthorizedException("Invalid token: missing or invalid roles");
-    }
-    if (!payload.scope || typeof payload.scope !== "string") {
-      throw new UnauthorizedException("Invalid token: missing scope");
-    }
-
-    // After validation, we can safely assert types
-    return {
-      sub: payload.sub,
-      iss: payload.iss,
-      aud: Array.isArray(payload.aud) ? payload.aud[0] : payload.aud,
-      exp: payload.exp,
-      iat: payload.iat,
-      jti: typeof payload.jti === "string" ? payload.jti : undefined,
-      team_id: payload.team_id,
-      roles: payload.roles,
-      scope: payload.scope,
-      email: typeof payload.email === "string" ? payload.email : undefined,
-      name: typeof payload.name === "string" ? payload.name : undefined,
-    };
+    return result.data;
   }
 }
