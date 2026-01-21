@@ -16,6 +16,7 @@ export class OidcService {
   private audience: string;
   private cachedJwks: JWKSResponse | null;
   private cacheExpiry: number;
+  private jwksFetchPromise: Promise<JWKSResponse> | null; // Cache the fetch promise
   private readonly CACHE_DURATION = 300000;
 
   constructor(private readonly configService: ConfigService) {
@@ -24,6 +25,7 @@ export class OidcService {
     this.audience = this.configService.getOrThrow<string>("AUTHENTIK_AUDIENCE");
     this.cacheExpiry = 0;
     this.cachedJwks = null;
+    this.jwksFetchPromise = null;
   }
 
   async validateToken(token: string): Promise<OidcAccessTokenPayload> {
@@ -66,17 +68,34 @@ export class OidcService {
       return jose.importJWK(key);
     }
 
-    const jwks = await this.fetchJwksWithExponentialBackoff(this.jwksUrl);
-    this.cachedJwks = jwks;
-    this.cacheExpiry = now + this.CACHE_DURATION;
-
-    const key = jwks.keys.find((k) => k.kid === kid);
-
-    if (!key) {
-      throw new UnauthorizedException("Invalid token: key not found");
+    // If a fetch is already in progress, wait for it
+    if (this.jwksFetchPromise) {
+      const jwks = await this.jwksFetchPromise;
+      const key = jwks.keys.find((k) => k.kid === kid);
+      if (!key) {
+        throw new UnauthorizedException("Invalid token: key not found");
+      }
+      return jose.importJWK(key);
     }
 
-    return jose.importJWK(key);
+    // Start a new fetch and cache the promise
+    this.jwksFetchPromise = this.fetchJwksWithExponentialBackoff(this.jwksUrl);
+
+    try {
+      const jwks = await this.jwksFetchPromise;
+      this.cachedJwks = jwks;
+      this.cacheExpiry = now + this.CACHE_DURATION;
+      this.jwksFetchPromise = null; // Clear the promise after success
+
+      const key = jwks.keys.find((k) => k.kid === kid);
+      if (!key) {
+        throw new UnauthorizedException("Invalid token: key not found");
+      }
+      return jose.importJWK(key);
+    } catch (error) {
+      this.jwksFetchPromise = null; // Clear on error too
+      throw error;
+    }
   }
 
   private validatePayload(payload: jose.JWTPayload): OidcAccessTokenPayload {
