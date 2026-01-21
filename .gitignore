@@ -209,3 +209,6 @@ $RECYCLE.BIN/
 
 # Backend data directory
 backend/data/
+
+# Authentik local data
+authentik/

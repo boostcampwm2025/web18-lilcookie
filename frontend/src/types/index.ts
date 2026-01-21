@@ -35,28 +35,3 @@ export interface User {
   email: string;
   nickname?: string;
 }
-
-// 회원가입 요청 타입
-export interface SignupRequest {
-  email: string;
-  password: string;
-  nickname: string;
-  agreements: {
-    termsOfService: boolean;
-    privacyPolicy: boolean;
-    marketingConsent: boolean;
-  };
-}
-
-// 로그인 요청 타입
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-// 인증 응답 타입
-export interface AuthResponse {
-  uuid: string;
-  email: string;
-  nickname?: string;
-}
