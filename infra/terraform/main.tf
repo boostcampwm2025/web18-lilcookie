@@ -125,7 +125,7 @@ resource "authentik_provider_oauth2" "teamstash" {
     # Just for Terraform testing purpose
     {
       matching_mode = "strict",
-      url           = "https://app.localhost/callback",
+      url           = "https://app.localhost/auth/callback",
     },
     {
       matching_mode = "strict",
