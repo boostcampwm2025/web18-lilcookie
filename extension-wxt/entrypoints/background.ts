@@ -1,7 +1,7 @@
 export default defineBackground(() => {
   const BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const FE_BASE_URL = import.meta.env.VITE_FE_BASE_URL;
-  const POST_URL = BASE_URL + "/api/links";
+  const POST_URL = BASE_URL + "/links";
 
   // Authentik OAuth 설정
   const AUTHENTIK_URL = import.meta.env.VITE_AUTHENTIK_URL;
@@ -228,7 +228,7 @@ export default defineBackground(() => {
         return { success: false, error: "로그인이 필요합니다" };
       }
 
-      const response = await fetch(BASE_URL + "/api/ai/summary", {
+      const response = await fetch(BASE_URL + "/ai/summary", {
         method: "POST",
         body: JSON.stringify({
           content: content.slice(0, MAX_AI_INPUT_CHARACTER_COUNT),
