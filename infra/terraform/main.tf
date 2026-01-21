@@ -114,7 +114,6 @@ resource "authentik_provider_oauth2" "teamstash" {
   name = "teamstash-oauth-provider"
 
   client_id     = "teamstash-client"
-  client_secret = "teamstash-secret"
   client_type   = "public"
 
   authorization_flow = data.authentik_flow.default_authorization.id
