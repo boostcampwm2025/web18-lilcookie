@@ -1,15 +1,16 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { getTeamIdFromToken } from "../services/authentikAuth";
 
 const Login = () => {
   const { loginWithAuthentik, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
-  // 이미 로그인되어 있으면 대시보드로 리다이렉트
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      navigate("/web01", { replace: true });
+      const teamId = getTeamIdFromToken();
+      navigate(`/${teamId || "web01"}`, { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate]);
 
