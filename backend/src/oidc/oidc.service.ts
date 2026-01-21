@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as jose from "jose";
-import type { OidcTokenPayload } from "./interfaces/oidc.interface";
+import type { OidcAccessTokenPayload } from "./interfaces/oidc.interface";
 
 type JWKWithKid = jose.JWK & { kid: string };
 
@@ -26,7 +26,7 @@ export class OidcService {
     this.cachedJwks = null;
   }
 
-  async validateToken(token: string): Promise<OidcTokenPayload> {
+  async validateToken(token: string): Promise<OidcAccessTokenPayload> {
     try {
       const header = jose.decodeProtectedHeader(token);
 
@@ -81,7 +81,7 @@ export class OidcService {
     return jose.importJWK(key);
   }
 
-  private validatePayload(payload: jose.JWTPayload): OidcTokenPayload {
+  private validatePayload(payload: jose.JWTPayload): OidcAccessTokenPayload {
     // Validate required standard claims (already verified by jwtVerify, but type-check here)
     if (!payload.sub || typeof payload.sub !== "string") {
       throw new UnauthorizedException("Invalid token: missing sub");

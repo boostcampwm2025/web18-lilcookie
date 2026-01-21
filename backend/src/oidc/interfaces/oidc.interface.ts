@@ -1,6 +1,6 @@
 import type { Request } from "express";
 
-export interface OidcTokenPayload {
+export interface OidcAccessTokenPayload {
   sub: string;
   iss: string;
   aud: string;
@@ -15,5 +15,5 @@ export interface OidcTokenPayload {
 }
 
 export interface AuthenticatedRequest extends Request {
-  user: OidcTokenPayload;
+  user: OidcAccessTokenPayload;
 }
