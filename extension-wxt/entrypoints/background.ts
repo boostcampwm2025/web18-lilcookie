@@ -22,13 +22,19 @@ export default defineBackground(() => {
   // 로그인 함수 - OAuth 플로우 시작
   async function login(): Promise<{ success: boolean; error?: string }> {
     try {
+      // 0.1. state 생성
+      const state = crypto.randomUUID();
+      // 0.2. state를 storage에 임시 저장
+      await chrome.storage.local.set({ oauth_state: state });
+
       // 1. 인가 url 생성
       const authUrl =
         `${AUTHENTIK_URL}/application/o/authorize/?` +
         `client_id=${CLIENT_ID}&` +
         `response_type=code&` +
         `redirect_uri=${encodeURIComponent(chrome.identity.getRedirectURL())}&` +
-        `scope=${encodeURIComponent(SCOPES)}`;
+        `scope=${encodeURIComponent(SCOPES)}&` +
+        `state=${state}`;
 
       // 2. 브라우저 팝업으로 로그인
       const responseUrl = await chrome.identity.launchWebAuthFlow({
@@ -42,6 +48,18 @@ export default defineBackground(() => {
 
       // 3. 리다이렉트 url에서 code 추출
       const url = new URL(responseUrl);
+
+      // 3-1. 응답에서 state 검증
+      const returnedState = url.searchParams.get("state");
+      const { oauth_state: savedState } =
+        await chrome.storage.local.get("ouath_state");
+      if (returnedState !== savedState) {
+        return { success: false, error: "보안 검증 실패(state mismatch)" };
+      }
+      // 3-1-1. 사용한 state 삭제
+      await chrome.storage.local.remove("oauth_state");
+
+      // 3-2. code 추출
       const code = url.searchParams.get("code");
 
       if (!code) {
