@@ -6,12 +6,17 @@ export class TeamGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const user = request.user;
-    const teamId = request.query.teamId;
+    const rawTeamId = request.query.teamId;
 
-    if (!teamId) {
+    if (Array.isArray(rawTeamId)) {
+      throw new ForbiddenException("Multiple teamId query parameters are not allowed");
+    }
+
+    if (typeof rawTeamId !== "string" || !rawTeamId) {
       throw new ForbiddenException("teamId query parameter is required");
     }
 
+    const teamId = rawTeamId;
     if (user.team_id !== teamId) {
       throw new ForbiddenException("You do not have access to this team");
     }
