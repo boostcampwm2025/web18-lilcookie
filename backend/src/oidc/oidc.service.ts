@@ -46,7 +46,10 @@ export class OidcService {
       if (error instanceof jose.errors.JOSEError) {
         throw new UnauthorizedException("Invalid token signature");
       }
-      throw error;
+      // Preserve original error context for better debugging
+      throw new UnauthorizedException(
+        `Token validation failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
