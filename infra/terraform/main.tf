@@ -19,7 +19,7 @@ provider "authentik" {
 # --- Look up default objects Authentik already provides ---
 
 data "authentik_flow" "default_authorization" {
-  slug = "default-provider-authorization-explicit-consent"
+  slug = "default-provider-authorization-implicit-consent"
 }
 
 data "authentik_certificate_key_pair" "default" {
@@ -53,7 +53,7 @@ data "authentik_property_mapping_provider_scope" "offline_access" {
 resource "authentik_property_mapping_provider_scope" "team_id" {
   name       = "teamstash-team-id"
   scope_name = "team_id"
-  expression = "return { 'team_id': user.team_id if user.team_id else None }"
+  expression = "return {\"team_id\": user.attributes.get(\"team_id\")}"
 }
 
 resource "authentik_property_mapping_provider_scope" "roles" {
@@ -78,6 +78,33 @@ resource "authentik_property_mapping_provider_scope" "ai_use" {
   name       = "teamstash-ai-use"
   scope_name = "ai:use"
   expression = "return {}"
+}
+
+resource "authentik_property_mapping_provider_scope" "folders_read" {
+  name       = "teamstash-folders-read"
+  scope_name = "folders:read"
+  expression = "return {}"
+}
+
+resource "authentik_property_mapping_provider_scope" "folders_write" {
+  name       = "teamstash-folders-write"
+  scope_name = "folders:write"
+  expression = "return {}"
+}
+
+# --- test user ---
+
+resource "authentik_user" "teamstash_user" {
+  username  = "testuser"
+  name      = "Test User"
+  email     = "testuser@example.com"
+  password  = "vYciAw0a+AA+6dbJPJQFRybB9dfJNnEmZbk69qOPvgU="
+  is_active = true
+
+  # Arbitrary JSON attributes
+  attributes = jsonencode({
+    team_id = "web18"
+  })
 }
 
 # --- OAuth2 / OIDC Provider ---
@@ -114,7 +141,10 @@ resource "authentik_provider_oauth2" "teamstash" {
     authentik_property_mapping_provider_scope.team_id.id,
     authentik_property_mapping_provider_scope.roles.id,
     authentik_property_mapping_provider_scope.links_read.id,
-    authentik_property_mapping_provider_scope.links_write.id
+    authentik_property_mapping_provider_scope.links_write.id,
+    authentik_property_mapping_provider_scope.ai_use.id,
+    authentik_property_mapping_provider_scope.folders_read.id,
+    authentik_property_mapping_provider_scope.folders_write.id
   ]
 
   sub_mode = "hashed_user_id"
