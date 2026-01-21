@@ -222,6 +222,12 @@ export default defineBackground(() => {
 
   async function summarizeContent(content: string, aiPassword: string) {
     try {
+      // 인증 상태 확인 및 토큰 가져오기
+      const authState = await getAuthState();
+      if (!authState.isLoggedIn || !authState.accessToken) {
+        return { success: false, error: "로그인이 필요합니다" };
+      }
+
       const response = await fetch(BASE_URL + "/api/ai/summary", {
         method: "POST",
         body: JSON.stringify({
@@ -230,6 +236,7 @@ export default defineBackground(() => {
         }),
         headers: {
           "Content-type": "application/json; charset=UTF-8",
+          Authorization: `Bearer ${authState.accessToken}`,
         },
       });
 
@@ -260,7 +267,7 @@ export default defineBackground(() => {
         method: "POST",
         body: JSON.stringify(formData),
         headers: {
-          "Content-type": "application/json; charset=UTF-8",
+          "Content-Type": "application/json; charset=UTF-8",
           Authorization: `Bearer ${authState.accessToken}`,
         },
       });
