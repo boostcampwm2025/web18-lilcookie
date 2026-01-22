@@ -11,21 +11,19 @@ interface LinkCardProps {
 const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
   const [isVisited, setIsVisited] = useState(() => {
     const visitedLinks = localStorage.getItem("visited_links");
-    return visitedLinks
-      ? JSON.parse(visitedLinks).includes(link.linkId)
-      : false;
+    return visitedLinks ? JSON.parse(visitedLinks).includes(link.uuid) : false;
   });
 
   const handleLinkClick = () => {
     if (!isVisited) {
       setIsVisited(true);
       const visitedLinks = JSON.parse(
-        localStorage.getItem("visited_links") || "[]"
+        localStorage.getItem("visited_links") || "[]",
       );
-      if (!visitedLinks.includes(link.linkId)) {
+      if (!visitedLinks.includes(link.uuid)) {
         localStorage.setItem(
           "visited_links",
-          JSON.stringify([...visitedLinks, link.linkId])
+          JSON.stringify([...visitedLinks, link.uuid]),
         );
       }
     }
@@ -39,15 +37,16 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
   };
 
   // 날짜 포맷팅
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+  const formatDate = (dateInput: Date | string) => {
+    const date =
+      typeof dateInput === "string" ? new Date(dateInput) : dateInput;
     const now = new Date();
 
     // Get calendar dates (ignoring time)
     const dateOnly = new Date(
       date.getFullYear(),
       date.getMonth(),
-      date.getDate()
+      date.getDate(),
     );
     const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -122,12 +121,12 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-linear-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-sm">
                 <span className="text-white text-sm font-bold">
-                  {link.createdBy.charAt(0).toUpperCase()}
+                  {String(link.createdBy).charAt(0).toUpperCase()}
                 </span>
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-gray-800">
-                  {link.createdBy}
+                  사용자 {link.createdBy}
                 </span>
                 <span className="text-xs text-gray-500">
                   {formatDate(link.createdAt)}
@@ -138,7 +137,7 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
             <div className="flex items-center gap-2">
               {onDelete && (
                 <button
-                  onClick={() => onDelete(link.linkId)}
+                  onClick={() => onDelete(link.uuid)}
                   className="p-2 hover:bg-red-50 rounded-lg transition-colors group cursor-pointer"
                   title="링크 삭제"
                 >

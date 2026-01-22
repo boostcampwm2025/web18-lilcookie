@@ -57,11 +57,11 @@ const LinkGrid = ({
       {links
         .sort(
           (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         )
         .map((link) => (
           <LinkCard
-            key={link.linkId}
+            key={link.uuid}
             link={link}
             onDelete={onDeleteLink}
             onTagClick={onTagClick}
