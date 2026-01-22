@@ -5,6 +5,9 @@ import { ConfigService } from "@nestjs/config";
 import { NotificationService } from "../notification/notification.service";
 import { LinkNotificationDto } from "../notification/dto/link-notification.dto";
 import { LinkRepository } from "./repositories/link.repository";
+import { TeamRepository } from "src/teams/repositories/team.repository";
+import { FolderRepository } from "src/folders/repositories/folder.repository";
+import { GetLinksQueryDto } from "./dto/get-links-query.dto";
 
 @Injectable()
 export class LinksService implements OnModuleInit {
@@ -12,6 +15,8 @@ export class LinksService implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly linkRepository: LinkRepository,
     private readonly notificationService: NotificationService,
+    private readonly teamRepository: TeamRepository,
+    private readonly folderRepository: FolderRepository,
   ) {}
 
   onModuleInit() {
@@ -111,15 +116,24 @@ export class LinksService implements OnModuleInit {
   }
 
   // 새로운 Link 생성
-  async create(requestDto: CreateLinkRequestDto): Promise<Link> {
+  async create(dto: CreateLinkRequestDto, userId: number): Promise<Link> {
+    const team = await this.teamRepository.findByUuid(dto.teamUuid);
+    if (!team) throw new NotFoundException("팀이 존재하지 않습니다");
+
+    let folderId: number | null = null;
+    if (dto.folderUuid) {
+      const folder = await this.folderRepository.findByUuid(dto.folderUuid);
+      if (!folder) throw new NotFoundException("폴더가 존재하지 않습니다");
+      folderId = folder.id;
+    }
     const created = await this.linkRepository.create({
-      teamId: requestDto.teamId,
-      url: requestDto.url,
-      title: requestDto.title,
-      tags: JSON.stringify(requestDto.tags), // 배열 → JSON string
-      summary: requestDto.summary,
-      createdBy: requestDto.userId, // number
-      folderId: requestDto.folderId || null,
+      teamId: team.id,
+      folderId,
+      url: dto.url,
+      title: dto.title,
+      tags: JSON.stringify(dto.tags),
+      summary: dto.summary,
+      createdBy: userId,
     });
 
     // 임시로 슬랙 채널 ID는 하드코딩(C0A6S6AM1K7)
@@ -129,10 +143,15 @@ export class LinksService implements OnModuleInit {
   }
 
   // 목록 조회 (전체 또는 조건)
-  async findAll(teamId?: number, tagsQuery?: string, createdAfter?: string): Promise<Link[]> {
-    const tags = tagsQuery ? tagsQuery.split(",").map((t) => t.trim()) : undefined;
-    const afterDate = createdAfter ? new Date(createdAfter) : undefined;
-    return this.linkRepository.findAll(teamId, tags, afterDate);
+  async findAll(query: GetLinksQueryDto): Promise<Link[]> {
+    const teamId = query.teamUuid ? (await this.teamRepository.findByUuid(query.teamUuid))?.id : undefined;
+
+    const folderId = query.folderUuid ? (await this.folderRepository.findByUuid(query.folderUuid))?.id : undefined;
+
+    const tags = query.tags?.split(",").map((t) => t.trim());
+    const createdAfter = query.createdAfter ? new Date(query.createdAfter) : undefined;
+
+    return this.linkRepository.findAll(teamId, folderId, tags, createdAfter);
   }
 
   // 단건 조회

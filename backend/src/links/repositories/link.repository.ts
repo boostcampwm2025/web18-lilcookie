@@ -23,10 +23,11 @@ export class LinkRepository implements ILinkRepository {
     return new Link(created);
   }
 
-  async findAll(teamId?: number, tags?: string[], createdAfter?: Date): Promise<Link[]> {
-    const where: { teamId?: number; createdAt?: { gt: Date } } = {};
+  async findAll(teamId?: number, folderId?: number, tags?: string[], createdAfter?: Date): Promise<Link[]> {
+    const where: { teamId?: number; folderId?: number; createdAt?: { gt: Date } } = {};
 
     if (teamId) where.teamId = teamId;
+    if (folderId) where.folderId = folderId;
     if (createdAfter) where.createdAt = { gt: createdAfter };
 
     const links = await this.prisma.link.findMany({

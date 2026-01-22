@@ -1,15 +1,16 @@
 import { Injectable, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { Folder } from "./entities/folder.entity";
-import { CreateFolderRequestDto } from "./dto/create-folder.request.dto";
 import { UpdateFolderRequestDto } from "./dto/update-folder.request.dto";
 import { ConfigService } from "@nestjs/config";
 import { FolderRepository } from "./repositories/folder.repository";
+import { TeamRepository } from "../teams/repositories/team.repository";
 
 @Injectable()
 export class FoldersService implements OnModuleInit {
   constructor(
     private readonly folderRepository: FolderRepository,
     private readonly configService: ConfigService,
+    private readonly teamRepository: TeamRepository,
   ) {}
 
   onModuleInit() {
@@ -41,22 +42,25 @@ export class FoldersService implements OnModuleInit {
   }
 
   // 폴더 생성
-  async create(requestDto: CreateFolderRequestDto): Promise<Folder> {
+  async create(teamUuid: string, folderName: string, userId: number): Promise<Folder> {
+    const team = await this.teamRepository.findByUuid(teamUuid);
+    if (!team) throw new NotFoundException("팀이 존재하지 않습니다");
+
     return this.folderRepository.create({
-      teamId: requestDto.teamId,
-      name: requestDto.folderName,
-      createdBy: requestDto.userId,
+      teamId: team.id, // 여기서만 id 사용
+      name: folderName,
+      createdBy: userId,
     });
   }
 
   // 팀의 모든 폴더 조회
-  async findAllByTeam(teamId: number): Promise<Folder[]> {
-    return this.folderRepository.findAllByTeam(teamId);
+  async findAllByTeam(teamUuid: string): Promise<Folder[]> {
+    return this.folderRepository.findAllByTeam(teamUuid);
   }
 
   // 특정 폴더 조회
   async findOne(uuid: string): Promise<Folder> {
-    const folder = await this.folderRepository.findOne(uuid);
+    const folder = await this.folderRepository.findByUuid(uuid);
 
     if (!folder) {
       throw new NotFoundException(`폴더를 찾을 수 없습니다: ${uuid}`);

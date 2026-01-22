@@ -6,7 +6,6 @@ import {
   Delete,
   Body,
   Param,
-  Query,
   HttpStatus,
   HttpCode,
   Inject,
@@ -22,6 +21,8 @@ import { FolderResponseDto } from "./dto/folder.response.dto";
 import { OidcGuard } from "../oidc/guards/oidc.guard";
 import { TeamGuard } from "../oidc/guards/team.guard";
 import { RequireScopes } from "../oidc/guards/scopes.decorator";
+import { CurrentUser } from "src/oidc/decorators/current-user.decorator";
+import type { AuthenticatedUser } from "src/oidc/interfaces/oidc.interface";
 
 @Controller("folders")
 @UseGuards(OidcGuard, TeamGuard)
@@ -35,10 +36,10 @@ export class FoldersController {
   @Post()
   @RequireScopes("folders:write")
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() requestDto: CreateFolderRequestDto) {
-    this.logger.log(`POST /api/folders - 폴더 생성 요청: ${requestDto.folderName}`);
+  async create(@Body() dto: CreateFolderRequestDto, @CurrentUser() user: AuthenticatedUser) {
+    this.logger.log(`POST /api/folders - 폴더 생성 요청: ${dto.folderName}`);
 
-    const folder = await this.foldersService.create(requestDto);
+    const folder = await this.foldersService.create(dto.teamUuid, dto.folderName, user.userId);
     const responseDto = FolderResponseDto.from(folder);
 
     return ResponseBuilder.success<FolderResponseDto>()
@@ -51,10 +52,10 @@ export class FoldersController {
   // 팀의 모든 폴더 조회
   @Get()
   @RequireScopes("folders:read")
-  async findAllByTeam(@Query("teamId") teamId: number) {
-    this.logger.log(`GET /api/folders?teamId=${teamId} - 폴더 목록 조회`);
+  async findAllByTeam(@Param("teamUuid") teamUuid: string) {
+    this.logger.log(`GET /api/folders?teamId=${teamUuid} - 폴더 목록 조회`);
 
-    const folders = await this.foldersService.findAllByTeam(teamId);
+    const folders = await this.foldersService.findAllByTeam(teamUuid);
     const responseDtos = folders.map((folder) => FolderResponseDto.from(folder));
 
     return ResponseBuilder.success<FolderResponseDto[]>()

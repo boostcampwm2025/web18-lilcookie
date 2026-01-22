@@ -22,6 +22,8 @@ import { GetLinksQueryDto } from "./dto/get-links-query.dto";
 import { OidcGuard } from "../oidc/guards/oidc.guard";
 import { TeamGuard } from "../oidc/guards/team.guard";
 import { RequireScopes } from "../oidc/guards/scopes.decorator";
+import { CurrentUser } from "src/oidc/decorators/current-user.decorator";
+import type { AuthenticatedUser } from "src/oidc/interfaces/oidc.interface";
 
 @Controller("links")
 @UseGuards(OidcGuard, TeamGuard)
@@ -35,11 +37,11 @@ export class LinksController {
   @Post()
   @RequireScopes("links:write")
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() requestDto: CreateLinkRequestDto) {
-    this.logger.log(`POST /api/links - 링크 생성 요청: ${requestDto.title}`);
+  async create(@Body() dto: CreateLinkRequestDto, @CurrentUser() user: AuthenticatedUser) {
+    this.logger.log(`POST /api/links - 링크 생성 요청: ${dto.title}`);
 
-    const link = await this.linksService.create(requestDto);
-    const responseDto = CreateLinkResponseDto.from(link.id, link.createdAt);
+    const link = await this.linksService.create(dto, user.userId);
+    const responseDto = CreateLinkResponseDto.from(link.uuid, link.createdAt);
 
     return ResponseBuilder.success<CreateLinkResponseDto>()
       .status(HttpStatus.CREATED)
@@ -51,12 +53,12 @@ export class LinksController {
   // 목록 조회 (전체 또는 조건)
   @Get()
   @RequireScopes("links:read")
-  async findAll(@Query() requestDto: GetLinksQueryDto) {
+  async findAll(@Query() query: GetLinksQueryDto) {
     this.logger.log(
-      `GET /api/links - 링크 목록 조회: teamId=${requestDto.teamId}, tags=${requestDto.tags}, createdAfter=${requestDto.createdAfter}`,
+      `GET /api/links - 링크 목록 조회: teamId=${query.teamUuid}, tags=${query.tags}, createdAfter=${query.createdAfter}`,
     );
 
-    const links = await this.linksService.findAll(requestDto.teamId, requestDto.tags, requestDto.createdAfter);
+    const links = await this.linksService.findAll(query);
     const responseDtos = links.map((link) => LinkResponseDto.from(link));
 
     return ResponseBuilder.success<LinkResponseDto[]>()
@@ -67,12 +69,12 @@ export class LinksController {
   }
 
   // 단건 조회
-  @Get(":linkId")
+  @Get(":linkUuid")
   @RequireScopes("links:read")
-  async findOne(@Param("linkId") linkId: string) {
-    this.logger.log(`GET /api/links/${linkId} - 링크 단건 조회`);
+  async findOne(@Param("linkUuid") linkUuid: string) {
+    this.logger.log(`GET /api/links/${linkUuid} - 링크 단건 조회`);
 
-    const link = await this.linksService.findOne(linkId);
+    const link = await this.linksService.findOne(linkUuid);
     const responseDto = LinkResponseDto.from(link);
 
     return ResponseBuilder.success<LinkResponseDto>()
@@ -83,13 +85,13 @@ export class LinksController {
   }
 
   // 단건 삭제
-  @Delete(":linkId")
+  @Delete(":linkUuid")
   @RequireScopes("links:write")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param("linkId") linkId: string) {
-    this.logger.log(`DELETE /api/links/${linkId} - 링크 단건 삭제`);
+  async remove(@Param("linkUuid") linkUuid: string) {
+    this.logger.log(`DELETE /api/links/${linkUuid} - 링크 단건 삭제`);
 
-    await this.linksService.remove(linkId);
+    await this.linksService.remove(linkUuid);
 
     // 204 No Content는 Response Body 없음
     return;
