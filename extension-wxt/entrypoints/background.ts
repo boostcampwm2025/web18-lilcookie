@@ -6,7 +6,8 @@ export default defineBackground(() => {
   // Authentik OAuth 설정
   const AUTHENTIK_URL = import.meta.env.VITE_AUTHENTIK_URL;
   const CLIENT_ID = import.meta.env.VITE_AUTHENTIK_CLIENT_ID;
-  const SCOPES = "openid profile email offline_access";
+  const SCOPES =
+    "openid profile email roles offline_access team_id links:read links:write ai:use folders:read folders:write";
 
   const MAX_AI_INPUT_CHARACTER_COUNT = 300;
 
@@ -17,6 +18,43 @@ export default defineBackground(() => {
     access_token: string;
     refresh_token: string;
     expires_at: number; // timestamp
+  }
+
+  interface UserInfo {
+    userId: string; // sub claim
+    teamId: string; // team_id claim
+    nickname?: string; // nickname claim
+  }
+
+  function decodeJwtPayload(token: string): Record<string, unknown> | null {
+    try {
+      const parts = token.split(".");
+      if (parts.length !== 3) return null;
+      const base64Url = parts[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const jsonStr = atob(base64);
+      return JSON.parse(jsonStr);
+    } catch {
+      return null;
+    }
+  }
+
+  function extractUserInfo(accessToken: string): UserInfo | null {
+    const payload = decodeJwtPayload(accessToken);
+    if (!payload) return null;
+
+    const sub = payload.sub;
+    const teamId = payload.team_id;
+
+    if (typeof sub !== "string" || typeof teamId !== "string") {
+      return null;
+    }
+
+    return {
+      userId: sub,
+      teamId,
+      nickname: typeof payload.nickname === "string" ? payload.nickname : undefined,
+    };
   }
 
   // 로그인 함수 - OAuth 플로우 시작
@@ -83,7 +121,7 @@ export default defineBackground(() => {
         auth_tokens: tokens,
       });
 
-      // 6. 임시저장된 pkcd 데이터 정리
+      // 6. 임시저장된 PKCE 데이터 정리
       await chrome.storage.local.remove("oauth_code_verifier");
 
       return { success: true };
@@ -133,10 +171,10 @@ export default defineBackground(() => {
     };
   }
 
-  // 현재 인증 상태 확인
   async function getAuthState(): Promise<{
     isLoggedIn: boolean;
     accessToken?: string;
+    userInfo?: UserInfo;
   }> {
     const { auth_tokens } = (await chrome.storage.local.get("auth_tokens")) as {
       auth_tokens?: AuthTokens;
@@ -153,16 +191,26 @@ export default defineBackground(() => {
         try {
           const newTokens = await refreshAccessToken(auth_tokens.refresh_token);
           await chrome.storage.local.set({ auth_tokens: newTokens });
-          return { isLoggedIn: true, accessToken: newTokens.access_token };
+          const userInfo = extractUserInfo(newTokens.access_token);
+          if (!userInfo) {
+            await logout();
+            return { isLoggedIn: false };
+          }
+          return { isLoggedIn: true, accessToken: newTokens.access_token, userInfo };
         } catch {
-          // refresh 실패
           await logout();
           return { isLoggedIn: false };
         }
       }
       return { isLoggedIn: false };
     }
-    return { isLoggedIn: true, accessToken: auth_tokens.access_token };
+
+    const userInfo = extractUserInfo(auth_tokens.access_token);
+    if (!userInfo) {
+      await logout();
+      return { isLoggedIn: false };
+    }
+    return { isLoggedIn: true, accessToken: auth_tokens.access_token, userInfo };
   }
 
   // refresh token으로 access token 갱신
@@ -259,13 +307,23 @@ export default defineBackground(() => {
     try {
       // 인증 상태 확인 및 토큰 가져오기
       const authState = await getAuthState();
-      if (!authState.isLoggedIn || !authState.accessToken) {
+      if (!authState.isLoggedIn || !authState.accessToken || !authState.userInfo) {
         return { success: false, error: "로그인이 필요합니다." };
       }
 
-      const response = await fetch(POST_URL, {
+      const { teamId, userId } = authState.userInfo;
+
+      const urlWithTeamId = `${POST_URL}?teamId=${encodeURIComponent(teamId)}`;
+
+      const requestBody = {
+        ...formData,
+        teamId,
+        userId,
+      };
+
+      const response = await fetch(urlWithTeamId, {
         method: "POST",
-        body: JSON.stringify(formData),
+        body: JSON.stringify(requestBody),
         headers: {
           "Content-Type": "application/json; charset=UTF-8",
           Authorization: `Bearer ${authState.accessToken}`,
