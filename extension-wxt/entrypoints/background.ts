@@ -249,9 +249,15 @@ export default defineBackground(() => {
     };
   }
 
-  // 로그아웃
   async function logout(): Promise<void> {
     await chrome.storage.local.remove("auth_tokens");
+
+    const logoutUrl = `${AUTHENTIK_URL}/application/o/teamstash/end-session/`;
+    const tab = await chrome.tabs.create({ url: logoutUrl, active: false });
+
+    setTimeout(() => {
+      if (tab.id) chrome.tabs.remove(tab.id);
+    }, 2000);
   }
 
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
