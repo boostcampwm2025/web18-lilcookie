@@ -53,7 +53,8 @@ export default defineBackground(() => {
     return {
       userId: sub,
       teamId,
-      nickname: typeof payload.nickname === "string" ? payload.nickname : undefined,
+      nickname:
+        typeof payload.nickname === "string" ? payload.nickname : undefined,
     };
   }
 
@@ -196,7 +197,11 @@ export default defineBackground(() => {
             await logout();
             return { isLoggedIn: false };
           }
-          return { isLoggedIn: true, accessToken: newTokens.access_token, userInfo };
+          return {
+            isLoggedIn: true,
+            accessToken: newTokens.access_token,
+            userInfo,
+          };
         } catch {
           await logout();
           return { isLoggedIn: false };
@@ -210,7 +215,11 @@ export default defineBackground(() => {
       await logout();
       return { isLoggedIn: false };
     }
-    return { isLoggedIn: true, accessToken: auth_tokens.access_token, userInfo };
+    return {
+      isLoggedIn: true,
+      accessToken: auth_tokens.access_token,
+      userInfo,
+    };
   }
 
   // refresh token으로 access token 갱신
@@ -306,7 +315,11 @@ export default defineBackground(() => {
     try {
       // 인증 상태 확인 및 토큰 가져오기
       const authState = await getAuthState();
-      if (!authState.isLoggedIn || !authState.accessToken || !authState.userInfo) {
+      if (
+        !authState.isLoggedIn ||
+        !authState.accessToken ||
+        !authState.userInfo
+      ) {
         return { success: false, error: "로그인이 필요합니다." };
       }
 
@@ -344,118 +357,117 @@ export default defineBackground(() => {
     }
   }
 
-  // TODO: 유저-팀 연결 후 새 링크 알림 기능 복원
-  // // 알람 설정: 1분마다 실행
-  // chrome.alarms.create("pollLinks", { periodInMinutes: 0.5 });
+  chrome.alarms.create("pollLinks", { periodInMinutes: 0.5 });
 
-  // chrome.alarms.onAlarm.addListener((alarm) => {
-  //   if (alarm.name === "pollLinks") {
-  //     checkNewLinks();
-  //   }
-  // });
+  chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === "pollLinks") {
+      checkNewLinks();
+    }
+  });
 
-  // // Notification click handler: open dashboard
-  // chrome.notifications.onClicked.addListener(async (notificationId) => {
-  //   if (notificationId === "teamstash-new-links") {
-  //     const { teamId } = await chrome.storage.sync.get("teamId");
-  //     if (teamId && typeof teamId === "string") {
-  //       chrome.tabs.create({ url: `${FE_BASE_URL}/${teamId.toLowerCase()}` });
-  //     }
-  //     chrome.notifications.clear(notificationId);
-  //     await chrome.storage.local.set({ unseenLinkCount: 0 });
-  //   }
-  // });
+  chrome.notifications.onClicked.addListener(async (notificationId) => {
+    if (notificationId === "teamstash-new-links") {
+      const authState = await getAuthState();
+      if (authState.isLoggedIn && authState.userInfo?.teamId) {
+        chrome.tabs.create({
+          url: `${FE_BASE_URL}/${authState.userInfo.teamId.toLowerCase()}`,
+        });
+      }
+      chrome.notifications.clear(notificationId);
+      await chrome.storage.local.set({ unseenLinkCount: 0 });
+    }
+  });
 
-  // async function checkNewLinks() {
-  //   try {
-  //     const { teamId, lastCheck, camperId } = await chrome.storage.sync.get([
-  //       "teamId",
-  //       "lastCheck",
-  //       "camperId",
-  //     ]);
+  async function checkNewLinks() {
+    try {
+      const authState = await getAuthState();
+      if (
+        !authState.isLoggedIn ||
+        !authState.accessToken ||
+        !authState.userInfo
+      ) {
+        return;
+      }
 
-  //     if (!teamId) return;
+      const { teamId, userId } = authState.userInfo;
+      const { lastCheck } = await chrome.storage.local.get("lastCheck");
 
-  //     const now = new Date();
-  //     const formattedNow = now.toISOString();
+      const now = new Date();
+      const formattedNow = now.toISOString();
 
-  //     if (!lastCheck) {
-  //       await chrome.storage.sync.set({ lastCheck: formattedNow });
-  //       return;
-  //     }
+      if (!lastCheck) {
+        await chrome.storage.local.set({ lastCheck: formattedNow });
+        return;
+      }
 
-  //     const url = new URL(POST_URL);
-  //     url.searchParams.append("teamId", String(teamId));
-  //     url.searchParams.append("createdAfter", String(lastCheck));
+      const url = new URL(POST_URL);
+      url.searchParams.append("teamId", teamId);
+      url.searchParams.append("createdAfter", String(lastCheck));
 
-  //     const response = await fetch(url.toString());
-  //     if (response.ok) {
-  //       const json = await response.json();
-  //       const links = json.data || [];
-  //       const newLinks = links.filter(
-  //         (link: any) => link.createdBy !== camperId,
-  //       );
+      const response = await fetch(url.toString(), {
+        headers: {
+          Authorization: `Bearer ${authState.accessToken}`,
+        },
+      });
 
-  //       if (Array.isArray(newLinks) && newLinks.length > 0) {
-  //         const { unseenLinkCount } = await chrome.storage.local.get([
-  //           "unseenLinkCount",
-  //         ]);
-  //         const totalNewLinks =
-  //           (Number(unseenLinkCount) || 0) + newLinks.length;
+      if (response.ok) {
+        const json = await response.json();
+        const links = json.data || [];
+        const newLinks = links.filter((link: any) => link.createdBy !== userId);
 
-  //         const notificationId = "teamstash-new-links";
-  //         chrome.notifications.create(notificationId, {
-  //           type: "basic",
-  //           iconUrl: "images/icon-128.png",
-  //           title: "[TeamStash] 새로운 링크 알림",
-  //           message: `${totalNewLinks}개의 새로운 링크가 등록되었습니다.`,
-  //           priority: 2,
-  //         });
+        if (Array.isArray(newLinks) && newLinks.length > 0) {
+          const { unseenLinkCount } =
+            await chrome.storage.local.get("unseenLinkCount");
+          const totalNewLinks =
+            (Number(unseenLinkCount) || 0) + newLinks.length;
 
-  //         chrome.storage.local.set({
-  //           unseenLinkCount: totalNewLinks,
-  //         });
-  //       }
+          chrome.notifications.create("teamstash-new-links", {
+            type: "basic",
+            iconUrl: "images/icon-128.png",
+            title: "[TeamStash] 새로운 링크 알림",
+            message: `${totalNewLinks}개의 새로운 링크가 등록되었습니다.`,
+            priority: 2,
+          });
 
-  //       await chrome.storage.sync.set({ lastCheck: formattedNow });
-  //     }
-  //   } catch (error) {}
-  // }
+          chrome.storage.local.set({ unseenLinkCount: totalNewLinks });
+        }
+
+        await chrome.storage.local.set({ lastCheck: formattedNow });
+      }
+    } catch (error) {}
+  }
 
   chrome.tabs.onActivated.addListener(async (activeInfo) => {
     try {
       const tab = await chrome.tabs.get(activeInfo.tabId);
       if (tab) {
         showSummary(tab);
-        // TODO: 유저-팀 연결 후 대시보드 방문 체크 복원
-        // checkDashboardVisit(tab);
+        checkDashboardVisit(tab);
       }
     } catch (error) {}
   });
   chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     if (changeInfo.status === "complete" && tab) {
       showSummary(tab);
-      // TODO: 유저-팀 연결 후 대시보드 방문 체크 복원
-      // checkDashboardVisit(tab);
+      checkDashboardVisit(tab);
     }
   });
 
-  // TODO: 유저-팀 연결 후 대시보드 방문 체크 복원
-  // async function checkDashboardVisit(tab: chrome.tabs.Tab) {
-  //   try {
-  //     if (!tab || !tab.url) return;
+  async function checkDashboardVisit(tab: chrome.tabs.Tab) {
+    try {
+      if (!tab || !tab.url) return;
 
-  //     const { teamId } = await chrome.storage.sync.get("teamId");
-  //     if (!teamId || typeof teamId !== "string") return;
+      const authState = await getAuthState();
+      if (!authState.isLoggedIn || !authState.userInfo?.teamId) return;
 
-  //     const dashboardUrl = `${FE_BASE_URL}/${teamId.toLowerCase()}`;
+      const dashboardUrl = `${FE_BASE_URL}/${authState.userInfo.teamId.toLowerCase()}`;
 
-  //     if (tab.url.startsWith(dashboardUrl)) {
-  //       await chrome.storage.local.set({ unseenLinkCount: 0 });
-  //       chrome.notifications.clear("teamstash-new-links");
-  //     }
-  //   } catch (error) {}
-  // }
+      if (tab.url.startsWith(dashboardUrl)) {
+        await chrome.storage.local.set({ unseenLinkCount: 0 });
+        chrome.notifications.clear("teamstash-new-links");
+      }
+    } catch (error) {}
+  }
 
   async function showSummary(tab: chrome.tabs.Tab) {
     try {
