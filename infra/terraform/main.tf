@@ -133,7 +133,7 @@ resource "authentik_provider_oauth2" "teamstash" {
     },
     {
       matching_mode = "strict",
-      url           = "https://fdoebkjfodmjkpnfcenaliefhpgpmagg.chromiumapp.org/", #크롬익스텐션 아이디로 변경
+      url           = "https://fhclkhghckmnaiaifilckomdioidiink.chromiumapp.org/", #크롬익스텐션 아이디로 변경
     },
   ]
 
