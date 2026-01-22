@@ -85,13 +85,15 @@ const Dashboard = () => {
 
   // 링크 삭제 (204 No Content 처리)
   const handleDeleteLink = async (linkId: string) => {
+    if (!teamId) return;
+
     // TODO: 커스텀 확인 모달로 교체 필요
     if (!window.confirm("정말로 이 링크를 삭제하시겠습니까?")) {
       return;
     }
 
     try {
-      await linkApi.deleteLink(linkId);
+      await linkApi.deleteLink(teamId, linkId);
       setLinks(links.filter((link) => link.linkId !== linkId));
     } catch (err) {
       console.error("링크 삭제 실패:", err);
