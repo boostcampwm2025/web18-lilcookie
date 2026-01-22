@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException, OnModuleInit } from "@nestjs/common";
-import { randomUUID } from "crypto";
 import { Link } from "./entities/link.entity";
 import { CreateLinkRequestDto } from "./dto/create-link.request.dto";
 import { ConfigService } from "@nestjs/config";
@@ -33,115 +32,95 @@ export class LinksService implements OnModuleInit {
 
     const mockLinks = [
       {
-        teamId: "web01",
+        teamId: 1,
         url: "https://react.dev",
         title: "React 공식 문서",
-        tags: ["리액트", "프론트엔드"],
+        tags: JSON.stringify(["리액트", "프론트엔드"]),
         summary: "React 최신 공식 문서입니다.",
-        userId: "J001",
-        createdAt: "2025-12-16T03:00:00.000Z",
+        createdBy: 1,
+        folderId: null,
       },
       {
-        teamId: "web01",
+        teamId: 1,
         url: "https://www.typescriptlang.org",
         title: "TypeScript 공식 문서",
-        tags: ["타입스크립트", "프론트엔드"],
+        tags: JSON.stringify(["타입스크립트", "프론트엔드"]),
         summary: "TypeScript 공식 문서입니다.",
-        userId: "J002",
-        createdAt: "2025-12-15T05:30:00.000Z",
+        createdBy: 1,
+        folderId: null,
       },
       {
-        teamId: "web01",
+        teamId: 1,
         url: "https://nestjs.com",
         title: "NestJS 공식 문서",
-        tags: ["NestJS", "백엔드"],
+        tags: JSON.stringify(["NestJS", "백엔드"]),
         summary: "NestJS 프레임워크 공식 문서입니다.",
-        userId: "J001",
-        createdAt: "2025-12-14T08:00:00.000Z",
+        createdBy: 1,
+        folderId: null,
       },
       {
-        teamId: "web01",
+        teamId: 1,
         url: "https://vitejs.dev",
         title: "Vite 공식 문서",
-        tags: ["Vite", "빌드도구"],
+        tags: JSON.stringify(["Vite", "빌드도구"]),
         summary: "차세대 프론트엔드 빌드 도구 Vite 문서입니다.",
-        userId: "J003",
-        createdAt: "2025-12-11T10:00:00.000Z",
+        createdBy: 1,
+        folderId: null,
       },
       {
-        teamId: "web01",
+        teamId: 1,
         url: "https://tailwindcss.com",
         title: "Tailwind CSS 공식 문서",
-        tags: ["CSS", "프론트엔드", "디자인"],
+        tags: JSON.stringify(["CSS", "프론트엔드", "디자인"]),
         summary: "유틸리티 우선 CSS 프레임워크 Tailwind CSS 문서입니다.",
-        userId: "J002",
-        createdAt: "2025-12-06T02:00:00.000Z",
+        createdBy: 1,
+        folderId: null,
       },
       {
-        teamId: "web01",
+        teamId: 1,
         url: "https://docs.github.com",
         title: "GitHub Docs",
-        tags: ["Git", "협업", "도구"],
+        tags: JSON.stringify(["Git", "협업", "도구"]),
         summary: "GitHub 사용법 및 기능에 대한 공식 문서입니다.",
-        userId: "J001",
-        createdAt: "2025-12-01T06:00:00.000Z",
+        createdBy: 1,
+        folderId: null,
       },
       {
-        teamId: "web01",
+        teamId: 1,
         url: "https://developer.mozilla.org",
         title: "MDN Web Docs",
-        tags: ["JavaScript", "웹", "레퍼런스"],
+        tags: JSON.stringify(["JavaScript", "웹", "레퍼런스"]),
         summary: "웹 개발자를 위한 최고의 레퍼런스 문서입니다.",
-        userId: "J003",
-        createdAt: "2025-11-16T04:00:00.000Z",
+        createdBy: 1,
+        folderId: null,
       },
       {
-        teamId: "web01",
+        teamId: 1,
         url: "https://www.figma.com/best-practices",
         title: "Figma Best Practices",
-        tags: ["디자인", "UI/UX", "협업"],
+        tags: JSON.stringify(["디자인", "UI/UX", "협업"]),
         summary: "Figma 디자인 협업 베스트 프랙티스 가이드입니다.",
-        userId: "J002",
-        createdAt: "2025-10-17T07:00:00.000Z",
+        createdBy: 1,
+        folderId: null,
       },
     ];
 
-    for (const mockLink of mockLinks) {
-      const linkId = randomUUID();
-
-      const link = new Link({
-        linkId,
-        teamId: mockLink.teamId,
-        url: mockLink.url,
-        title: mockLink.title,
-        tags: mockLink.tags,
-        summary: mockLink.summary,
-        createdAt: mockLink.createdAt,
-        createdBy: mockLink.userId,
-      });
-
-      await this.linkRepository.create(link);
+    for (const mock of mockLinks) {
+      await this.linkRepository.create(mock);
     }
   }
 
   // 새로운 Link 생성
   async create(requestDto: CreateLinkRequestDto): Promise<Link> {
-    const linkId = randomUUID();
-    const createdAt = new Date().toISOString();
-
-    const link = new Link({
-      linkId,
+    const created = await this.linkRepository.create({
       teamId: requestDto.teamId,
       url: requestDto.url,
       title: requestDto.title,
-      tags: requestDto.tags,
+      tags: JSON.stringify(requestDto.tags), // 배열 → JSON string
       summary: requestDto.summary,
-      createdAt,
-      createdBy: requestDto.userId,
+      createdBy: requestDto.userId, // number
       folderId: requestDto.folderId || null,
     });
-
-    const created = await this.linkRepository.create(link);
 
     // 임시로 슬랙 채널 ID는 하드코딩(C0A6S6AM1K7)
     this.notificationService.notifyLinkCreated(LinkNotificationDto.fromLink(created, "C0A6S6AM1K7")).catch(() => {});
@@ -150,30 +129,29 @@ export class LinksService implements OnModuleInit {
   }
 
   // 목록 조회 (전체 또는 조건)
-  async findAll(teamId?: string, tagsQuery?: string, createdAfter?: string): Promise<Link[]> {
-    const tags = tagsQuery ? tagsQuery.split(",").map((tag) => tag.trim()) : undefined;
+  async findAll(teamId?: number, tagsQuery?: string, createdAfter?: string): Promise<Link[]> {
+    const tags = tagsQuery ? tagsQuery.split(",").map((t) => t.trim()) : undefined;
     const afterDate = createdAfter ? new Date(createdAfter) : undefined;
-
     return this.linkRepository.findAll(teamId, tags, afterDate);
   }
 
   // 단건 조회
-  async findOne(linkId: string): Promise<Link> {
-    const link = await this.linkRepository.findOne(linkId);
+  async findOne(uuid: string): Promise<Link> {
+    const link = await this.linkRepository.findOne(uuid);
 
     if (!link) {
-      throw new NotFoundException(`링크를 찾을 수 없습니다: ${linkId}`);
+      throw new NotFoundException(`링크를 찾을 수 없습니다: ${uuid}`);
     }
 
     return link;
   }
 
   // 단건 삭제
-  async remove(linkId: string): Promise<void> {
-    const removed = await this.linkRepository.remove(linkId);
+  async remove(uuid: string): Promise<void> {
+    const removed = await this.linkRepository.remove(uuid);
 
     if (!removed) {
-      throw new NotFoundException(`링크를 찾을 수 없습니다: ${linkId}`);
+      throw new NotFoundException(`링크를 찾을 수 없습니다: ${uuid}`);
     }
   }
 }
