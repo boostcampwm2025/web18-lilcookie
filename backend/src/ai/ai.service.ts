@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, InternalServerErrorException } from "@nestjs/common";
+import { Injectable, InternalServerErrorException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { SummarizeRequestDto } from "./dto/summarize.request.dto";
 
@@ -38,22 +38,15 @@ interface SummaryResult {
 export class AiService {
   private readonly apiUrl: string;
   private readonly apiKey: string;
-  private readonly aiPassword: string;
 
   constructor(private readonly configService: ConfigService) {
     this.apiUrl =
       this.configService.get<string>("CLOVA_STUDIO_API_URL") ||
       "https://clovastudio.stream.ntruss.com/v1/chat-completions/HCX-003";
     this.apiKey = this.configService.get<string>("CLOVA_STUDIO_API_KEY") || "";
-    this.aiPassword = this.configService.get<string>("AI_PASSWORD") || "";
   }
 
   async summarizeContent(requestDto: SummarizeRequestDto): Promise<SummaryResult> {
-    // AI 비밀번호 검증
-    if (requestDto.aiPassword !== this.aiPassword) {
-      throw new UnauthorizedException("AI 비밀번호가 올바르지 않습니다");
-    }
-
     // Clova Studio API 호출
     const prompt = this.createPrompt(requestDto.content);
     const response = await this.callClovaStudio(prompt);

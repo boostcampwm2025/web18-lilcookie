@@ -99,16 +99,6 @@ function App() {
     setIsLoggedIn(false);
   };
 
-  // 설정 페이지 열기
-  const handleSettingsClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (chrome.runtime.openOptionsPage) {
-      chrome.runtime.openOptionsPage();
-    } else {
-      window.open(chrome.runtime.getURL("options.html"));
-    }
-  };
-
   // AI 요약 생성
   const handleAiClick = async () => {
     if (!aiButtonRef.current) return;
@@ -127,29 +117,9 @@ function App() {
         return;
       }
 
-      const { aiPassword } = await chrome.storage.sync.get("aiPassword");
-
-      if (!aiPassword) {
-        if (
-          confirm(
-            "AI 기능을 사용하려면 설정에서 비밀번호를 입력해야 합니다. 설정 페이지로 이동하시겠습니까?",
-          )
-        ) {
-          if (chrome.runtime.openOptionsPage) {
-            chrome.runtime.openOptionsPage();
-          } else {
-            window.open(chrome.runtime.getURL("options.html"));
-          }
-        }
-        setIsAiLoading(false);
-        setIsAiDisabled(false);
-        return;
-      }
-
       const response = await chrome.runtime.sendMessage({
         action: "summarize",
         content: (pageContent as any).textContent,
-        aiPassword,
       });
 
       if (response && response.success) {
@@ -438,14 +408,9 @@ function App() {
             <p className="tagline">링크를 빠르게 저장하세요</p>
           </div>
         </div>
-        <div>
-          <a href="#" onClick={handleSettingsClick} className="settings-link">
-            사용자 설정
-          </a>
-          <button className="settings-link" onClick={handleLogout}>
-            로그아웃
-          </button>
-        </div>
+        <button className="settings-link" onClick={handleLogout}>
+          로그아웃
+        </button>
       </header>
 
       {/* Page Info Card */}

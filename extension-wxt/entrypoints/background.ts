@@ -250,7 +250,7 @@ export default defineBackground(() => {
       saveLink(request.data).then(sendResponse);
       return true;
     } else if (request.action === "summarize") {
-      summarizeContent(request.content, request.aiPassword)
+      summarizeContent(request.content)
         .then(sendResponse)
         .catch((error) =>
           sendResponse({ success: false, error: error.message }),
@@ -268,7 +268,7 @@ export default defineBackground(() => {
     }
   });
 
-  async function summarizeContent(content: string, aiPassword: string) {
+  async function summarizeContent(content: string) {
     try {
       // 인증 상태 확인 및 토큰 가져오기
       const authState = await getAuthState();
@@ -280,7 +280,6 @@ export default defineBackground(() => {
         method: "POST",
         body: JSON.stringify({
           content: content.slice(0, MAX_AI_INPUT_CHARACTER_COUNT),
-          aiPassword,
         }),
         headers: {
           "Content-type": "application/json; charset=UTF-8",
