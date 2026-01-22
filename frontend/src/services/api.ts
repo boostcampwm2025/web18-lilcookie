@@ -56,7 +56,11 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // 401 에러이고, 아직 재시도하지 않았으며, 공개 엔드포인트가 아닌 경우
-    if (error.response?.status === 401 && !originalRequest._retry && !isPublicEndpoint(originalRequest.url)) {
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !isPublicEndpoint(originalRequest.url)
+    ) {
       // 이미 갱신 중이면 큐에 추가하고 대기
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -99,16 +103,19 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 // 대시보드용 API 함수들
 export const linkApi = {
-  // GET /api/links?teamId=web01 - 팀별 링크 목록 조회
-  getLinks: async (teamId?: string, tags?: string[]): Promise<ApiResponse<Link[]>> => {
-    const params: Record<string, string> = {};
+  // GET /api/links?teamId=1 - 팀별 링크 목록 조회
+  getLinks: async (
+    teamId?: number,
+    tags?: string[],
+  ): Promise<ApiResponse<Link[]>> => {
+    const params: Record<string, string | number> = {};
 
-    if (teamId) {
+    if (teamId !== undefined) {
       params.teamId = teamId;
     }
 
@@ -121,54 +128,58 @@ export const linkApi = {
   },
 
   // DELETE /api/links/:linkId - 링크 삭제 (204 No Content)
+  // linkId는 uuid string으로 유지 (외부 노출용)
   deleteLink: async (linkId: string): Promise<void> => {
     await api.delete(`/links/${linkId}`);
   },
 
-  // GET /api/links?teamId=web01&tags=리엑트,분석 - 태그로 검색
-  searchByTags: async (teamId: string, tags: string[]): Promise<ApiResponse<Link[]>> => {
+  // GET /api/links?teamId=1&tags=리엑트,분석 - 태그로 검색
+  searchByTags: async (
+    teamId: number,
+    tags: string[],
+  ): Promise<ApiResponse<Link[]>> => {
     return linkApi.getLinks(teamId, tags);
   },
 };
 
 // 폴더 API 함수들
 export const folderApi = {
-  // GET /api/folders?teamId=web01 - 팀의 모든 폴더 조회
-  getFolders: async (teamId: string): Promise<ApiResponse<Folder[]>> => {
+  // GET /api/folders?teamId=1 - 팀의 모든 폴더 조회
+  getFolders: async (teamId: number): Promise<ApiResponse<Folder[]>> => {
     const response = await api.get("/folders", { params: { teamId } });
     return response.data;
   },
 
   // GET /api/folders/:folderId - 특정 폴더 조회
+  // folderId는 uuid string으로 유지 (외부 노출용)
   getFolder: async (folderId: string): Promise<ApiResponse<Folder>> => {
     const response = await api.get(`/folders/${folderId}`);
     return response.data;
   },
 
-  // GET /api/folders/:folderId/subfolders - 하위 폴더 조회
-  getSubfolders: async (folderId: string): Promise<ApiResponse<Folder[]>> => {
-    const response = await api.get(`/folders/${folderId}/subfolders`);
-    return response.data;
-  },
+  // 1단계 폴더 구조로 단순화
 
   // POST /api/folders - 새 폴더 생성
   createFolder: async (data: {
-    teamId: string;
+    teamId: number;
     folderName: string;
-    parentFolderId?: string;
-    userId: string;
+    userId: number;
   }): Promise<ApiResponse<Folder>> => {
     const response = await api.post("/folders", data);
     return response.data;
   },
 
   // PUT /api/folders/:folderId - 폴더 이름 수정
-  updateFolder: async (folderId: string, data: { folderName: string }): Promise<ApiResponse<Folder>> => {
+  updateFolder: async (
+    folderId: string,
+    data: { folderName: string },
+  ): Promise<ApiResponse<Folder>> => {
     const response = await api.put(`/folders/${folderId}`, data);
     return response.data;
   },
 
   // DELETE /api/folders/:folderId - 폴더 삭제
+
   deleteFolder: async (folderId: string): Promise<void> => {
     await api.delete(`/folders/${folderId}`);
   },
