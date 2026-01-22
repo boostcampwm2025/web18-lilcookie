@@ -7,6 +7,7 @@ import { AiModule } from "./ai/ai.module";
 import { DatabaseModule } from "./database/database.module";
 import { FoldersModule } from "./folders/folders.module";
 import { OidcModule } from "./oidc/oidc.module";
+import { TeamsModule } from "./teams/teams.module";
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { OidcModule } from "./oidc/oidc.module";
     AiModule,
     FoldersModule,
     OidcModule,
+    TeamsModule,
   ],
 })
 export class AppModule {}
