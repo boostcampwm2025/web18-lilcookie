@@ -12,14 +12,6 @@ model User {
   uuid                 String          @unique @map("uuid")
   nickname             String
   createdAt            DateTime        @default(now()) @map("created_at")
-  updatedAt            DateTime        @updatedAt @map("updated_at")
-
-  termsOfService       Boolean         @map("terms_of_service")
-  privacyPolicy        Boolean         @map("privacy_policy")
-  marketingConsent     Boolean         @map("marketing_consent")
-  termsOfServiceAt     DateTime        @map("terms_of_service_at")
-  privacyPolicyAt      DateTime        @map("privacy_policy_at")
-  marketingConsentAt   DateTime?       @map("marketing_consent_at")
 
   teamMembers          TeamMember[]
 

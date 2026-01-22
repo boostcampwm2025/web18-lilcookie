@@ -3,14 +3,7 @@ CREATE TABLE "users" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "uuid" TEXT NOT NULL,
     "nickname" TEXT NOT NULL,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
-    "terms_of_service" BOOLEAN NOT NULL,
-    "privacy_policy" BOOLEAN NOT NULL,
-    "marketing_consent" BOOLEAN NOT NULL,
-    "terms_of_service_at" DATETIME NOT NULL,
-    "privacy_policy_at" DATETIME NOT NULL,
-    "marketing_consent_at" DATETIME
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateTable
