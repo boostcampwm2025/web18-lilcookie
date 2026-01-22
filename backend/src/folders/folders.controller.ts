@@ -51,7 +51,7 @@ export class FoldersController {
   // 팀의 모든 폴더 조회
   @Get()
   @RequireScopes("folders:read")
-  async findAllByTeam(@Query("teamId") teamId: string) {
+  async findAllByTeam(@Query("teamId") teamId: number) {
     this.logger.log(`GET /api/folders?teamId=${teamId} - 폴더 목록 조회`);
 
     const folders = await this.foldersService.findAllByTeam(teamId);
@@ -77,22 +77,6 @@ export class FoldersController {
       .status(HttpStatus.OK)
       .message("폴더를 성공적으로 조회했습니다")
       .data(responseDto)
-      .build();
-  }
-
-  // 폴더의 하위 폴더 조회
-  @Get(":folderId/subfolders")
-  @RequireScopes("folders:read")
-  async findSubfolders(@Param("folderId") folderId: string) {
-    this.logger.log(`GET /api/folders/${folderId}/subfolders - 하위 폴더 조회`);
-
-    const subfolders = await this.foldersService.findSubfolders(folderId);
-    const responseDtos = subfolders.map((folder) => FolderResponseDto.from(folder));
-
-    return ResponseBuilder.success<FolderResponseDto[]>()
-      .status(HttpStatus.OK)
-      .message("하위 폴더를 성공적으로 조회했습니다")
-      .data(responseDtos)
       .build();
   }
 
