@@ -9,7 +9,7 @@ export default defineConfig({
       port: 3001, // 백엔드(3000)와 충돌 방지
     },
   },
-  manifest: {
+  manifest: () => ({
     name: "TeamStash",
     version: "1.0",
     description: "한 번의 클릭으로 URL을 저장하는 확장 프로그램",
@@ -34,7 +34,6 @@ export default defineConfig({
         id: "teamstash@boostcamp.connect",
       },
     },
-    // TODO: 환경 변수로 분리
-    key: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArh/GtehbcWQ1KDBevXfK2FDcuVVvT9mJ5JcSdFyHEC9yM/MR/HGll8qGQ6s8bWXL4s0ybAkYcLqZWe/cwvpRS7PcXBE/bsqgvD81so++Sm4Q6HCAXc9FD8J1ofAugyUsyZC0dSWg33nYS0HeyBHPDJF2AqGjD1sjwvY04+ZxFWvu44m/mugEVtu7B5rErr/JfzyaCrJ5HzAnbdxUISNs8kveENaIh+7Hvs1CklTOrAkCBc9678NVXwSTDSZtiit4QgRDQU9H9pDgGegKVXxk4mtl7GkCMqIY0RAdd0kXTTMYBKmYvj0488OnMHTCyMrft8eA0qguXFaG0Q+9EvsagQIDAQAB",
-  },
+    key: import.meta.env.CHROME_EXTENSION_KEY,
+  }),
 });
