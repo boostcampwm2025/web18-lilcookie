@@ -13,5 +13,15 @@ resource "authentik_stage_prompt_field" "teamstash_password_field" {
   field_key = "password"
   label     = "Password"
   type      = "password"
-  order     = 301
+  order     = 300
+}
+
+resource "authentik_stage_prompt_field" "teamstash_password_repeat_field" {
+  name        = "teamstash-password-repeat"
+  field_key   = "password_repeat"
+  label       = "Password (repeat)"
+  placeholder = "Password (repeat)"
+  type        = "password"
+  required    = true
+  order       = 301
 }

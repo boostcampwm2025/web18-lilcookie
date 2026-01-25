@@ -50,6 +50,7 @@ resource "authentik_stage_password" "teamstash_authentication_password" {
     "authentik.sources.kerberos.auth.KerberosBackend",
   ]
   failed_attempts_before_cancel = 5
+  configure_flow                = authentik_flow.teamstash_password_change.uuid
 }
 
 # --- Prompt Stages ---
@@ -58,6 +59,17 @@ resource "authentik_stage_prompt" "teamstash_enrollment_prompt" {
   fields = [
     authentik_stage_prompt_field.teamstash_email_field.id,
     authentik_stage_prompt_field.teamstash_password_field.id,
+  ]
+  validation_policies = [
+    authentik_policy_password.teamstash_password_policy.id,
+  ]
+}
+
+resource "authentik_stage_prompt" "teamstash_password_change_prompt" {
+  name = "teamstash-password-change-prompt"
+  fields = [
+    authentik_stage_prompt_field.teamstash_password_field.id,
+    authentik_stage_prompt_field.teamstash_password_repeat_field.id,
   ]
   validation_policies = [
     authentik_policy_password.teamstash_password_policy.id,
@@ -89,4 +101,10 @@ resource "authentik_stage_user_write" "teamstash_user_write_stage" {
   create_users_as_inactive = true
   user_type                = "external"
   create_users_group       = authentik_group.teamstash_group.id
+}
+
+resource "authentik_stage_user_write" "teamstash_password_change_write" {
+  name               = "teamstash-password-change-write"
+  user_creation_mode = "never_create"
+  user_type          = "external"
 }
