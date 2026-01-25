@@ -2,18 +2,43 @@
 
 # --- Password Policies ---
 resource "authentik_policy_password" "teamstash_password_policy" {
-  name             = "TeamStash Password Policy"
-  length_min       = 8
-  amount_uppercase = 1
-  amount_symbols   = 1
-  amount_digits    = 1
-  error_message    = "Password must be at least 8 characters long and include at least 1 uppercase letter, 1 symbol, and 1 digit."
+  name                    = "TeamStash Password Policy"
+  length_min              = 8
+  amount_uppercase        = 1
+  amount_symbols          = 1
+  amount_digits           = 1
+  error_message           = "Password must be at least 8 characters long and include at least 1 uppercase letter, 1 symbol, and 1 digit."
   check_have_i_been_pwned = true
-  check_zxcvbn = true
-  zxcvbn_score_threshold = 2
+  check_zxcvbn            = true
+  zxcvbn_score_threshold  = 2
 }
 
 # --- Expression Policies ---
+
+resource "authentik_policy_expression" "teamstash_authentication_password_stage" {
+  name       = "teamstash-authentication-flow-password-stage"
+  expression = <<-PY
+flow_plan = request.context.get("flow_plan")
+if not flow_plan:
+    return True
+# If the user does not have a backend attached to it, they haven't
+# been authenticated yet and we need the password stage
+return not hasattr(flow_plan.context.get("pending_user"), "backend")
+PY
+}
+
+resource "authentik_policy_expression" "teamstash_authentication_mfa_validation_stage" {
+  name       = "teamstash-authentication-flow-authenticator-validate-stage"
+  expression = <<-PY
+flow_plan = request.context.get("flow_plan")
+if not flow_plan:
+    return True
+# if the authentication method is webauthn (passwordless), then we skip the authenticator
+# validation stage by returning false (true will execute the stage)
+return not (flow_plan.context.get("auth_method") == "auth_webauthn_pwl")
+PY
+}
+
 resource "authentik_policy_expression" "post_logout_redirect_policy" {
   name       = "post-logout-redirect-policy"
   expression = <<-PY

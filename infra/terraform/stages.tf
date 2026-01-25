@@ -1,5 +1,20 @@
 # All Authentik Stage resources
 
+# --- Authenticator Validate Stages ---
+resource "authentik_stage_authenticator_validate" "teamstash_authentication_mfa_validation" {
+  name = "teamstash-authentication-mfa-validation"
+  device_classes = [
+    "static",
+    "totp",
+    "webauthn",
+    "duo",
+    "sms",
+    "email",
+  ]
+  not_configured_action      = "skip"
+  webauthn_user_verification = "preferred"
+}
+
 # --- Email Stages ---
 resource "authentik_stage_email" "email_account_verification" {
   name                     = "email_account_verification"
@@ -14,8 +29,27 @@ resource "authentik_stage_email" "email_account_verification" {
 
 # --- Identification Stages ---
 resource "authentik_stage_identification" "teamstash_identification_stage" {
-  name        = "TeamStash Identification Stage"
-  user_fields = ["username", "email"]
+  name                      = "TeamStash Identification Stage"
+  user_fields               = ["email", "username"]
+  case_insensitive_matching = true
+  pretend_user_exists       = true
+  show_matched_user         = true
+}
+
+# --- Password Stages ---
+resource "authentik_stage_password" "teamstash_authentication_password" {
+  name = "teamstash-authentication-password"
+  backends = [
+    # User database + standard password
+    "authentik.core.auth.InbuiltBackend",
+    # User database + app passwords
+    "authentik.core.auth.TokenBackend",
+    # User database + LDAP password
+    "authentik.sources.ldap.auth.LDAPBackend",
+    # User database + Kerberos password
+    "authentik.sources.kerberos.auth.KerberosBackend",
+  ]
+  failed_attempts_before_cancel = 5
 }
 
 # --- Prompt Stages ---
@@ -42,8 +76,13 @@ resource "authentik_stage_user_logout" "post_logout_logout_stage" {
   name = "post-logout-user-logout-stage"
 }
 
-# --- User Write Stages ---
+# --- User Login Stages ---
+resource "authentik_stage_user_login" "teamstash_authentication_login" {
+  name             = "teamstash-authentication-login"
+  session_duration = "seconds=0"
+}
 
+# --- User Write Stages ---
 resource "authentik_stage_user_write" "teamstash_user_write_stage" {
   name = "Teamstash User Write Stage"
   # users created via this stage will be inactive until they verify their email
