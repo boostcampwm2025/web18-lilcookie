@@ -27,6 +27,15 @@ resource "authentik_stage_email" "email_account_verification" {
   recovery_cache_timeout   = "minutes=10"
 }
 
+resource "authentik_stage_email" "teamstash_recovery_email" {
+  name                     = "teamstash-recovery-email"
+  activate_user_on_success = false
+  use_global_settings      = true
+  token_expiry             = "minutes=15"
+  subject                  = "TeamStash Password Recovery"
+  template                 = "email/password_reset.html"
+}
+
 # --- Identification Stages ---
 resource "authentik_stage_identification" "teamstash_identification_stage" {
   name                      = "TeamStash Identification Stage"
@@ -35,6 +44,16 @@ resource "authentik_stage_identification" "teamstash_identification_stage" {
   pretend_user_exists       = true
   show_matched_user         = true
   password_stage            = authentik_stage_password.teamstash_authentication_password.id
+  enrollment_flow           = authentik_flow.teamstash_enrollment_flow.uuid
+  recovery_flow             = authentik_flow.teamstash_recovery_flow.uuid
+}
+
+resource "authentik_stage_identification" "teamstash_recovery_identification_stage" {
+  name                      = "teamstash-recovery-identification"
+  user_fields               = ["email", "username"]
+  case_insensitive_matching = true
+  pretend_user_exists       = true
+  show_matched_user         = false
 }
 
 # --- Password Stages ---
@@ -77,6 +96,17 @@ resource "authentik_stage_prompt" "teamstash_password_change_prompt" {
   ]
 }
 
+resource "authentik_stage_prompt" "teamstash_recovery_prompt" {
+  name = "teamstash-recovery-prompt"
+  fields = [
+    authentik_stage_prompt_field.teamstash_password_field.id,
+    authentik_stage_prompt_field.teamstash_password_repeat_field.id,
+  ]
+  validation_policies = [
+    authentik_policy_password.teamstash_password_policy.id,
+  ]
+}
+
 # --- Redirect Stages ---
 resource "authentik_stage_redirect" "post_logout_dummy_redirect" {
   name          = "post-logout-dummy-redirect"
@@ -106,6 +136,12 @@ resource "authentik_stage_user_write" "teamstash_user_write_stage" {
 
 resource "authentik_stage_user_write" "teamstash_password_change_write" {
   name               = "teamstash-password-change-write"
+  user_creation_mode = "never_create"
+  user_type          = "external"
+}
+
+resource "authentik_stage_user_write" "teamstash_recovery_write" {
+  name               = "teamstash-recovery-write"
   user_creation_mode = "never_create"
   user_type          = "external"
 }
