@@ -14,6 +14,7 @@ resource "authentik_flow_stage_binding" "teamstash_auth_identification" {
   stage                = authentik_stage_identification.teamstash_identification_stage.id
   order                = 10
   re_evaluate_policies = true
+  evaluate_on_plan     = false
 }
 
 resource "authentik_flow_stage_binding" "teamstash_auth_password" {
@@ -21,6 +22,7 @@ resource "authentik_flow_stage_binding" "teamstash_auth_password" {
   stage                = authentik_stage_password.teamstash_authentication_password.id
   order                = 20
   re_evaluate_policies = true
+  evaluate_on_plan     = false
 }
 
 resource "authentik_flow_stage_binding" "teamstash_auth_mfa_validation" {
@@ -28,6 +30,7 @@ resource "authentik_flow_stage_binding" "teamstash_auth_mfa_validation" {
   stage                = authentik_stage_authenticator_validate.teamstash_authentication_mfa_validation.id
   order                = 30
   re_evaluate_policies = true
+  evaluate_on_plan     = false
 }
 
 resource "authentik_flow_stage_binding" "teamstash_auth_login" {
@@ -35,6 +38,7 @@ resource "authentik_flow_stage_binding" "teamstash_auth_login" {
   stage                = authentik_stage_user_login.teamstash_authentication_login.id
   order                = 100
   re_evaluate_policies = true
+  evaluate_on_plan     = false
 }
 
 # --- Policy Bindings ---
