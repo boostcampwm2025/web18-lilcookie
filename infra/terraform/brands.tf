@@ -5,6 +5,7 @@ resource "authentik_brand" "teamstash_brand" {
   branding_default_flow_background = "teamstash-login-background.png"
   branding_logo                    = "teamstash-logo.svg"
   branding_favicon                 = "teamstash-favicon.png"
+  flow_authentication              = authentik_flow.teamstash_authentication_flow.uuid
   branding_custom_css              = <<-EOF
 /* Hide 'Powered by authentik' */
 .pf-c-login__footer {display: none}

@@ -5,9 +5,10 @@ resource "authentik_provider_oauth2" "teamstash" {
   client_id   = var.oauth_client_id
   client_type = "public"
 
-  authorization_flow = data.authentik_flow.default_authorization.id
-  invalidation_flow  = authentik_flow.post_logout_redirect.uuid
-  signing_key        = data.authentik_certificate_key_pair.default.id
+  authentication_flow = authentik_flow.teamstash_authentication_flow.uuid
+  authorization_flow  = data.authentik_flow.default_authorization.id
+  invalidation_flow   = authentik_flow.post_logout_redirect.uuid
+  signing_key         = data.authentik_certificate_key_pair.default.id
 
   allowed_redirect_uris = [
     { matching_mode = "strict", url = var.app_redirect_uri },
