@@ -34,6 +34,7 @@ resource "authentik_stage_identification" "teamstash_identification_stage" {
   case_insensitive_matching = true
   pretend_user_exists       = true
   show_matched_user         = true
+  password_stage            = authentik_stage_password.teamstash_authentication_password.id
 }
 
 # --- Password Stages ---
