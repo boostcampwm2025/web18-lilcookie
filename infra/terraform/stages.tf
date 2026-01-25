@@ -38,3 +38,13 @@ resource "authentik_stage_redirect" "post_logout_dummy_redirect" {
   mode          = "static"
   target_static = "about:blank"
 }
+
+# --- User Write Stages ---
+
+resource "authentik_stage_user_write" "teamstash_user_write_stage" {
+  name = "Teamstash User Write Stage"
+  # users created via this stage will be inactive until they verify their email
+  create_users_as_inactive = true
+  user_type                = "external"
+  create_users_group       = authentik_group.teamstash_group.id
+}
