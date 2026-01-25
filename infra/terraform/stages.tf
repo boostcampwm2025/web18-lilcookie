@@ -82,6 +82,7 @@ resource "authentik_stage_prompt" "teamstash_enrollment_prompt" {
   ]
   validation_policies = [
     authentik_policy_password.teamstash_password_policy.id,
+    authentik_policy_expression.teamstash_username_from_email.id,
   ]
 }
 

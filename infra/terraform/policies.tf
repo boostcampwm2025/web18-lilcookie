@@ -15,6 +15,14 @@ resource "authentik_policy_password" "teamstash_password_policy" {
 
 # --- Expression Policies ---
 
+resource "authentik_policy_expression" "teamstash_username_from_email" {
+  name       = "teamstash-username-from-email"
+  expression = <<-PY
+request.context['prompt_data']['username'] = request.context['prompt_data']['email']
+return True
+PY
+}
+
 resource "authentik_policy_expression" "teamstash_authentication_password_stage" {
   name       = "teamstash-authentication-flow-password-stage"
   expression = <<-PY
