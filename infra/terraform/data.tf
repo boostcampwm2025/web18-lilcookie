@@ -9,6 +9,10 @@ data "authentik_flow" "default_invalidation" {
   slug = "default-provider-invalidation-flow"
 }
 
+data "authentik_stage" "default-authentication-identification" {
+  name = "default-authentication-identification"
+}
+
 # 기본 인증서 조회 
 data "authentik_certificate_key_pair" "default" {
   name = "authentik Self-signed Certificate"
