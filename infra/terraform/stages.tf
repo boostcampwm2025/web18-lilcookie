@@ -19,6 +19,9 @@ resource "authentik_stage_prompt" "teamstash_enrollment_prompt" {
     authentik_stage_prompt_field.teamstash_email_field.id,
     authentik_stage_prompt_field.teamstash_password_field.id,
   ]
+  validation_policies = [
+    authentik_policy_password.teamstash_password_policy.id,
+  ]
 }
 
 # --- Identification Stages ---
