@@ -8,6 +8,9 @@ resource "authentik_policy_password" "teamstash_password_policy" {
   amount_symbols   = 1
   amount_digits    = 1
   error_message    = "Password must be at least 8 characters long and include at least 1 uppercase letter, 1 symbol, and 1 digit."
+  check_have_i_been_pwned = true
+  check_zxcvbn = true
+  zxcvbn_score_threshold = 2
 }
 
 # --- Expression Policies ---
