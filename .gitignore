@@ -253,10 +253,8 @@ terraform.rc
 # Backend data directory
 backend/data/
 
-# Authentik data directory
-infra/authentik/data
+# Authentik data director
 infra/authentik/certs
-infra/authentik/custom-templates
 
 # Caddy data directory
 infra/caddy/data

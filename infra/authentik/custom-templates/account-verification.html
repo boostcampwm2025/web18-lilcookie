@@ -1,0 +1,68 @@
+{# Email template for account verification #}
+{% extends "email/base.html" %}
+{% load i18n %}
+{% load humanize %}
+{% block content %}
+<tr>
+    <td class="alert alert-success">
+        {% blocktrans with username=user.username %} Hi {{ username }},
+        {% endblocktrans %}
+    </td>
+</tr>
+<tr>
+    <td class="content-wrap">
+        <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+                <td class="content-block">
+                    {% trans 'Thank you for signing up! Please verify your email address to complete your account registration.' %}
+                </td>
+            </tr>
+            <tr>
+                <td class="content-block">
+                    <table
+                        role="presentation"
+                        border="0"
+                        cellpadding="0"
+                        cellspacing="0"
+                        class="btn btn-primary"
+                    >
+                        <tbody>
+                            <tr>
+                                <td align="center">
+                                    <table
+                                        role="presentation"
+                                        border="0"
+                                        cellpadding="0"
+                                        cellspacing="0"
+                                    >
+                                        <tbody>
+                                            <tr>
+                                                <td>
+                                                    <a
+                                                        id="confirm"
+                                                        href="{{ url }}"
+                                                        rel="noopener noreferrer"
+                                                        target="_blank"
+                                                        >{% trans 'Verify Email' %}</a
+                                                    >
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td class="content-block">
+                    {% blocktrans with expires=expires|naturaltime %}
+                    If you did not create an account, please ignore this email. The verification link is valid for {{ expires }}.
+                    {% endblocktrans %}
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+{% endblock %}
