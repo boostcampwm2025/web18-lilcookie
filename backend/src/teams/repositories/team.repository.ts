@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
 import { ITeamRepository } from "./team.repository.interface";
 import { Team, TeamMember } from "../entities/team.entity";
+import { Prisma } from "@prisma/client";
 
 @Injectable()
 export class TeamRepository implements ITeamRepository {
@@ -53,8 +54,13 @@ export class TeamRepository implements ITeamRepository {
         where: { teamId_userId: { teamId, userId } },
       });
       return true;
-    } catch {
-      return false;
+    } catch (error) {
+      // 레코드가 없는 경우만 false 반환
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+        return false;
+      }
+      // 그 외 에러는 그대로
+      throw error;
     }
   }
 
