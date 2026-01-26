@@ -1,15 +1,15 @@
 import { Link } from "../entities/link.entity";
 
 export class LinkResponseDto {
-  linkId: string;
-  teamId: string;
+  id: number;
+  teamId: number;
   url: string;
   title: string;
   tags: string[];
   summary: string;
-  createdAt: string;
-  createdBy: string;
-  folderId: string | null;
+  createdAt: Date;
+  createdBy: number;
+  folderId: number | null;
 
   constructor(partial: Partial<LinkResponseDto>) {
     Object.assign(this, partial);
@@ -17,15 +17,19 @@ export class LinkResponseDto {
 
   static from(link: Link): LinkResponseDto {
     return new LinkResponseDto({
-      linkId: link.linkId,
+      id: link.id,
       teamId: link.teamId,
       url: link.url,
       title: link.title,
-      tags: link.tags,
+      tags: safeJsonParse(link.tags),
       summary: link.summary,
       createdAt: link.createdAt,
       createdBy: link.createdBy,
       folderId: link.folderId,
     });
   }
+}
+
+function safeJsonParse<T>(value: string): T {
+  return JSON.parse(value) as T;
 }

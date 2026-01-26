@@ -15,7 +15,7 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null); // 선택된 폴더
+  const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null); // 선택된 폴더
 
   const getTeamName = (id: string) => {
     // web01~30, ios01~04 표시
@@ -30,7 +30,9 @@ const Dashboard = () => {
       setLoading(true);
       setError(null);
 
-      const response = await linkApi.getLinks(team);
+      // team string에서 숫자 추출 (예: "web18" → 18, "ios01" → 1)
+      const numericTeamId = parseInt(team.replace(/\D/g, ""), 10);
+      const response = await linkApi.getLinks(numericTeamId || undefined);
 
       if (response.success) {
         setLinks(response.data);
@@ -64,7 +66,7 @@ const Dashboard = () => {
     // 태그 필터링
     if (selectedTags.length > 0) {
       result = result.filter((link) =>
-        selectedTags.every((tag) => link.tags.includes(tag))
+        selectedTags.every((tag) => link.tags.includes(tag)),
       );
     }
 
@@ -76,7 +78,7 @@ const Dashboard = () => {
           link.title.toLowerCase().includes(query) ||
           link.summary.toLowerCase().includes(query) ||
           link.tags.some((tag) => tag.toLowerCase().includes(query)) ||
-          link.url.toLowerCase().includes(query)
+          link.url.toLowerCase().includes(query),
       );
     }
 
@@ -93,8 +95,8 @@ const Dashboard = () => {
     }
 
     try {
-      await linkApi.deleteLink(teamId, linkId);
-      setLinks(links.filter((link) => link.linkId !== linkId));
+      await linkApi.deleteLink(linkId);
+      setLinks(links.filter((link) => link.uuid !== linkId));
     } catch (err) {
       console.error("링크 삭제 실패:", err);
       // TODO: 커스텀 알림 모달로 교체 필요
@@ -117,11 +119,15 @@ const Dashboard = () => {
   };
 
   const handleMarkAllAsRead = () => {
-    const allLinkIds = links.map((link) => link.linkId);
-    const visitedLinks = JSON.parse(localStorage.getItem("visited_links") || "[]");
-    const newVisitedLinks = Array.from(new Set([...visitedLinks, ...allLinkIds]));
+    const allLinkIds = links.map((link) => link.uuid);
+    const visitedLinks = JSON.parse(
+      localStorage.getItem("visited_links") || "[]",
+    );
+    const newVisitedLinks = Array.from(
+      new Set([...visitedLinks, ...allLinkIds]),
+    );
     localStorage.setItem("visited_links", JSON.stringify(newVisitedLinks));
-    
+
     // Force re-render of LinkCards by updating a key or state that they depend on
     // Since LinkCard reads from localStorage on mount, we might need to reload or use a context
     // For now, a simple window reload is the easiest way to reflect changes immediately without complex state management
@@ -233,7 +239,7 @@ const Dashboard = () => {
           {/* 왼쪽: 폴더 트리 */}
           <div className="col-span-3">
             <FolderTree
-              teamId={teamId || ""}
+              teamId={parseInt((teamId || "0").replace(/\D/g, ""), 10)}
               selectedFolderId={selectedFolderId}
               onFolderClick={setSelectedFolderId}
             />

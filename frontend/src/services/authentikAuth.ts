@@ -23,7 +23,7 @@ export interface AccessTokenPayload {
   name?: string;
   email?: string;
   preferred_username?: string;
-  team_id: string;
+  team_id?: string;
   exp: number;
   iat: number;
 }
@@ -49,6 +49,14 @@ export function getStoredAccessToken(): string | null {
   return getCookie(COOKIE_NAMES.ACCESS_TOKEN);
 }
 
+/**
+ * Decodes JWT payload WITHOUT signature verification.
+ * Use ONLY for display purposes (UI). Never trust for authorization.
+ * All authorization decisions are made by the backend which validates signatures via JWKS.
+ * JWT 페이로드를 서명 검증 없이 디코딩합니다.
+ * 오직 UI 표시 용도로만 사용하세요. 권한 부여를 위해 신뢰하지 마세요.
+ * 모든 권한 부여 결정은 JWKS를 통해 서명을 검증하는 백엔드에서 이루어집니다.
+ */
 export function decodeAccessToken(token: string): AccessTokenPayload | null {
   try {
     const parts = token.split(".");

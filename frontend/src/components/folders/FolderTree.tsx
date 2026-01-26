@@ -4,14 +4,12 @@ import type { Folder } from "../../types";
 import { folderApi } from "../../services/api";
 
 interface FolderTreeProps {
-  teamId: string;
-  onFolderClick?: (folderId: string | null) => void;
-  selectedFolderId: string | null;
+  teamId: number;
+  onFolderClick?: (folderId: number | null) => void;
+  selectedFolderId: number | null;
 }
 
-interface FolderNode extends Folder {
-  children: FolderNode[];
-}
+// 1단계 폴더 구조로 단순화 - 트리 구조 제거
 
 const FolderTree = ({
   teamId,
@@ -19,13 +17,9 @@ const FolderTree = ({
   selectedFolderId,
 }: FolderTreeProps) => {
   const [folders, setFolders] = useState<Folder[]>([]);
-  const [folderTree, setFolderTree] = useState<FolderNode[]>([]);
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
-    new Set()
-  );
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
-  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  const [editingFolderId, setEditingFolderId] = useState<number | null>(null);
   const [folderName, setFolderName] = useState("");
 
   // 폴더 목록 가져오기
@@ -49,31 +43,6 @@ const FolderTree = ({
     }
   }, [teamId]);
 
-  // 폴더를 트리 구조로 변환
-  useEffect(() => {
-    const buildTree = (parentId: string | null): FolderNode[] => {
-      return folders
-        .filter((folder) => folder.parentFolderId === parentId)
-        .map((folder) => ({
-          ...folder,
-          children: buildTree(folder.folderId),
-        }));
-    };
-
-    setFolderTree(buildTree(null));
-  }, [folders]);
-
-  // 폴더 펼치기/접기
-  const toggleFolder = (folderId: string) => {
-    const newExpanded = new Set(expandedFolders);
-    if (newExpanded.has(folderId)) {
-      newExpanded.delete(folderId);
-    } else {
-      newExpanded.add(folderId);
-    }
-    setExpandedFolders(newExpanded);
-  };
-
   // 폴더 생성
   const handleCreateFolder = async () => {
     if (!folderName.trim()) {
@@ -81,14 +50,15 @@ const FolderTree = ({
       return;
     }
 
-    // localStorage에서 camperId 가져오기
-    const camperId = localStorage.getItem("camperId") || "J001";
+    // localStorage에서 userId 가져오기
+    const userIdStr = localStorage.getItem("userId") || "1";
+    const userId = parseInt(userIdStr, 10);
 
     try {
       await folderApi.createFolder({
         teamId,
         folderName: folderName.trim(),
-        userId: camperId,
+        userId,
       });
 
       // 폴더 목록 새로고침
@@ -106,14 +76,14 @@ const FolderTree = ({
   };
 
   // 폴더 이름 수정
-  const handleUpdateFolder = async (folderId: string) => {
+  const handleUpdateFolder = async (folderUuid: string) => {
     if (!folderName.trim()) {
       alert("폴더 이름을 입력하세요.");
       return;
     }
 
     try {
-      await folderApi.updateFolder(folderId, {
+      await folderApi.updateFolder(folderUuid, {
         folderName: folderName.trim(),
       });
 
@@ -132,17 +102,21 @@ const FolderTree = ({
   };
 
   // 폴더 삭제
-  const handleDeleteFolder = async (folderId: string, folderName: string) => {
+  const handleDeleteFolder = async (
+    folderUuid: string,
+    folderNameStr: string,
+    folderId: number,
+  ) => {
     if (
       !window.confirm(
-        `"${folderName}" 폴더를 삭제하시겠습니까?\n하위 폴더는 함께 삭제되고, 링크는 폴더에서 제거됩니다.`
+        `"${folderNameStr}" 폴더를 삭제하시겠습니까?\n폴더 내 링크는 폴더에서 제거됩니다.`,
       )
     ) {
       return;
     }
 
     try {
-      await folderApi.deleteFolder(folderId);
+      await folderApi.deleteFolder(folderUuid);
 
       // 폴더 목록 새로고침
       const response = await folderApi.getFolders(teamId);
@@ -161,9 +135,9 @@ const FolderTree = ({
   };
 
   // 수정 시작
-  const startEdit = (folder: FolderNode) => {
-    setEditingFolderId(folder.folderId);
-    setFolderName(folder.folderName);
+  const startEdit = (folder: Folder) => {
+    setEditingFolderId(folder.id);
+    setFolderName(folder.name);
   };
 
   // 수정 취소
@@ -172,35 +146,21 @@ const FolderTree = ({
     setFolderName("");
   };
 
-  // 폴더 노드 렌더링
-  const renderFolder = (folder: FolderNode, level: number = 0) => {
-    const hasChildren = folder.children.length > 0;
-    const isExpanded = expandedFolders.has(folder.folderId);
-    const isSelected = selectedFolderId === folder.folderId;
-    const isEditing = editingFolderId === folder.folderId;
+  // 폴더 항목 렌더링 (1단계 구조로 단순화)
+  const renderFolder = (folder: Folder) => {
+    const isSelected = selectedFolderId === folder.id;
+    const isEditing = editingFolderId === folder.id;
 
     return (
-      <div key={folder.folderId}>
+      <div key={folder.id}>
         <div
           className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors group ${
             isSelected
               ? "bg-blue-100 text-blue-700 font-semibold"
               : "hover:bg-gray-100 text-gray-700"
           }`}
-          style={{ paddingLeft: `${level * 20 + 12}px` }}
         >
-          {hasChildren && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleFolder(folder.folderId);
-              }}
-              className="w-4 h-4 flex items-center justify-center hover:bg-gray-200 rounded cursor-pointer"
-            >
-              {isExpanded ? "▼" : "▶"}
-            </button>
-          )}
-          {!hasChildren && <span className="w-4" />}
+          <span className="w-4" />
           <span className="text-lg">📁</span>
 
           {isEditing ? (
@@ -211,7 +171,7 @@ const FolderTree = ({
                 onChange={(e) => setFolderName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
-                    handleUpdateFolder(folder.folderId);
+                    handleUpdateFolder(folder.uuid);
                   } else if (e.key === "Escape") {
                     cancelEdit();
                   }
@@ -220,7 +180,7 @@ const FolderTree = ({
                 autoFocus
               />
               <button
-                onClick={() => handleUpdateFolder(folder.folderId)}
+                onClick={() => handleUpdateFolder(folder.uuid)}
                 className="px-2 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer"
               >
                 저장
@@ -236,9 +196,9 @@ const FolderTree = ({
             <>
               <span
                 className="flex-1 cursor-pointer"
-                onClick={() => onFolderClick?.(folder.folderId)}
+                onClick={() => onFolderClick?.(folder.id)}
               >
-                {folder.folderName}
+                {folder.name}
               </span>
               <button
                 onClick={(e) => {
@@ -253,7 +213,7 @@ const FolderTree = ({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleDeleteFolder(folder.folderId, folder.folderName);
+                  handleDeleteFolder(folder.uuid, folder.name, folder.id);
                 }}
                 className="opacity-0 group-hover:opacity-100 px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-opacity cursor-pointer"
                 title="삭제"
@@ -263,12 +223,6 @@ const FolderTree = ({
             </>
           )}
         </div>
-
-        {hasChildren && isExpanded && (
-          <div>
-            {folder.children.map((child) => renderFolder(child, level + 1))}
-          </div>
-        )}
       </div>
     );
   };
@@ -353,14 +307,14 @@ const FolderTree = ({
         <span>전체 링크</span>
       </div>
 
-      {/* 폴더 트리 */}
-      {folderTree.length === 0 ? (
+      {/* 폴더 목록 (1단계 구조) */}
+      {folders.length === 0 ? (
         <div className="text-sm text-gray-500 text-center py-4">
           폴더가 없습니다
         </div>
       ) : (
         <div className="space-y-1">
-          {folderTree.map((folder) => renderFolder(folder))}
+          {folders.map((folder) => renderFolder(folder))}
         </div>
       )}
     </div>

@@ -10,11 +10,10 @@ const Login = () => {
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       const teamId = getTeamIdFromToken();
-      if (teamId) {
-        navigate(`/${teamId}`, { replace: true });
+      if (!teamId) {
+        throw new Error("Failed to determine team ID from authentication token.");
       }
-      // Team ID 없으면 라우팅 안 함
-      // Bad UX: 사용자는 무슨 일이 일어났는지 알지 못함
+      navigate(`/${teamId}`, { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate]);
 

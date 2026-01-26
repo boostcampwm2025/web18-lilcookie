@@ -4,9 +4,10 @@ import { LinksService } from "./links.service";
 import { NotificationModule } from "../notification/notification.module";
 import { LinkRepository } from "./repositories/link.repository";
 import { OidcModule } from "../oidc/oidc.module";
+import { UserModule } from "src/user/user.module";
 
 @Module({
-  imports: [NotificationModule, OidcModule],
+  imports: [NotificationModule, OidcModule, UserModule],
   controllers: [LinksController],
   providers: [LinksService, LinkRepository],
 })

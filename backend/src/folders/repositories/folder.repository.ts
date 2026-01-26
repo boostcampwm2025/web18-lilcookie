@@ -7,26 +7,16 @@ import { Folder } from "../entities/folder.entity";
 export class FolderRepository implements IFolderRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(folder: Folder): Promise<Folder> {
+  async create(folder: Omit<Folder, "id" | "uuid" | "createdAt">): Promise<Folder> {
     const created = await this.prisma.folder.create({
       data: {
-        folderId: folder.folderId,
         teamId: folder.teamId,
-        folderName: folder.folderName,
-        parentFolderId: folder.parentFolderId,
-        createdAt: folder.createdAt,
+        name: folder.name,
         createdBy: folder.createdBy,
       },
     });
 
-    return new Folder({
-      folderId: created.folderId,
-      teamId: created.teamId,
-      folderName: created.folderName,
-      parentFolderId: created.parentFolderId,
-      createdAt: created.createdAt,
-      createdBy: created.createdBy,
-    });
+    return new Folder(created);
   }
 
   async findAll(): Promise<Folder[]> {
@@ -36,20 +26,10 @@ export class FolderRepository implements IFolderRepository {
       },
     });
 
-    return folders.map(
-      (folder) =>
-        new Folder({
-          folderId: folder.folderId,
-          teamId: folder.teamId,
-          folderName: folder.folderName,
-          parentFolderId: folder.parentFolderId,
-          createdAt: folder.createdAt,
-          createdBy: folder.createdBy,
-        }),
-    );
+    return folders.map((f) => new Folder(f));
   }
 
-  async findAllByTeam(teamId: string): Promise<Folder[]> {
+  async findAllByTeam(teamId: number): Promise<Folder[]> {
     const folders = await this.prisma.folder.findMany({
       where: {
         teamId,
@@ -59,97 +39,42 @@ export class FolderRepository implements IFolderRepository {
       },
     });
 
-    return folders.map(
-      (folder) =>
-        new Folder({
-          folderId: folder.folderId,
-          teamId: folder.teamId,
-          folderName: folder.folderName,
-          parentFolderId: folder.parentFolderId,
-          createdAt: folder.createdAt,
-          createdBy: folder.createdBy,
-        }),
-    );
+    return folders.map((f) => new Folder(f));
   }
 
-  async findOne(folderId: string): Promise<Folder | null> {
+  async findOne(uuid: string): Promise<Folder | null> {
     const folder = await this.prisma.folder.findUnique({
       where: {
-        folderId,
+        uuid,
       },
     });
 
-    if (!folder) {
-      return null;
-    }
-
-    return new Folder({
-      folderId: folder.folderId,
-      teamId: folder.teamId,
-      folderName: folder.folderName,
-      parentFolderId: folder.parentFolderId,
-      createdAt: folder.createdAt,
-      createdBy: folder.createdBy,
-    });
+    return folder ? new Folder(folder) : null;
   }
 
-  async update(folderId: string, folderName: string): Promise<Folder | null> {
+  async update(uuid: string, name: string): Promise<Folder | null> {
     try {
       const updated = await this.prisma.folder.update({
         where: {
-          folderId,
+          uuid,
         },
         data: {
-          folderName,
+          name,
         },
       });
 
-      return new Folder({
-        folderId: updated.folderId,
-        teamId: updated.teamId,
-        folderName: updated.folderName,
-        parentFolderId: updated.parentFolderId,
-        createdAt: updated.createdAt,
-        createdBy: updated.createdBy,
-      });
+      return new Folder(updated);
     } catch {
       return null;
     }
   }
 
-  async remove(folderId: string): Promise<boolean> {
+  async remove(uuid: string): Promise<boolean> {
     try {
-      await this.prisma.folder.delete({
-        where: {
-          folderId,
-        },
-      });
+      await this.prisma.folder.delete({ where: { uuid } });
       return true;
     } catch {
       return false;
     }
-  }
-
-  async findSubfolders(parentFolderId: string): Promise<Folder[]> {
-    const folders = await this.prisma.folder.findMany({
-      where: {
-        parentFolderId,
-      },
-      orderBy: {
-        createdAt: "asc",
-      },
-    });
-
-    return folders.map(
-      (folder) =>
-        new Folder({
-          folderId: folder.folderId,
-          teamId: folder.teamId,
-          folderName: folder.folderName,
-          parentFolderId: folder.parentFolderId,
-          createdAt: folder.createdAt,
-          createdBy: folder.createdBy,
-        }),
-    );
   }
 }

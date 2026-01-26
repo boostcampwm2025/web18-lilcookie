@@ -41,16 +41,62 @@ resource "authentik_flow_stage_binding" "post_logout_redirect_binding" {
 resource "authentik_policy_expression" "post_logout_redirect_policy" {
   name       = "post-logout-redirect-policy"
   expression = <<-PY
-# Adapted from https://docs.goauthentik.io/add-secure-apps/flows-stages/flow/examples/snippets/#redirect-current-flow-to-another-url
 plan = request.context.get("flow_plan")
 if not plan:
     return False
-# `request.http_request` is a Django HTTPRequest object, see https://docs.goauthentik.io/customize/policies/expression/#variables
-query_params = request.http_request.GET.get("query")  # this is a long string
-post_logout_redirect_uri = next(filter(lambda s: s.startswith("post_logout_redirect_uri"), query_params.split("&")))  # this looks like "post_logout_redirect_uri=..."
-post_logout_redirect_uri = post_logout_redirect_uri.split("=")[1]  # remove "post_logout_redirect_uri=" prefix
-post_logout_redirect_uri = post_logout_redirect_uri.replace("%3A", ":").replace("%2F", "/")  # Authentik won't perform redirect properly unless we present non-URL-encoded URI to plan.redirect() in the next line.
-plan.redirect(post_logout_redirect_uri)
+
+# post_logout_redirect_uri is nested inside "query" param as a query string
+query_string = request.http_request.GET.get("query")
+if not query_string:
+    return False
+
+# Extract post_logout_redirect_uri from the query string
+post_logout_param = None
+for param in query_string.split("&"):
+    if param.startswith("post_logout_redirect_uri="):
+        post_logout_param = param
+        break
+
+if not post_logout_param:
+    return False
+
+# Remove "post_logout_redirect_uri=" prefix
+uri = post_logout_param.split("=", 1)[1] if "=" in post_logout_param else None
+if not uri:
+    return False
+
+# URL decode (applied twice - once for query encoding, once for the URI itself)
+uri = regex_replace(uri, "%25", "%PERCENT_TEMP%")
+uri = regex_replace(uri, "%3A", ":")
+uri = regex_replace(uri, "%2F", "/")
+uri = regex_replace(uri, "%3F", "?")
+uri = regex_replace(uri, "%3D", "=")
+uri = regex_replace(uri, "%26", "&")
+uri = regex_replace(uri, "%PERCENT_TEMP%", "%")
+# Second pass for double-encoded values
+uri = regex_replace(uri, "%3A", ":")
+uri = regex_replace(uri, "%2F", "/")
+uri = regex_replace(uri, "%3F", "?")
+uri = regex_replace(uri, "%3D", "=")
+uri = regex_replace(uri, "%26", "&")
+
+allowed_hosts = ${jsonencode(var.post_logout_allowed_hosts)}
+
+# Reject javascript: and data: schemes
+if regex_match(uri, "^(javascript|data|vbscript):"):
+    return False
+
+# Check if absolute URL (has scheme)
+if regex_match(uri, "^https?://"):
+    host = regex_replace(uri, "^https?://([^/:]+).*", r"\1")
+    if host not in allowed_hosts:
+        return False
+elif regex_match(uri, "^//"):
+    host = regex_replace(uri, "^//([^/:]+).*", r"\1")
+    if host not in allowed_hosts:
+        return False
+
+plan.redirect(uri)
 return False
 PY
 }
