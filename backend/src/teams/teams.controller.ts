@@ -6,7 +6,7 @@ import { TeamMemberResponseDto } from "./dto/team-member.response.dto";
 import { OidcGuard } from "../oidc/guards/oidc.guard";
 import { CurrentUser } from "../oidc/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "../oidc/interfaces/oidc.interface";
-import { ResponseBuilder } from "src/common/builders/response.builder";
+import { ResponseBuilder } from "../common/builders/response.builder";
 
 @Controller("teams")
 export class TeamsController {
