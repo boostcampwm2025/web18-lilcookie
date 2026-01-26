@@ -14,7 +14,7 @@ export class TeamMember {
   id: number;
   teamId: number;
   userId: number;
-  role: string; // "owner" | "member"
+  role: string;
   joinedAt: Date;
 
   constructor(partial: Partial<TeamMember>) {

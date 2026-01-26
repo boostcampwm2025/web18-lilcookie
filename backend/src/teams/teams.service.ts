@@ -1,6 +1,7 @@
 import { Injectable, ConflictException, NotFoundException, ForbiddenException } from "@nestjs/common";
 import { TeamRepository } from "./repositories/team.repository";
 import { Team, TeamMember } from "./entities/team.entity";
+import { TeamRole } from "./enums/team-role.enum";
 
 @Injectable()
 export class TeamsService {
@@ -9,7 +10,7 @@ export class TeamsService {
   // 팀 생성 (생성자는 자동으로 owner로 가입)
   async create(name: string, userId: number): Promise<{ team: Team; member: TeamMember }> {
     const team = await this.teamRepository.create(name);
-    const member = await this.teamRepository.addMember(team.id, userId, "owner");
+    const member = await this.teamRepository.addMember(team.id, userId, TeamRole.OWNER);
 
     return { team, member };
   }
@@ -41,7 +42,7 @@ export class TeamsService {
       throw new ConflictException("이미 해당 팀에 가입되어 있습니다.");
     }
 
-    return this.teamRepository.addMember(team.id, userId, "member");
+    return this.teamRepository.addMember(team.id, userId, TeamRole.MEMBER);
   }
 
   // 팀 탈퇴
@@ -57,7 +58,7 @@ export class TeamsService {
     }
 
     // owner는 탈퇴 불가
-    if (member.role === "owner") {
+    if (member.role === TeamRole.OWNER) {
       throw new ForbiddenException("팀 소유자는 탈퇴할 수 없습니다. 팀을 삭제하거나 소유권을 위임해주세요.");
     }
 
