@@ -5,6 +5,7 @@ import {
   verifyState,
   storeTokens,
   getUserInfo,
+  getTeamIdFromToken,
 } from "../services/authentikAuth";
 import { clearStoredOAuthParams } from "../utils/pkce";
 import { useAuth } from "../contexts/AuthContext";
@@ -47,15 +48,17 @@ const AuthCallback = () => {
         // 사용자 정보 조회
         const userInfo = await getUserInfo(tokenResponse.access_token);
 
-        // AuthContext에 사용자 정보 저장
         setOAuthUser({
           sub: userInfo.sub,
           email: userInfo.email || "",
           nickname: userInfo.name || userInfo.preferred_username || "",
         });
 
-        // 대시보드로 이동
-        navigate("/web01", { replace: true });
+        const teamId = getTeamIdFromToken(tokenResponse.access_token);
+        if (!teamId) {
+          throw new Error("토큰에서 팀 정보를 찾을 수 없습니다.");
+        }
+        navigate(`/${teamId}`, { replace: true });
       } catch (error) {
         setStatus("error");
         setErrorMessage(

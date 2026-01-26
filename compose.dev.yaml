@@ -73,10 +73,8 @@ services:
     volumes:
       - ./infra/caddy/caddy-conf/Caddyfile.dev:/etc/caddy/Caddyfile
       - ./infra/caddy/caddy-site:/srv
-      - caddy-data:/data
-      - caddy-config:/config
+      - ./infra/caddy/data:/data
+      - ./infra/caddy/config:/config
 
 volumes:
   authentik-database:
-  caddy-data:
-  caddy-config:

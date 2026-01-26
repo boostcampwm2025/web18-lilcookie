@@ -16,8 +16,8 @@ export const AUTHENTIK_CONFIG = {
   redirectUri: REDIRECT_URI,
 
   // 요청할 권한 범위
-  scope: "openid profile email offline_access",
+  scope: "openid profile email roles offline_access team_id links:read links:write ai:use folders:read folders:write",
 
   // 로그아웃 엔드포인트 (Authentik 세션도 함께 종료)
-  logoutUrl: `${AUTHENTIK_URL}/application/o/team-stash/end-session/`,
+  logoutUrl: `${AUTHENTIK_URL}/application/o/teamstash/end-session/`,
 };

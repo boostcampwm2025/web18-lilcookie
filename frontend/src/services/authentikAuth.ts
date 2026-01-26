@@ -18,12 +18,61 @@ export interface TokenResponse {
   scope: string;
 }
 
-// 사용자 정보 타입 (Authentik에서 반환하는 형태)
-export interface AuthentikUserInfo {
+export interface AccessTokenPayload {
   sub: string;
   name?: string;
   email?: string;
   preferred_username?: string;
+  team_id?: string;
+  exp: number;
+  iat: number;
+}
+
+const COOKIE_NAMES = {
+  ACCESS_TOKEN: "access_token",
+  REFRESH_TOKEN: "refresh_token",
+  EXPIRES_AT: "token_expires_at",
+};
+
+function getCookie(name: string): string | null {
+  const cookies = document.cookie.split("; ");
+  for (const cookie of cookies) {
+    const [cookieName, cookieValue] = cookie.split("=");
+    if (cookieName === name) {
+      return decodeURIComponent(cookieValue);
+    }
+  }
+  return null;
+}
+
+export function getStoredAccessToken(): string | null {
+  return getCookie(COOKIE_NAMES.ACCESS_TOKEN);
+}
+
+/**
+ * Decodes JWT payload WITHOUT signature verification.
+ * Use ONLY for display purposes (UI). Never trust for authorization.
+ * All authorization decisions are made by the backend which validates signatures via JWKS.
+ * JWT 페이로드를 서명 검증 없이 디코딩합니다.
+ * 오직 UI 표시 용도로만 사용하세요. 권한 부여를 위해 신뢰하지 마세요.
+ * 모든 권한 부여 결정은 JWKS를 통해 서명을 검증하는 백엔드에서 이루어집니다.
+ */
+export function decodeAccessToken(token: string): AccessTokenPayload | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1]));
+    return payload as AccessTokenPayload;
+  } catch {
+    return null;
+  }
+}
+
+export function getTeamIdFromToken(token?: string): string | null {
+  const accessToken = token ?? getStoredAccessToken();
+  if (!accessToken) return null;
+  const payload = decodeAccessToken(accessToken);
+  return payload?.team_id ?? null;
 }
 
 // Authentik 로그인 시작
@@ -102,10 +151,9 @@ export function verifyState(receivedState: string): boolean {
   return storedState === receivedState;
 }
 
-// Access token으로 사용자 정보 조회
 export async function getUserInfo(
   accessToken: string,
-): Promise<AuthentikUserInfo> {
+): Promise<AccessTokenPayload> {
   const response = await fetch(AUTHENTIK_CONFIG.userinfoUrl, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -119,20 +167,11 @@ export async function getUserInfo(
   return response.json();
 }
 
-// 쿠키 이름
-const COOKIE_NAMES = {
-  ACCESS_TOKEN: "access_token",
-  REFRESH_TOKEN: "refresh_token",
-  EXPIRES_AT: "token_expires_at",
-};
-
-// 쿠키 설정
 function setCookie(name: string, value: string, maxAgeSeconds?: number): void {
   const isLocalhost = window.location.hostname === "localhost";
   let cookie = `${name}=${encodeURIComponent(value)}; path=/; SameSite=Strict`;
 
   if (!isLocalhost) {
-    //https일 때만 Secure 옵션 추가
     cookie += "; Secure";
   }
 
@@ -143,24 +182,10 @@ function setCookie(name: string, value: string, maxAgeSeconds?: number): void {
   document.cookie = cookie;
 }
 
-// 쿠키 가져오기
-function getCookie(name: string): string | null {
-  const cookies = document.cookie.split("; ");
-  for (const cookie of cookies) {
-    const [cookieName, cookieValue] = cookie.split("=");
-    if (cookieName === name) {
-      return decodeURIComponent(cookieValue);
-    }
-  }
-  return null;
-}
-
-// 쿠키 삭제
 function deleteCookie(name: string): void {
   document.cookie = `${name}=; path=/; max-age=0`;
 }
 
-// 토큰 정보 저장 (쿠키) - access_token, refresh_token, 만료 시간 저장
 export function storeTokens(tokenResponse: TokenResponse): void {
   // access_token 저장 (만료 시간 설정)
   setCookie(
@@ -186,11 +211,6 @@ export function storeTokens(tokenResponse: TokenResponse): void {
     expiresAt.toString(),
     tokenResponse.expires_in,
   );
-}
-
-// 저장된 Access token 가져오기
-export function getStoredAccessToken(): string | null {
-  return getCookie(COOKIE_NAMES.ACCESS_TOKEN);
 }
 
 // 저장된 Refresh token 가져오기

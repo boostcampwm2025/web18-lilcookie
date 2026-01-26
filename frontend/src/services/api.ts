@@ -1,12 +1,17 @@
 import axios from "axios";
 import type { ApiResponse, Link, Folder } from "../types";
+import {
+  getStoredAccessToken,
+  refreshAccessToken,
+  clearTokens,
+} from "./authentikAuth";
 
 // API 베이스 URL
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 // axios 인스턴스
 const api = axios.create({
-  baseURL: `${API_BASE_URL}/api`,
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -41,13 +46,13 @@ const processQueue = (error: unknown = null) => {
   failedQueue = [];
 };
 
-// 인증이 필요 없는 엔드포인트 (토큰 갱신하지 않을 엔드포인트)
-const PUBLIC_ENDPOINTS = ["/auth/login", "/auth/signup", "/auth/refresh"];
-
-// 인증이 필요 없는 요청인지 확인
-const isPublicEndpoint = (url: string) => {
-  return PUBLIC_ENDPOINTS.some((endpoint) => url?.includes(endpoint));
-};
+api.interceptors.request.use((config) => {
+  const token = getStoredAccessToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 // Response Interceptor: 401 에러 시 토큰 자동 갱신
 api.interceptors.response.use(
@@ -75,14 +80,18 @@ api.interceptors.response.use(
 
       try {
         // 토큰 갱신 시도
-        await api.post("/auth/refresh");
+        const newTokens = await refreshAccessToken();
         isRefreshing = false;
 
         // 대기 중인 모든 요청 성공 처리
-        processQueue();
+        if (newTokens) {
+          processQueue();
+          // 원래 요청 재시도
+          originalRequest.headers.Authorization = `Bearer ${newTokens.access_token}`;
+          return api(originalRequest);
+        }
 
-        // 원래 요청 재시도
-        return api(originalRequest);
+        throw new Error("Token refresh failed");
       } catch (refreshError) {
         isRefreshing = false;
 
@@ -90,6 +99,7 @@ api.interceptors.response.use(
         processQueue(refreshError);
 
         // 갱신 실패 시 콜백 호출 (AuthContext에서 로그아웃 처리)
+        clearTokens();
         if (onAuthErrorCallback) {
           onAuthErrorCallback();
         }
@@ -159,7 +169,7 @@ export const folderApi = {
 
   // 1단계 폴더 구조로 단순화
 
-  // POST /api/folders - 새 폴더 생성
+  // POST /folders - 새 폴더 생성
   createFolder: async (data: {
     teamId: number;
     folderName: string;
