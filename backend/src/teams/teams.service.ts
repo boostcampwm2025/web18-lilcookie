@@ -1,7 +1,7 @@
 import { Injectable, ConflictException, NotFoundException, ForbiddenException } from "@nestjs/common";
 import { TeamRepository } from "./repositories/team.repository";
 import { Team, TeamMember } from "./entities/team.entity";
-import { TeamRole } from "./enums/team-role.enum";
+import { TeamRole } from "./constants/team-role.constants";
 
 @Injectable()
 export class TeamsService {
