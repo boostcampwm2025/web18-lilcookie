@@ -11,6 +11,7 @@ import {
   Inject,
   type LoggerService,
   UseGuards,
+  ParseUUIDPipe,
 } from "@nestjs/common";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { LinksService } from "./links.service";
@@ -71,7 +72,7 @@ export class LinksController {
   // 단건 조회
   @Get(":linkUuid")
   @RequireScopes("links:read")
-  async findOne(@Param("linkUuid") linkUuid: string) {
+  async findOne(@Param("linkUuid", ParseUUIDPipe) linkUuid: string) {
     this.logger.log(`GET /api/links/${linkUuid} - 링크 단건 조회`);
 
     const link = await this.linksService.findOne(linkUuid);
@@ -88,7 +89,7 @@ export class LinksController {
   @Delete(":linkUuid")
   @RequireScopes("links:write")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param("linkUuid") linkUuid: string) {
+  async remove(@Param("linkUuid", ParseUUIDPipe) linkUuid: string) {
     this.logger.log(`DELETE /api/links/${linkUuid} - 링크 단건 삭제`);
 
     await this.linksService.remove(linkUuid);

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Body, Param, UseGuards, HttpStatus } from "@nestjs/common";
+import { Controller, Post, Get, Delete, Body, Param, UseGuards, HttpStatus, ParseUUIDPipe } from "@nestjs/common";
 import { TeamsService } from "./teams.service";
 import { CreateTeamRequestDto } from "./dto/create-team.request.dto";
 import { TeamResponseDto } from "./dto/team.response.dto";
@@ -42,7 +42,7 @@ export class TeamsController {
 
   // 초대 링크용 팀 정보 조회 (가입 전 확인용)
   @Get(":uuid/invite")
-  async getTeamForInvite(@Param("uuid") uuid: string) {
+  async getTeamForInvite(@Param("uuid", ParseUUIDPipe) uuid: string) {
     const team = await this.teamsService.getTeamByUuid(uuid);
 
     return ResponseBuilder.success<{ name: string }>()
@@ -55,7 +55,7 @@ export class TeamsController {
   // 팀 가입
   @Post(":uuid/join")
   @UseGuards(OidcGuard)
-  async join(@Param("uuid") uuid: string, @CurrentUser() user: AuthenticatedUser) {
+  async join(@Param("uuid", ParseUUIDPipe) uuid: string, @CurrentUser() user: AuthenticatedUser) {
     await this.teamsService.join(uuid, user.userId);
     return ResponseBuilder.success<{ success: true }>()
       .status(HttpStatus.OK)
@@ -67,7 +67,7 @@ export class TeamsController {
   // 팀 탈퇴
   @Delete(":uuid")
   @UseGuards(OidcGuard)
-  async leave(@Param("uuid") uuid: string, @CurrentUser() user: AuthenticatedUser) {
+  async leave(@Param("uuid", ParseUUIDPipe) uuid: string, @CurrentUser() user: AuthenticatedUser) {
     await this.teamsService.leave(uuid, user.userId);
     return ResponseBuilder.success<{ success: true }>()
       .status(HttpStatus.OK)
@@ -79,7 +79,7 @@ export class TeamsController {
   // 팀 멤버 목록
   @Get(":uuid/members")
   @UseGuards(OidcGuard)
-  async getMembers(@Param("uuid") uuid: string, @CurrentUser() user: AuthenticatedUser) {
+  async getMembers(@Param("uuid", ParseUUIDPipe) uuid: string, @CurrentUser() user: AuthenticatedUser) {
     const members = await this.teamsService.getMembers(uuid, user.userId);
     const responseDtos = members.map((member) => TeamMemberResponseDto.from(member));
     return ResponseBuilder.success<TeamMemberResponseDto[]>()

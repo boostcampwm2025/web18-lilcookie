@@ -11,6 +11,7 @@ import {
   Inject,
   type LoggerService,
   UseGuards,
+  ParseUUIDPipe,
 } from "@nestjs/common";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { FoldersService } from "./folders.service";
@@ -50,9 +51,9 @@ export class FoldersController {
   }
 
   // 팀의 모든 폴더 조회
-  @Get()
+  @Get("team/:uuid")
   @RequireScopes("folders:read")
-  async findAllByTeam(@Param("teamUuid") teamUuid: string) {
+  async findAllByTeam(@Param("uuid", ParseUUIDPipe) teamUuid: string) {
     this.logger.log(`GET /api/folders?teamId=${teamUuid} - 폴더 목록 조회`);
 
     const folders = await this.foldersService.findAllByTeam(teamUuid);
@@ -68,7 +69,7 @@ export class FoldersController {
   // 특정 폴더 조회
   @Get(":folderId")
   @RequireScopes("folders:read")
-  async findOne(@Param("folderId") folderId: string) {
+  async findOne(@Param("folderId", ParseUUIDPipe) folderId: string) {
     this.logger.log(`GET /api/folders/${folderId} - 폴더 단건 조회`);
 
     const folder = await this.foldersService.findOne(folderId);
@@ -84,7 +85,7 @@ export class FoldersController {
   // 폴더 이름 수정
   @Put(":folderId")
   @RequireScopes("folders:write")
-  async update(@Param("folderId") folderId: string, @Body() requestDto: UpdateFolderRequestDto) {
+  async update(@Param("folderId", ParseUUIDPipe) folderId: string, @Body() requestDto: UpdateFolderRequestDto) {
     this.logger.log(`PUT /api/folders/${folderId} - 폴더 수정`);
 
     const folder = await this.foldersService.update(folderId, requestDto);
@@ -101,7 +102,7 @@ export class FoldersController {
   @Delete(":folderId")
   @RequireScopes("folders:write")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param("folderId") folderId: string) {
+  async remove(@Param("folderId", ParseUUIDPipe) folderId: string) {
     this.logger.log(`DELETE /api/folders/${folderId} - 폴더 삭제`);
 
     await this.foldersService.remove(folderId);
