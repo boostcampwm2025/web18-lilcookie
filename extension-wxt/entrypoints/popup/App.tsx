@@ -23,7 +23,6 @@ function App() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSaveSuccess, setIsSaveSuccess] = useState(false);
 
-    
   const [dashboardUrl, setDashboardUrl] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
