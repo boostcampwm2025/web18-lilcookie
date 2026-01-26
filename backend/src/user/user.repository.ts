@@ -12,4 +12,12 @@ export class UserRepository {
   async create(data: { uuid: string; nickname: string }) {
     return this.prisma.user.create({ data });
   }
+
+  async upsert(data: { uuid: string; nickname: string }) {
+    return this.prisma.user.upsert({
+      where: { uuid: data.uuid },
+      create: data,
+      update: {},
+    });
+  }
 }
