@@ -1,11 +1,15 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable, type LoggerService } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
 import { ILinkRepository } from "./link.repository.interface";
 import { Link } from "../entities/link.entity";
+import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 
 @Injectable()
 export class LinkRepository implements ILinkRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService,
+  ) {}
 
   async create(link: Omit<Link, "id" | "uuid" | "createdAt">): Promise<Link> {
     const created = await this.prisma.link.create({
@@ -40,8 +44,13 @@ export class LinkRepository implements ILinkRepository {
     // 태그 필터링 (클라이언트 사이드)
     if (tags && tags.length > 0) {
       result = result.filter((link) => {
-        const linkTags = JSON.parse(link.tags) as string[];
-        return tags.every((tag) => linkTags.includes(tag));
+        try {
+          const linkTags = JSON.parse(link.tags) as string[];
+          return tags.every((tag) => linkTags.includes(tag));
+        } catch {
+          this.logger.warn(`링크 ${link.uuid}의 tags 필드에 잘못된 JSON: ${link.tags}`);
+          return false;
+        }
       });
     }
 
