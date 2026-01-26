@@ -23,7 +23,7 @@ export interface AccessTokenPayload {
   name?: string;
   email?: string;
   preferred_username?: string;
-  team_id: string;
+  team_id?: string;
   exp: number;
   iat: number;
 }
