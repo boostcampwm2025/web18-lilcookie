@@ -39,7 +39,7 @@ export class LinksController {
     this.logger.log(`POST /api/links - 링크 생성 요청: ${requestDto.title}`);
 
     const link = await this.linksService.create(requestDto);
-    const responseDto = CreateLinkResponseDto.from(link.linkId, link.createdAt);
+    const responseDto = CreateLinkResponseDto.from(link.id, link.createdAt);
 
     return ResponseBuilder.success<CreateLinkResponseDto>()
       .status(HttpStatus.CREATED)

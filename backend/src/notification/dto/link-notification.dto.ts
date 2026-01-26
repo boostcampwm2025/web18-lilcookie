@@ -1,14 +1,14 @@
 import { Link } from "../../links/entities/link.entity";
 
 export class LinkNotificationDto {
-  linkId: string;
-  teamId: string;
+  linkId: number;
+  teamId: number;
   url: string;
   title: string;
   tags: string[];
   summary: string;
-  createdBy: string;
-  createdAt: string;
+  createdBy: number;
+  createdAt: Date;
   slackChannelId?: string;
 
   constructor(partial: Partial<LinkNotificationDto>) {
@@ -17,15 +17,19 @@ export class LinkNotificationDto {
 
   static fromLink(link: Link, slackChannelId?: string): LinkNotificationDto {
     return new LinkNotificationDto({
-      linkId: link.linkId,
+      linkId: link.id,
       teamId: link.teamId,
       url: link.url,
       title: link.title,
-      tags: link.tags,
+      tags: safeJsonParse(link.tags),
       summary: link.summary,
       createdBy: link.createdBy,
       createdAt: link.createdAt,
       slackChannelId,
     });
   }
+}
+
+function safeJsonParse<T>(value: string): T {
+  return JSON.parse(value) as T;
 }
