@@ -1,5 +1,8 @@
 import { Injectable, UnauthorizedException, InternalServerErrorException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom, catchError } from "rxjs";
+import { AxiosError } from "axios";
 import { SummarizeRequestDto } from "./dto/summarize.request.dto";
 
 interface ClovaStudioMessage {
@@ -40,7 +43,10 @@ export class AiService {
   private readonly apiKey: string;
   private readonly aiPassword: string;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly httpService: HttpService,
+  ) {
     this.apiUrl =
       this.configService.get<string>("CLOVA_STUDIO_API_URL") ||
       "https://clovastudio.stream.ntruss.com/v1/chat-completions/HCX-003";
@@ -105,25 +111,26 @@ ${content}
     };
 
     try {
-      const response = await fetch(this.apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiKey}`,
-          "X-NCP-CLOVASTUDIO-REQUEST-ID": requestId,
-        },
-        body: JSON.stringify(requestBody),
-      });
+      const { data } = await firstValueFrom(
+        this.httpService
+          .post<ClovaStudioResponse>(this.apiUrl, requestBody, {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${this.apiKey}`,
+              "X-NCP-CLOVASTUDIO-REQUEST-ID": requestId,
+            },
+          })
+          .pipe(
+            catchError((error: AxiosError) => {
+              const errorBody = error.response?.data ?? error.message;
+              console.error("Clova Studio API 에러 응답:", errorBody);
+              throw new InternalServerErrorException(
+                `Clova Studio API 호출 실패: ${error.response?.status} ${error.response?.statusText} - ${JSON.stringify(errorBody)}`,
+              );
+            }),
+          ),
+      );
 
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error("Clova Studio API 에러 응답:", errorBody);
-        throw new InternalServerErrorException(
-          `Clova Studio API 호출 실패: ${response.status} ${response.statusText} - ${errorBody}`,
-        );
-      }
-
-      const data = (await response.json()) as ClovaStudioResponse;
       if (data.status.code !== "20000") {
         throw new InternalServerErrorException(`Clova Studio API 오류: ${data.status.message}`);
       }
