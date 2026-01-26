@@ -1,10 +1,14 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
 import { OidcService } from "../oidc.service";
 import type { AuthenticatedRequest } from "../interfaces/oidc.interface";
+import { UserService } from "src/user/user.service";
 
 @Injectable()
 export class OidcGuard implements CanActivate {
-  constructor(private readonly oidcService: OidcService) {}
+  constructor(
+    private readonly oidcService: OidcService,
+    private readonly userService: UserService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
@@ -24,7 +28,12 @@ export class OidcGuard implements CanActivate {
 
     try {
       const payload = await this.oidcService.validateToken(token);
-      request.user = payload;
+
+      // DB에서 유저 조회.생성
+      const nickname = payload.preferred_username || payload.name || "User";
+      const user = await this.userService.findOrCreate(payload.sub, nickname);
+
+      request.user = { ...payload, userId: user.id };
       return true;
     } catch (error) {
       if (error instanceof UnauthorizedException) {

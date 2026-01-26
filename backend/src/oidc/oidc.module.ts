@@ -5,6 +5,7 @@ import { OidcService } from "./oidc.service";
 import { OidcGuard } from "./guards/oidc.guard";
 import { TeamGuard } from "./guards/team.guard";
 import { ScopesGuard } from "./guards/scopes.guard";
+import { UserModule } from "src/user/user.module";
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { ScopesGuard } from "./guards/scopes.guard";
       timeout: 5000,
       maxRedirects: 5,
     }),
+    UserModule,
   ],
   providers: [OidcService, OidcGuard, TeamGuard, ScopesGuard],
   exports: [OidcService, OidcGuard, TeamGuard, ScopesGuard],

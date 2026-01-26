@@ -1,14 +1,14 @@
 export class CreateLinkResponseDto {
-  linkId: string;
-  createdAt: string;
+  id: number;
+  createdAt: Date;
 
   constructor(partial: Partial<CreateLinkResponseDto>) {
     Object.assign(this, partial);
   }
 
-  static from(linkId: string, createdAt: string): CreateLinkResponseDto {
+  static from(id: number, createdAt: Date): CreateLinkResponseDto {
     return new CreateLinkResponseDto({
-      linkId,
+      id,
       createdAt,
     });
   }

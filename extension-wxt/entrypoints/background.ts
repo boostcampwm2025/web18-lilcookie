@@ -6,7 +6,7 @@ export default defineBackground(() => {
   // Authentik OAuth 설정
   const AUTHENTIK_URL = import.meta.env.VITE_AUTHENTIK_URL;
   const CLIENT_ID = import.meta.env.VITE_AUTHENTIK_CLIENT_ID;
-  const SCOPES = "openid profile email offline_access";
+  const SCOPES = "openid profile email offline_access roles team_id ai:use";
 
   const MAX_AI_INPUT_CHARACTER_COUNT = 300;
 

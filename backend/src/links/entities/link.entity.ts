@@ -1,13 +1,14 @@
 export class Link {
-  linkId: string;
-  teamId: string;
+  id: number;
+  uuid: string;
+  teamId: number;
+  folderId: number | null;
   url: string;
   title: string;
-  tags: string[];
+  tags: string; // JSON 문자열로 저장
   summary: string;
-  createdAt: string;
-  createdBy: string;
-  folderId: string | null; // 폴더 ID (null이면 폴더 없음)
+  createdAt: Date;
+  createdBy: number;
 
   constructor(partial: Partial<Link>) {
     Object.assign(this, partial);
