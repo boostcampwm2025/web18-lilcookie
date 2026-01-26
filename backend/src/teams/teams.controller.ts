@@ -26,16 +26,16 @@ export class TeamsController {
       .build();
   }
 
-  // 내 팀 조회
+  // 내 팀들 조회
   @Get("me")
-  async getMyTeam(@CurrentUser() user: AuthenticatedUser) {
-    const result = await this.teamsService.getMyTeam(user.userId);
-    const responseDto = result ? TeamResponseDto.from(result.team, result.role) : null;
+  async getMyTeams(@CurrentUser() user: AuthenticatedUser) {
+    const results = await this.teamsService.getMyTeams(user.userId);
+    const responseDtos = results.map((r) => TeamResponseDto.from(r.team, r.role));
 
-    return ResponseBuilder.success<TeamResponseDto | null>()
+    return ResponseBuilder.success<TeamResponseDto[]>()
       .status(HttpStatus.OK)
       .message("내 팀 정보를 성공적으로 조회했습니다")
-      .data(responseDto)
+      .data(responseDtos)
       .build();
   }
 
@@ -63,9 +63,9 @@ export class TeamsController {
   }
 
   // 팀 탈퇴
-  @Delete("me")
-  async leave(@CurrentUser() user: AuthenticatedUser) {
-    await this.teamsService.leave(user.userId);
+  @Delete(":uuid")
+  async leave(@Param("uuid") uuid: string, @CurrentUser() user: AuthenticatedUser) {
+    await this.teamsService.leave(uuid, user.userId);
     return ResponseBuilder.success<{ success: true }>()
       .status(HttpStatus.OK)
       .message("팀에서 성공적으로 탈퇴했습니다")

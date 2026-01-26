@@ -8,12 +8,6 @@ export class TeamsService {
 
   // 팀 생성 (생성자는 자동으로 owner로 가입)
   async create(name: string, userId: number): Promise<{ team: Team; member: TeamMember }> {
-    // 이미 팀에 속해있는지 확인
-    const existingMember = await this.teamRepository.findMemberByUserId(userId);
-    if (existingMember) {
-      throw new ConflictException("이미 팀에 소속되어 있습니다. 탈퇴 후 새 팀을 생성해주세요.");
-    }
-
     const team = await this.teamRepository.create(name);
     const member = await this.teamRepository.addMember(team.id, userId, "owner");
 
@@ -21,14 +15,8 @@ export class TeamsService {
   }
 
   // 내 팀 조회
-  async getMyTeam(userId: number): Promise<{ team: Team; role: string } | null> {
-    const member = await this.teamRepository.findMemberByUserId(userId);
-    if (!member) {
-      return null;
-    }
-
-    const team = await this.teamRepository.findByUserId(userId);
-    return team ? { team, role: member.role } : null;
+  async getMyTeams(userId: number): Promise<Array<{ team: Team; role: string }>> {
+    return this.teamRepository.findTeamsWithRoleByUserId(userId);
   }
 
   // 초대 링크용 팀 정보 조회
@@ -42,25 +30,30 @@ export class TeamsService {
 
   // 팀 가입
   async join(uuid: string, userId: number): Promise<TeamMember> {
-    // 이미 팀에 속해있는지 확인
-    const existingMember = await this.teamRepository.findMemberByUserId(userId);
-    if (existingMember) {
-      throw new ConflictException("이미 팀에 소속되어 있습니다. 탈퇴 후 가입해주세요.");
-    }
-
     const team = await this.teamRepository.findByUuid(uuid);
     if (!team) {
       throw new NotFoundException("팀을 찾을 수 없습니다.");
+    }
+
+    // 이미 해당 팀에 가입했는지 체크
+    const existingMember = await this.teamRepository.findMember(team.id, userId);
+    if (existingMember) {
+      throw new ConflictException("이미 해당 팀에 가입되어 있습니다.");
     }
 
     return this.teamRepository.addMember(team.id, userId, "member");
   }
 
   // 팀 탈퇴
-  async leave(userId: number): Promise<void> {
-    const member = await this.teamRepository.findMemberByUserId(userId);
-    if (!member) {
+  async leave(uuid: string, userId: number): Promise<void> {
+    const team = await this.teamRepository.findByUuid(uuid);
+    if (!team) {
       throw new NotFoundException("소속된 팀이 없습니다.");
+    }
+
+    const member = await this.teamRepository.findMember(team.id, userId);
+    if (!member) {
+      throw new NotFoundException("해당 팀에 소속되어 있지 않습니다.");
     }
 
     // owner는 탈퇴 불가
@@ -79,8 +72,8 @@ export class TeamsService {
     }
 
     // 해당 팀 멤버인지 확인
-    const member = await this.teamRepository.findMemberByUserId(userId);
-    if (!member || member.teamId !== team.id) {
+    const member = await this.teamRepository.findMember(team.id, userId);
+    if (!member) {
       throw new ForbiddenException("해당 팀의 멤버만 조회할 수 있습니다.");
     }
 
