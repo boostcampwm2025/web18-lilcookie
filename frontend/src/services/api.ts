@@ -113,6 +113,8 @@ api.interceptors.response.use(
 // 대시보드용 API 함수들
 export const linkApi = {
   getLinks: async (teamId: string, tags?: string[]): Promise<ApiResponse<Link[]>> => {
+    // Caller validates teamId to keep API layer consistent.
+    // 호출하는 쪽에서 teamId 유효성 검사 수행
     const params: Record<string, string> = { teamId };
 
     if (tags && tags.length > 0) {
