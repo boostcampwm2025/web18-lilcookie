@@ -107,12 +107,15 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 // 대시보드용 API 함수들
 export const linkApi = {
-  getLinks: async (teamId: string, tags?: string[]): Promise<ApiResponse<Link[]>> => {
+  getLinks: async (
+    teamId: string,
+    tags?: string[],
+  ): Promise<ApiResponse<Link[]>> => {
     const params: Record<string, string> = { teamId };
 
     if (tags && tags.length > 0) {
@@ -127,7 +130,10 @@ export const linkApi = {
     await api.delete(`/links/${linkId}`, { params: { teamId } });
   },
 
-  searchByTags: async (teamId: string, tags: string[]): Promise<ApiResponse<Link[]>> => {
+  searchByTags: async (
+    teamId: string,
+    tags: string[],
+  ): Promise<ApiResponse<Link[]>> => {
     return linkApi.getLinks(teamId, tags);
   },
 };
@@ -164,7 +170,10 @@ export const folderApi = {
   },
 
   // PUT /folders/:folderId - 폴더 이름 수정
-  updateFolder: async (folderId: string, data: { folderName: string }): Promise<ApiResponse<Folder>> => {
+  updateFolder: async (
+    folderId: string,
+    data: { folderName: string },
+  ): Promise<ApiResponse<Folder>> => {
     const response = await api.put(`/folders/${folderId}`, data);
     return response.data;
   },
