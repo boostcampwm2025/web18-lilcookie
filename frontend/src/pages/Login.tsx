@@ -10,9 +10,10 @@ const Login = () => {
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       const teamId = getTeamIdFromToken();
-      if (teamId) {
-        navigate(`/${teamId}`, { replace: true });
+      if (!teamId) {
+        throw new Error("Failed to determine team ID from authentication token.");
       }
+      navigate(`/${teamId}`, { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate]);
 
