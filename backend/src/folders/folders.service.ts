@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, OnModuleInit } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { Folder } from "./entities/folder.entity";
 import { UpdateFolderRequestDto } from "./dto/update-folder.request.dto";
 import { ConfigService } from "@nestjs/config";
@@ -6,40 +6,12 @@ import { FolderRepository } from "./repositories/folder.repository";
 import { TeamRepository } from "../teams/repositories/team.repository";
 
 @Injectable()
-export class FoldersService implements OnModuleInit {
+export class FoldersService {
   constructor(
     private readonly folderRepository: FolderRepository,
     private readonly configService: ConfigService,
     private readonly teamRepository: TeamRepository,
   ) {}
-
-  onModuleInit() {
-    this.initMockData().catch(() => {});
-  }
-
-  // 초기 mock data 생성
-  private async initMockData(): Promise<void> {
-    if (this.configService.get<string>("NODE_ENV") === "production") {
-      return;
-    }
-
-    // 이미 데이터가 있으면 추가하지 않음
-    const existingFolders = await this.folderRepository.findAll();
-    if (existingFolders.length > 0) {
-      return;
-    }
-
-    // Mock 폴더 데이터
-    const mockFolders = [
-      { teamId: 1, name: "프론트엔드", createdBy: 1 },
-      { teamId: 1, name: "백엔드", createdBy: 1 },
-      { teamId: 1, name: "디자인", createdBy: 2 },
-    ];
-
-    for (const mock of mockFolders) {
-      await this.folderRepository.create(mock);
-    }
-  }
 
   // 폴더 생성
   async create(teamUuid: string, folderName: string, userId: number): Promise<Folder> {

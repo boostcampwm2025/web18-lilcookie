@@ -9,12 +9,12 @@ import type { AuthenticatedUser } from "../oidc/interfaces/oidc.interface";
 import { ResponseBuilder } from "src/common/builders/response.builder";
 
 @Controller("teams")
-@UseGuards(OidcGuard)
 export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
 
   // 팀 생성
   @Post()
+  @UseGuards(OidcGuard)
   async create(@Body() dto: CreateTeamRequestDto, @CurrentUser() user: AuthenticatedUser) {
     const { team, member } = await this.teamsService.create(dto.name, user.userId);
     const responseDto = TeamResponseDto.from(team, member.role);
@@ -28,6 +28,7 @@ export class TeamsController {
 
   // 내 팀들 조회
   @Get("me")
+  @UseGuards(OidcGuard)
   async getMyTeams(@CurrentUser() user: AuthenticatedUser) {
     const results = await this.teamsService.getMyTeams(user.userId);
     const responseDtos = results.map((r) => TeamResponseDto.from(r.team, r.role));
@@ -53,6 +54,7 @@ export class TeamsController {
 
   // 팀 가입
   @Post(":uuid/join")
+  @UseGuards(OidcGuard)
   async join(@Param("uuid") uuid: string, @CurrentUser() user: AuthenticatedUser) {
     await this.teamsService.join(uuid, user.userId);
     return ResponseBuilder.success<{ success: true }>()
@@ -64,6 +66,7 @@ export class TeamsController {
 
   // 팀 탈퇴
   @Delete(":uuid")
+  @UseGuards(OidcGuard)
   async leave(@Param("uuid") uuid: string, @CurrentUser() user: AuthenticatedUser) {
     await this.teamsService.leave(uuid, user.userId);
     return ResponseBuilder.success<{ success: true }>()
@@ -75,6 +78,7 @@ export class TeamsController {
 
   // 팀 멤버 목록
   @Get(":uuid/members")
+  @UseGuards(OidcGuard)
   async getMembers(@Param("uuid") uuid: string, @CurrentUser() user: AuthenticatedUser) {
     const members = await this.teamsService.getMembers(uuid, user.userId);
     const responseDtos = members.map((member) => TeamMemberResponseDto.from(member));
