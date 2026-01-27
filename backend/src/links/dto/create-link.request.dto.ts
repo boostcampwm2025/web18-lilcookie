@@ -19,6 +19,9 @@ export class CreateLinkRequestDto {
 
   @IsArray()
   @IsString({ each: true })
+  // 빈 배열 허용?
+  // @ArrayMinSize(1)
+  // 확장 프로그램에서는 태그를 필수로 입력하게 되어 있음.
   tags: string[];
 
   @IsString()
