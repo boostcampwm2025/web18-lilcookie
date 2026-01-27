@@ -1,8 +1,8 @@
 export class Folder {
-  id: number;
-  uuid: string;
+  folderId: number;
+  folderUuid: string;
   teamId: number;
-  name: string;
+  folderName: string;
   createdAt: Date;
   createdBy: number;
 
