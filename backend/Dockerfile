@@ -10,25 +10,30 @@ RUN apk add --no-cache \
   g++ \
   libc-dev
 
-COPY package*.json ./
-COPY backend/package*.json ./backend/
+RUN corepack enable
 
-RUN npm ci
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY backend/package.json ./backend/
+
+RUN pnpm install --frozen-lockfile --filter backend
 
 COPY backend ./backend
 
 WORKDIR /app/backend
-RUN npm run build
+RUN pnpm run build
 
 # 2. Production stage
 FROM node:lts-alpine3.22
 
 WORKDIR /app
 
+RUN corepack enable
+
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/backend/node_modules ./backend/node_modules
 
 COPY --from=builder /app/backend/dist ./backend/dist
-COPY --from=builder /app/backend/package*.json ./backend/
+COPY --from=builder /app/backend/package.json ./backend/
 
 WORKDIR /app/backend
 CMD ["node", "dist/main"]

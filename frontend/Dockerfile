@@ -3,14 +3,16 @@ FROM node:lts-slim AS builder
 
 WORKDIR /app
 
+RUN corepack enable
+
 # Copy workspace root package files
-COPY package.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Copy frontend package.json
 COPY frontend/package.json ./frontend/
 
 # Install frontend workspace dependencies
-RUN npm install -w frontend
+RUN pnpm install --frozen-lockfile --filter frontend
 
 # Copy frontend source code
 COPY frontend ./frontend
@@ -19,7 +21,7 @@ COPY frontend ./frontend
 WORKDIR /app/frontend
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-RUN npm run build
+RUN pnpm run build
 
 # Production stage with nginx
 FROM nginx:alpine
