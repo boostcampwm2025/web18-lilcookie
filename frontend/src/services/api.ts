@@ -197,7 +197,7 @@ export const folderApi = {
 
 // 팀 API 함수들
 export const teamApi = {
-  // GET /api/teams/me - 내 팀들 조회
+  // GET /teams/me - 내 팀들 조회
   getMyTeams: async (): Promise<ApiResponse<Team[]>> => {
     const response = await api.get("/teams/me");
     return response.data;
