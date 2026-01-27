@@ -1,5 +1,7 @@
+name: teamstash
 services:
   authentik-postgresql:
+    container_name: authentik-postgresql
     env_file:
     - .env.development.local
     environment:
@@ -19,6 +21,7 @@ services:
     volumes:
     - authentik-database:/var/lib/postgresql/data
   authentik-server:
+    container_name: authentik-server
     command: server
     depends_on:
       authentik-postgresql:
@@ -37,9 +40,10 @@ services:
     - ${COMPOSE_PORT_HTTPS:-9443}:9443
     restart: unless-stopped
     volumes:
-    - ./infra/authentik/data:/data
-    - ./infra/authentik/custom-templates:/templates
+    - ../authentik/data:/data
+    - ../authentik/custom-templates:/templates
   authentik-worker:
+    container_name: authentik-worker
     command: worker
     depends_on:
       authentik-postgresql:
@@ -59,11 +63,12 @@ services:
     user: root
     volumes:
     - /var/run/docker.sock:/var/run/docker.sock
-    - ./infra/authentik/data:/data
-    - ./infra/authentik/certs:/certs
-    - ./infra/authentik/custom-templates:/templates
+    - ../authentik/data:/data
+    - ../authentik/certs:/certs
+    - ../authentik/custom-templates:/templates
 
   caddy:
+    container_name: caddy
     image: caddy:2.11
     restart: unless-stopped
     ports:
@@ -71,10 +76,10 @@ services:
       - "443:443"
       - "443:443/udp"
     volumes:
-      - ./infra/caddy/caddy-conf/Caddyfile.dev:/etc/caddy/Caddyfile
-      - ./infra/caddy/caddy-site:/srv
-      - ./infra/caddy/data:/data
-      - ./infra/caddy/config:/config
+      - ../caddy/caddy-conf/Caddyfile.dev:/etc/caddy/Caddyfile
+      - ../caddy/caddy-site:/srv
+      - ../caddy/data:/data
+      - ../caddy/config:/config
 
 volumes:
   authentik-database:

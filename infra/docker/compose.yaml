@@ -1,7 +1,7 @@
 services:
   backend:
     build:
-      context: .
+      context: ../..
       dockerfile: ./backend/Dockerfile
     image: lilcookie-backend:latest
     container_name: lilcookie-backend
@@ -12,8 +12,7 @@ services:
       - NODE_ENV=production
       - PORT=3000
     volumes:
-      # 윈도우 기준으로 data를 컨테이너 내부 /app/backend/data에 마운트했습니다 (수정 필요)
-      - ./data:/app/backend/data
+      - ../../data:/app/backend/data
     networks:
       - caddy-network
     healthcheck:
@@ -25,7 +24,7 @@ services:
 
   frontend:
     build:
-      context: .
+      context: ../..
       dockerfile: ./frontend/Dockerfile
       args:
         - VITE_API_BASE_URL=${VITE_API_BASE_URL}
@@ -75,8 +74,8 @@ services:
       AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
       AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?secret key required}
     volumes:
-      - ./infra/authentik/data:/data
-      - ./infra/authentik/custom-templates:/templates
+      - ../authentik/data:/data
+      - ../authentik/custom-templates:/templates
     depends_on:
       postgresql:
         condition: service_healthy
@@ -99,9 +98,9 @@ services:
     user: root
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./infra/authentik/data:/data
-      - ./infra/authentik/certs:/certs
-      - ./infra/authentik/custom-templates:/templates
+      - ../authentik/data:/data
+      - ../authentik/certs:/certs
+      - ../authentik/custom-templates:/templates
     depends_on:
       postgresql:
         condition: service_healthy
