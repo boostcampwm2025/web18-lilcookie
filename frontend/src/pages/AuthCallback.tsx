@@ -5,7 +5,6 @@ import {
   verifyState,
   storeTokens,
   getUserInfo,
-  getTeamIdFromToken,
 } from "../services/authentikAuth";
 import { clearStoredOAuthParams } from "../utils/pkce";
 import { useAuth } from "../contexts/AuthContext";
@@ -54,11 +53,8 @@ const AuthCallback = () => {
           nickname: userInfo.name || userInfo.preferred_username || "",
         });
 
-        const teamId = getTeamIdFromToken(tokenResponse.access_token);
-        if (!teamId) {
-          throw new Error("토큰에서 팀 정보를 찾을 수 없습니다.");
-        }
-        navigate(`/${teamId}`, { replace: true });
+        // 로그인 성공 후 팀 목록 페이지로 이동
+        navigate("/my-teams", { replace: true });
       } catch (error) {
         setStatus("error");
         setErrorMessage(
