@@ -6,7 +6,14 @@
   "scripts": {
     "preinstall": "npx only-allow pnpm && corepack enable",
     "start:dev": "concurrently \"pnpm --filter backend start:dev\" \"pnpm --filter frontend dev\" \"pnpm --filter extension-wxt dev\"",
-    "build": "pnpm --filter frontend build && pnpm --filter backend build"
+    "build": "pnpm --filter frontend build && pnpm --filter backend build",
+    "docker:dev:up": "docker compose --env-file infra/docker/.env.development.local -f infra/docker/compose.dev.yaml up -d",
+    "docker:dev:down": "docker compose --env-file infra/docker/.env.development.local -f infra/docker/compose.dev.yaml down",
+    "docker:dev:logs": "docker compose --env-file infra/docker/.env.development.local -f infra/docker/compose.dev.yaml logs -f",
+    "docker:prod:up": "docker compose -f infra/docker/compose.yaml up --build -d",
+    "docker:prod:down": "docker compose -f infra/docker/compose.yaml down",
+    "docker:prod:logs": "docker compose -f infra/docker/compose.yaml logs -f",
+    "docker:clean": "docker system prune -f"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
