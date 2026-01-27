@@ -143,6 +143,10 @@ export class FoldersService {
       throw new ForbiddenException("해당 팀에 접근 권한이 없습니다.");
     }
 
+    if (folder.folder.folderName === DEFAULT_FOLDER_NAME) {
+      throw new ConflictException("해당 폴더는 기본 폴더로, 삭제할 수 없습니다.");
+    }
+
     const removed = await this.folderRepository.remove(folder.folder.folderId);
     if (!removed) {
       throw new InternalServerErrorException("폴더 삭제 중 오류가 발생했습니다.");
