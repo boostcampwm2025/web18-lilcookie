@@ -1,12 +1,13 @@
 import { Controller, Post, Get, Delete, Body, Param, UseGuards, HttpStatus, ParseUUIDPipe } from "@nestjs/common";
 import { TeamsService } from "./teams.service";
-import { CreateTeamRequestDto } from "./dto/create-team.request.dto";
 import { TeamResponseDto } from "./dto/team.response.dto";
 import { TeamMemberResponseDto } from "./dto/team-member.response.dto";
 import { OidcGuard } from "../oidc/guards/oidc.guard";
 import { CurrentUser } from "../oidc/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "../oidc/interfaces/oidc.interface";
 import { ResponseBuilder } from "../common/builders/response.builder";
+import { ZodValidationPipe } from "src/common/zod-validation.pipe";
+import { CreateTeamRequestSchema, type CreateTeamRequest } from "@repo/shared";
 
 @Controller("teams")
 export class TeamsController {
@@ -15,8 +16,11 @@ export class TeamsController {
   // 팀 생성
   @Post()
   @UseGuards(OidcGuard)
-  async create(@Body() dto: CreateTeamRequestDto, @CurrentUser() user: AuthenticatedUser) {
-    const { team, member } = await this.teamsService.create(dto.name, user.userId);
+  async create(
+    @Body(new ZodValidationPipe(CreateTeamRequestSchema)) body: CreateTeamRequest,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const { team, member } = await this.teamsService.create(body.teamName, user.userId);
     const responseDto = TeamResponseDto.from(team, member.role);
 
     return ResponseBuilder.success<TeamResponseDto>()
