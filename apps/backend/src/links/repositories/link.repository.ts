@@ -1,8 +1,19 @@
 import { Inject, Injectable, type LoggerService } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
 import { ILinkRepository } from "./link.repository.interface";
-import { Link } from "../entities/link.entity";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import { LinkMapper } from "../mappers/link.mapper";
+import { UserMapper } from "../../user/mappers/user.mapper";
+import { LinkWithCreator, CreateLinkInput, UpdateLinkInput, LinkSearchCriteria } from "../types/link.types";
+
+/**
+ * prisma link에 관련된 include 옵션 모음
+ */
+const LINK_INCLUDE = {
+  creator: true,
+  team: true,
+  folder: true,
+} as const;
 
 @Injectable()
 export class LinkRepository implements ILinkRepository {
@@ -11,63 +22,137 @@ export class LinkRepository implements ILinkRepository {
     @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService,
   ) {}
 
-  async create(link: Omit<Link, "id" | "uuid" | "createdAt">): Promise<Link> {
+  /**
+   * 링크 생성
+   * @param data 생성할 링크 데이터
+   * @returns 생성된 링크와 생성한 사용자 정보
+   */
+  async create(data: CreateLinkInput): Promise<LinkWithCreator> {
     const created = await this.prisma.link.create({
       data: {
-        teamId: link.teamId,
-        url: link.url,
-        title: link.title,
-        tags: link.tags,
-        summary: link.summary,
-        createdBy: link.createdBy,
-        folderId: link.folderId,
+        teamId: data.teamId,
+        folderId: data.folderId,
+        url: data.url,
+        title: data.title,
+        tags: data.tags,
+        summary: data.summary,
+        createdBy: data.createdBy,
       },
+      include: LINK_INCLUDE,
     });
 
-    return new Link(created);
+    return {
+      link: LinkMapper.toDomain(created),
+      creator: UserMapper.toDomain(created.creator),
+    };
   }
 
-  async findAll(teamId?: number, folderId?: number, tags?: string[], createdAfter?: Date): Promise<Link[]> {
-    const where: { teamId?: number; folderId?: number; createdAt?: { gt: Date } } = {};
+  /**
+   * 링크 목록 조회 (조건 검색)
+   * @param criteria 검색 조건
+   * @returns 조건에 맞는 링크와 생성한 사용자 정보 배열
+   */
+  async findAll(criteria: LinkSearchCriteria): Promise<LinkWithCreator[]> {
+    const where: { teamId?: number | { in: number[] }; folderId?: number } = {};
 
-    if (teamId) where.teamId = teamId;
-    if (folderId) where.folderId = folderId;
-    if (createdAfter) where.createdAt = { gt: createdAfter };
+    // teamIds가 있으면 우선, 없으면 teamId 사용
+    // 왜 teamIds? 사용자가 속한 여러 팀에서 링크를 조회할 때 필요
+    if (criteria.teamIds && criteria.teamIds.length > 0) {
+      where.teamId = { in: criteria.teamIds };
+    } else if (criteria.teamId) {
+      where.teamId = criteria.teamId;
+    }
+
+    if (criteria.folderId) {
+      where.folderId = criteria.folderId;
+    }
 
     const links = await this.prisma.link.findMany({
       where,
+      include: LINK_INCLUDE,
       orderBy: { createdAt: "desc" },
     });
 
-    let result = links.map((l) => new Link(l));
+    let result = links.map((l) => ({
+      link: LinkMapper.toDomain(l),
+      creator: UserMapper.toDomain(l.creator),
+    }));
 
-    // 태그 필터링 (클라이언트 사이드)
-    if (tags && tags.length > 0) {
-      result = result.filter((link) => {
-        try {
-          const linkTags = JSON.parse(link.tags) as string[];
-          return tags.every((tag) => linkTags.includes(tag));
-        } catch {
-          this.logger.warn(`링크 ${link.uuid}의 tags 필드에 잘못된 JSON: ${link.tags}`);
+    // 태그 필터링 (클라이언트 사이드 - SQLite JSON 지원 제한)
+    if (criteria.tags && criteria.tags.length > 0) {
+      result = result.filter(({ link }) => {
+        const linkTags = link.getParsedTags();
+        if (linkTags.length === 0) {
+          this.logger.warn(`링크 ${link.linkUuid}의 tags 필드에 잘못된 JSON: ${link.linkTags}`);
           return false;
         }
+        return criteria.tags!.every((tag) => linkTags.includes(tag));
       });
     }
 
     return result;
   }
 
-  async findOne(uuid: string): Promise<Link | null> {
+  /**
+   * 링크 단건 조회
+   * @param linkUuid 링크 UUID
+   * @returns 링크와 생성한 사용자 정보 또는 null
+   */
+  async findByUuid(linkUuid: string): Promise<LinkWithCreator | null> {
     const link = await this.prisma.link.findUnique({
-      where: { uuid },
+      where: { uuid: linkUuid },
+      include: LINK_INCLUDE,
     });
 
-    return link ? new Link(link) : null;
+    if (!link) {
+      return null;
+    }
+
+    return {
+      link: LinkMapper.toDomain(link),
+      creator: UserMapper.toDomain(link.creator),
+    };
   }
 
-  async remove(uuid: string): Promise<boolean> {
+  /**
+   * 특정 링크 수정
+   * @param linkId 링크 ID
+   * @param data 수정할 링크 데이터
+   * @returns 수정된 링크와 생성한 사용자 정보 또는 null
+   */
+  async update(linkId: number, data: UpdateLinkInput): Promise<LinkWithCreator | null> {
     try {
-      await this.prisma.link.delete({ where: { uuid } });
+      const updated = await this.prisma.link.update({
+        where: { id: linkId },
+        // 부분 업데이트를 위해 조건부로 데이터 설정 (옵셔널 필드)
+        data: {
+          ...(data.teamId !== undefined && { teamId: data.teamId }),
+          ...(data.folderId !== undefined && { folderId: data.folderId }),
+          ...(data.url !== undefined && { url: data.url }),
+          ...(data.title !== undefined && { title: data.title }),
+          ...(data.tags !== undefined && { tags: data.tags }),
+          ...(data.summary !== undefined && { summary: data.summary }),
+        },
+        include: LINK_INCLUDE,
+      });
+
+      return {
+        link: LinkMapper.toDomain(updated),
+        creator: UserMapper.toDomain(updated.creator),
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * 특정 링크 삭제
+   * @param linkId 링크 ID
+   * @returns 삭제 성공 여부
+   */
+  async remove(linkId: number): Promise<boolean> {
+    try {
+      await this.prisma.link.delete({ where: { id: linkId } });
       return true;
     } catch {
       return false;

@@ -1,23 +1,54 @@
 import { Injectable } from "@nestjs/common";
-import { PrismaService } from "src/database/prisma.service";
+import { PrismaService } from "../database/prisma.service";
+import { User } from "./entities/user.entity";
+import { UserMapper } from "./mappers/user.mapper";
+import { UpsertUserInput } from "./types/user.types";
 
 @Injectable()
 export class UserRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByUuid(uuid: string) {
-    return this.prisma.user.findUnique({ where: { uuid } });
+  /**
+   * UUID로 사용자 조회
+   * @param userUuid 사용자 UUID
+   * @returns 사용자 엔티티 또는 null
+   */
+  async findByUuid(userUuid: string): Promise<User | null> {
+    const prismaUser = await this.prisma.user.findUnique({ where: { uuid: userUuid } });
+    return prismaUser ? UserMapper.toDomain(prismaUser) : null;
   }
 
-  async create(data: { uuid: string; nickname: string }) {
-    return this.prisma.user.create({ data });
+  /**
+   * ID로 사용자 조회
+   * @param userId 사용자 ID (PK)
+   * @return 사용자 엔티티 또는 null
+   */
+  async findById(userId: number): Promise<User | null> {
+    const prismaUser = await this.prisma.user.findUnique({ where: { id: userId } });
+    return prismaUser ? UserMapper.toDomain(prismaUser) : null;
   }
 
-  async upsert(data: { uuid: string; nickname: string }) {
-    return this.prisma.user.upsert({
+  /**
+   * 사용자 생성
+   * @param data 생성 데이터
+   * @return 생성된 사용자 엔티티
+   */
+  async create(data: UpsertUserInput): Promise<User> {
+    const created = await this.prisma.user.create({ data });
+    return UserMapper.toDomain(created);
+  }
+
+  /**
+   * 사용자 생성 또는 업데이트 (Upsert)
+   * @param data Upsert 데이터
+   * @return 생성 또는 업데이트된 사용자 엔티티
+   */
+  async upsert(data: UpsertUserInput): Promise<User> {
+    const upserted = await this.prisma.user.upsert({
       where: { uuid: data.uuid },
       create: data,
-      update: {},
+      update: { nickname: data.nickname },
     });
+    return UserMapper.toDomain(upserted);
   }
 }

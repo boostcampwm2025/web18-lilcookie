@@ -1,8 +1,9 @@
-import { Link } from "../entities/link.entity";
+import { LinkWithCreator, CreateLinkInput, UpdateLinkInput, LinkSearchCriteria } from "../types/link.types";
 
 export interface ILinkRepository {
-  create(link: Omit<Link, "id" | "uuid" | "createdAt">): Promise<Link>;
-  findAll(teamId?: number, folderId?: number, tags?: string[], createdAfter?: Date): Promise<Link[]>;
-  findOne(uuid: string): Promise<Link | null>;
-  remove(uuid: string): Promise<boolean>;
+  create(data: CreateLinkInput): Promise<LinkWithCreator>;
+  findAll(criteria: LinkSearchCriteria): Promise<LinkWithCreator[]>;
+  findByUuid(linkUuid: string): Promise<LinkWithCreator | null>;
+  update(linkId: number, data: UpdateLinkInput): Promise<LinkWithCreator | null>;
+  remove(linkId: number): Promise<boolean>;
 }

@@ -1,10 +1,12 @@
 import { Folder } from "../entities/folder.entity";
+import { FolderWithCreator, CreateFolderInput } from "../types/folder.types";
 
 export interface IFolderRepository {
-  create(folder: Omit<Folder, "id" | "uuid" | "createdAt">): Promise<Folder>;
-  findAll(): Promise<Folder[]>;
-  findAllByTeam(teamUuid: string): Promise<Folder[]>;
-  findByUuid(uuid: string): Promise<Folder | null>;
-  update(uuid: string, name: string): Promise<Folder | null>;
-  remove(uuid: string): Promise<boolean>;
+  create(input: CreateFolderInput): Promise<FolderWithCreator>;
+  findAllByTeam(teamId: number): Promise<FolderWithCreator[]>;
+  findByUuid(folderUuid: string): Promise<FolderWithCreator | null>;
+  update(folderId: number, folderName: string): Promise<FolderWithCreator | null>;
+  remove(folderId: number): Promise<boolean>;
+  findByTeamIdAndName(teamId: number, folderName: string): Promise<Folder | null>;
+  findDefaultFolderByTeamId(teamId: number): Promise<Folder | null>;
 }
