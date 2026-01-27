@@ -15,7 +15,7 @@ import {
   clearTokens,
 } from "./authentikAuth";
 
-const mock = new MockAdapter(api, { delayResponse: 200 });
+const mock = new MockAdapter(api, { delayResponse: 10 });
 
 const mockedGetStoredAccessToken = getStoredAccessToken as Mock;
 const mockedRefreshAccessToken = refreshAccessToken as Mock;
