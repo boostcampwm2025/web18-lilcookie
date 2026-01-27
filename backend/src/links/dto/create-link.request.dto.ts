@@ -1,15 +1,13 @@
-import { Type } from "class-transformer";
-import { IsString, IsArray, IsNotEmpty, IsUrl, IsOptional, IsNumber } from "class-validator";
+import { IsString, IsArray, IsNotEmpty, IsUrl, IsOptional } from "class-validator";
 
 export class CreateLinkRequestDto {
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
-  userId: number;
+  teamUuid: string;
 
-  @IsNumber()
-  @IsNotEmpty()
-  @Type(() => Number)
-  teamId: number;
+  @IsOptional()
+  @IsString()
+  folderUuid?: string;
 
   @IsUrl()
   @IsNotEmpty()
@@ -26,8 +24,4 @@ export class CreateLinkRequestDto {
   @IsString()
   @IsNotEmpty()
   summary: string;
-
-  @IsNumber()
-  @IsOptional() // 폴더는 선택사항
-  folderId?: number; // 폴더 ID (없으면 null)
 }

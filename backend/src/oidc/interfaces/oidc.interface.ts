@@ -17,7 +17,7 @@ export const OidcAccessTokenPayloadSchema = z.object({
   name: z.string().optional(),
   given_name: z.string().optional(),
   preferred_username: z.string().optional(),
-  nickname: z.string().optional(),
+  nickname: z.string(),
   groups: z.array(z.string()).optional(),
   roles: z.array(z.string()),
   team_id: z.string().nullable(),

@@ -30,7 +30,10 @@ export class OidcGuard implements CanActivate {
       const payload = await this.oidcService.validateToken(token);
 
       // DB에서 유저 조회.생성
-      const nickname = payload.preferred_username || payload.name || "User";
+      const nickname = payload.nickname;
+      if (!nickname) {
+        throw new UnauthorizedException("OIDC 토큰에 nickname이 필요합니다");
+      }
       const user = await this.userService.findOrCreate(payload.sub, nickname);
 
       request.user = { ...payload, userId: user.id };
