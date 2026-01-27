@@ -6,34 +6,6 @@ import Sidebar from "../components/layout/Sidebar";
 import { teamApi } from "../services/api";
 import type { Team } from "../types";
 
-// TODO: 백엔드 연동 후 제거
-
-// [팀 없을 때 테스트용]
-const MOCK_TEAMS: Team[] = [];
-
-/* [팀 있을 때 테스트용] - 테스트 시 위 빈 배열 주석 처리하고 아래 블록 주석 해제
-const MOCK_TEAMS: Team[] = [
-  {
-    uuid: "team-uuid-1",
-    name: "web18",
-    createdAt: new Date("2024-01-15"),
-    role: "owner",
-  },
-  {
-    uuid: "team-uuid-2",
-    name: "프론트엔드 스터디",
-    createdAt: new Date("2024-01-20"),
-    role: "member",
-  },
-  {
-    uuid: "team-uuid-3",
-    name: "사이드 프로젝트",
-    createdAt: new Date("2024-02-01"),
-    role: "member",
-  },
-];
-*/
-
 const MyTeams = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -53,9 +25,7 @@ const MyTeams = () => {
           setTeams(response.data);
         }
       } catch {
-        // TODO: 백엔드 연동 후 아래 mock 데이터 제거하고 에러 처리 복원
-        setTeams(MOCK_TEAMS);
-        // setError("팀 목록을 불러오는데 실패했습니다.");
+        setError("팀 목록을 불러오는데 실패했습니다.");
       } finally {
         setLoading(false);
       }
