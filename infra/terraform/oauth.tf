@@ -29,7 +29,7 @@ resource "authentik_provider_oauth2" "teamstash" {
     authentik_property_mapping_provider_scope.folders_write.id
   ]
 
-  sub_mode = "hashed_user_id"
+  sub_mode = "user_uuid"
 }
 
 resource "authentik_application" "teamstash" {

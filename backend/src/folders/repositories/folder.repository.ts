@@ -29,10 +29,10 @@ export class FolderRepository implements IFolderRepository {
     return folders.map((f) => new Folder(f));
   }
 
-  async findAllByTeam(teamId: number): Promise<Folder[]> {
+  async findAllByTeam(uuid: string): Promise<Folder[]> {
     const folders = await this.prisma.folder.findMany({
       where: {
-        teamId,
+        uuid,
       },
       orderBy: {
         createdAt: "asc",
@@ -42,7 +42,7 @@ export class FolderRepository implements IFolderRepository {
     return folders.map((f) => new Folder(f));
   }
 
-  async findOne(uuid: string): Promise<Folder | null> {
+  async findByUuid(uuid: string): Promise<Folder | null> {
     const folder = await this.prisma.folder.findUnique({
       where: {
         uuid,

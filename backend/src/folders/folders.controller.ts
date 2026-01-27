@@ -6,12 +6,12 @@ import {
   Delete,
   Body,
   Param,
-  Query,
   HttpStatus,
   HttpCode,
   Inject,
   type LoggerService,
   UseGuards,
+  ParseUUIDPipe,
 } from "@nestjs/common";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { FoldersService } from "./folders.service";
@@ -22,6 +22,8 @@ import { FolderResponseDto } from "./dto/folder.response.dto";
 import { OidcGuard } from "../oidc/guards/oidc.guard";
 import { TeamGuard } from "../oidc/guards/team.guard";
 import { RequireScopes } from "../oidc/guards/scopes.decorator";
+import { CurrentUser } from "src/oidc/decorators/current-user.decorator";
+import type { AuthenticatedUser } from "src/oidc/interfaces/oidc.interface";
 
 @Controller("folders")
 @UseGuards(OidcGuard, TeamGuard)
@@ -35,10 +37,10 @@ export class FoldersController {
   @Post()
   @RequireScopes("folders:write")
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() requestDto: CreateFolderRequestDto) {
-    this.logger.log(`POST /api/folders - 폴더 생성 요청: ${requestDto.folderName}`);
+  async create(@Body() dto: CreateFolderRequestDto, @CurrentUser() user: AuthenticatedUser) {
+    this.logger.log(`POST /api/folders - 폴더 생성 요청: ${dto.folderName}`);
 
-    const folder = await this.foldersService.create(requestDto);
+    const folder = await this.foldersService.create(dto.teamUuid, dto.folderName, user.userId);
     const responseDto = FolderResponseDto.from(folder);
 
     return ResponseBuilder.success<FolderResponseDto>()
@@ -49,12 +51,12 @@ export class FoldersController {
   }
 
   // 팀의 모든 폴더 조회
-  @Get()
+  @Get("team/:uuid")
   @RequireScopes("folders:read")
-  async findAllByTeam(@Query("teamId") teamId: number) {
-    this.logger.log(`GET /api/folders?teamId=${teamId} - 폴더 목록 조회`);
+  async findAllByTeam(@Param("uuid", ParseUUIDPipe) teamUuid: string) {
+    this.logger.log(`GET /api/folders?teamId=${teamUuid} - 폴더 목록 조회`);
 
-    const folders = await this.foldersService.findAllByTeam(teamId);
+    const folders = await this.foldersService.findAllByTeam(teamUuid);
     const responseDtos = folders.map((folder) => FolderResponseDto.from(folder));
 
     return ResponseBuilder.success<FolderResponseDto[]>()
@@ -67,7 +69,7 @@ export class FoldersController {
   // 특정 폴더 조회
   @Get(":folderId")
   @RequireScopes("folders:read")
-  async findOne(@Param("folderId") folderId: string) {
+  async findOne(@Param("folderId", ParseUUIDPipe) folderId: string) {
     this.logger.log(`GET /api/folders/${folderId} - 폴더 단건 조회`);
 
     const folder = await this.foldersService.findOne(folderId);
@@ -83,7 +85,7 @@ export class FoldersController {
   // 폴더 이름 수정
   @Put(":folderId")
   @RequireScopes("folders:write")
-  async update(@Param("folderId") folderId: string, @Body() requestDto: UpdateFolderRequestDto) {
+  async update(@Param("folderId", ParseUUIDPipe) folderId: string, @Body() requestDto: UpdateFolderRequestDto) {
     this.logger.log(`PUT /api/folders/${folderId} - 폴더 수정`);
 
     const folder = await this.foldersService.update(folderId, requestDto);
@@ -100,7 +102,7 @@ export class FoldersController {
   @Delete(":folderId")
   @RequireScopes("folders:write")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param("folderId") folderId: string) {
+  async remove(@Param("folderId", ParseUUIDPipe) folderId: string) {
     this.logger.log(`DELETE /api/folders/${folderId} - 폴더 삭제`);
 
     await this.foldersService.remove(folderId);

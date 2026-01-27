@@ -1,9 +1,13 @@
-import { IsNumber, IsOptional, IsString } from "class-validator";
+import { IsOptional, IsString } from "class-validator";
 
 export class GetLinksQueryDto {
   @IsOptional()
-  @IsNumber()
-  teamId?: number;
+  @IsString()
+  teamUuid?: string;
+
+  @IsOptional()
+  @IsString()
+  folderUuid?: string;
 
   @IsOptional()
   @IsString()
