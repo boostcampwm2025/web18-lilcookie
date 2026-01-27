@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { ApiResponse, Link, Folder } from "../types";
+import type { ApiResponse, Link, Folder, Team } from "../types";
 import {
   getStoredAccessToken,
   refreshAccessToken,
@@ -192,6 +192,15 @@ export const folderApi = {
 
   deleteFolder: async (folderId: string): Promise<void> => {
     await api.delete(`/folders/${folderId}`);
+  },
+};
+
+// 팀 API 함수들
+export const teamApi = {
+  // GET /api/teams/me - 내 팀들 조회
+  getMyTeams: async (): Promise<ApiResponse<Team[]>> => {
+    const response = await api.get("/teams/me");
+    return response.data;
   },
 };
 

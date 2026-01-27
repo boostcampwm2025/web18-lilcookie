@@ -35,3 +35,11 @@ export interface User {
   email: string;
   nickname?: string;
 }
+
+// 팀 타입
+export interface Team {
+  uuid: string;
+  name: string;
+  createdAt: Date;
+  role: string; // "owner" | "member"
+}
