@@ -18,6 +18,14 @@ export const PreviewTeamRespondDataSchema = z.object({
   teamName: z.string(),
 });
 
+/** 팀 가입 응답 data */
+export const JoinTeamResponseDataSchema = z.object({
+  teamUuid: z.string().uuid(),
+  teamName: z.string(),
+  joinedAt: z.string().datetime(),
+  role: z.enum(["admin", "member"]),
+});
+
 /** 팀 멤버 조회 응답 */
 export const GetTeamMembersResponsdDataSchema = z.object({
   userUuid: z.string().uuid(),
