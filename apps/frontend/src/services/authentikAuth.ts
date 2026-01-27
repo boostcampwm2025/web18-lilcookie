@@ -9,6 +9,8 @@ import {
 } from "../utils/pkce";
 
 // 토큰 응답 타입
+// https://www.rfc-editor.org/rfc/rfc6749.html#section-5.1
+// https://openid.net/specs/openid-connect-core-1_0.html#TokenResponse
 export interface TokenResponse {
   access_token: string;
   token_type: string;
