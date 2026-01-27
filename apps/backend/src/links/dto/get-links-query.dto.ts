@@ -1,19 +1,18 @@
-import { IsOptional, IsString } from "class-validator";
+import { IsNotEmpty, IsOptional, IsString, IsUUID } from "class-validator";
 
+/**
+ * 링크 조회 쿼리 DTO
+ */
 export class GetLinksQueryDto {
   @IsOptional()
-  @IsString()
+  @IsUUID()
   teamUuid?: string;
 
   @IsOptional()
-  @IsString()
+  @IsUUID()
   folderUuid?: string;
 
   @IsOptional()
   @IsString()
   tags?: string;
-
-  @IsOptional()
-  @IsString()
-  createdAfter?: string;
 }

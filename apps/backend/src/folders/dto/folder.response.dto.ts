@@ -1,16 +1,24 @@
-import { Folder } from "../entities/folder.entity";
+/**
+ * 생성한 사용자 정보 인터페이스
+ */
+export interface CreatorInfo {
+  userUuid: string;
+  userName: string;
+}
 
+/**
+ * 폴더 응답 DTO
+ */
 export class FolderResponseDto {
-  uuid: string;
-  name: string;
-  createdBy: number;
+  folderUuid: string;
+  folderName: string;
+  createdAt: string;
+  createdBy: CreatorInfo;
 
-  // Entity에서 DTO로 변환하는 헬퍼 메서드
-  static from(folder: Folder): FolderResponseDto {
-    const dto = new FolderResponseDto();
-    dto.uuid = folder.uuid;
-    dto.name = folder.name;
-    dto.createdBy = folder.createdBy;
-    return dto;
+  constructor(data: { folderUuid: string; folderName: string; createdAt: string; createdBy: CreatorInfo }) {
+    this.folderUuid = data.folderUuid;
+    this.folderName = data.folderName;
+    this.createdAt = data.createdAt;
+    this.createdBy = data.createdBy;
   }
 }

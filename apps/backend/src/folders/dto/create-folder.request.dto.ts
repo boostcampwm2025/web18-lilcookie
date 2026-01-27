@@ -1,11 +1,14 @@
-import { IsString, IsNotEmpty } from "class-validator";
+import { IsString, IsNotEmpty, IsUUID } from "class-validator";
 
+/**
+ * 폴더 생성 요청 DTO
+ */
 export class CreateFolderRequestDto {
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
-  teamUuid: string; // 팀 ID
+  teamUuid: string;
 
   @IsString()
   @IsNotEmpty()
-  folderName: string; // 폴더 이름
+  folderName: string;
 }
