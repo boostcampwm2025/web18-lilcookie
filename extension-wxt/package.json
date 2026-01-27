@@ -5,7 +5,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "wxt",
+    "dev": "wxt -m development",
     "dev:firefox": "wxt build -b firefox -m development",
     "build": "wxt build",
     "build:firefox": "wxt build -b firefox",
