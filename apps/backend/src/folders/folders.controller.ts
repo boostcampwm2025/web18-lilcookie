@@ -2,10 +2,11 @@ import {
   Controller,
   Get,
   Post,
-  Put,
+  Patch,
   Delete,
   Body,
   Param,
+  Query,
   HttpStatus,
   HttpCode,
   Inject,
@@ -20,92 +21,106 @@ import { CreateFolderRequestDto } from "./dto/create-folder.request.dto";
 import { UpdateFolderRequestDto } from "./dto/update-folder.request.dto";
 import { FolderResponseDto } from "./dto/folder.response.dto";
 import { OidcGuard } from "../oidc/guards/oidc.guard";
-import { TeamGuard } from "../oidc/guards/team.guard";
 import { RequireScopes } from "../oidc/guards/scopes.decorator";
-import { CurrentUser } from "src/oidc/decorators/current-user.decorator";
-import type { AuthenticatedUser } from "src/oidc/interfaces/oidc.interface";
+import { CurrentUser } from "../oidc/decorators/current-user.decorator";
+import type { AuthenticatedUser } from "../oidc/interfaces/oidc.interface";
 
 @Controller("folders")
-@UseGuards(OidcGuard, TeamGuard)
+@UseGuards(OidcGuard)
 export class FoldersController {
   constructor(
     private readonly foldersService: FoldersService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService,
   ) {}
 
-  // 폴더 생성
+  /**
+   * 새로운 폴더 생성
+   * POST /folders
+   */
   @Post()
   @RequireScopes("folders:write")
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreateFolderRequestDto, @CurrentUser() user: AuthenticatedUser) {
-    this.logger.log(`POST /api/folders - 폴더 생성 요청: ${dto.folderName}`);
+  async create(@Body() requestDto: CreateFolderRequestDto, @CurrentUser() user: AuthenticatedUser) {
+    this.logger.log(`POST /folders - 새로운 폴더 생성 요청: ${requestDto.folderName}`);
 
-    const folder = await this.foldersService.create(dto.teamUuid, dto.folderName, user.userId);
-    const responseDto = FolderResponseDto.from(folder);
+    const responseDto = await this.foldersService.create(requestDto.teamUuid, requestDto.folderName, user.userId);
 
     return ResponseBuilder.success<FolderResponseDto>()
       .status(HttpStatus.CREATED)
-      .message("폴더가 성공적으로 생성되었습니다")
+      .message("폴더가 성공적으로 생성되었습니다.")
       .data(responseDto)
       .build();
   }
 
-  // 팀의 모든 폴더 조회
-  @Get("team/:uuid")
+  /**
+   * 특정 팀의 모든 폴더 조회
+   * GET /folders?teamUuid={teamUuid}
+   */
+  @Get()
   @RequireScopes("folders:read")
-  async findAllByTeam(@Param("uuid", ParseUUIDPipe) teamUuid: string) {
-    this.logger.log(`GET /api/folders?teamId=${teamUuid} - 폴더 목록 조회`);
+  async findAllByTeam(@Query("teamUuid", ParseUUIDPipe) teamUuid: string, @CurrentUser() user: AuthenticatedUser) {
+    this.logger.log(`GET /folders?teamUuid=${teamUuid} - 특정 팀의 모든 폴더 조회 요청`);
 
-    const folders = await this.foldersService.findAllByTeam(teamUuid);
-    const responseDtos = folders.map((folder) => FolderResponseDto.from(folder));
+    const responseDtos = await this.foldersService.findAllByTeam(teamUuid, user.userId);
 
     return ResponseBuilder.success<FolderResponseDto[]>()
       .status(HttpStatus.OK)
-      .message("폴더 목록을 성공적으로 조회했습니다")
+      .message("폴더들을 성공적으로 조회했습니다.")
       .data(responseDtos)
       .build();
   }
 
-  // 특정 폴더 조회
-  @Get(":folderId")
+  /**
+   * 특정 폴더 조회
+   * GET /folders/:folderUuid
+   */
+  @Get(":folderUuid")
   @RequireScopes("folders:read")
-  async findOne(@Param("folderId", ParseUUIDPipe) folderId: string) {
-    this.logger.log(`GET /api/folders/${folderId} - 폴더 단건 조회`);
+  async findOne(@Param("folderUuid", ParseUUIDPipe) folderUuid: string, @CurrentUser() user: AuthenticatedUser) {
+    this.logger.log(`GET /folders/${folderUuid} - 특정 폴더 조회 요청`);
 
-    const folder = await this.foldersService.findOne(folderId);
-    const responseDto = FolderResponseDto.from(folder);
+    const responseDto = await this.foldersService.findOne(folderUuid, user.userId);
 
     return ResponseBuilder.success<FolderResponseDto>()
       .status(HttpStatus.OK)
-      .message("폴더를 성공적으로 조회했습니다")
+      .message("폴더 정보를 성공적으로 조회했습니다.")
       .data(responseDto)
       .build();
   }
 
-  // 폴더 이름 수정
-  @Put(":folderId")
+  /**
+   * 특정 폴더 이름 수정
+   * PATCH /folders/:folderUuid
+   */
+  @Patch(":folderUuid")
   @RequireScopes("folders:write")
-  async update(@Param("folderId", ParseUUIDPipe) folderId: string, @Body() requestDto: UpdateFolderRequestDto) {
-    this.logger.log(`PUT /api/folders/${folderId} - 폴더 수정`);
+  async update(
+    @Param("folderUuid", ParseUUIDPipe) folderUuid: string,
+    @Body() requestDto: UpdateFolderRequestDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    this.logger.log(`PATCH /folders/${folderUuid} - 특정 폴더 이름 수정 요청`);
 
-    const folder = await this.foldersService.update(folderId, requestDto);
-    const responseDto = FolderResponseDto.from(folder);
+    const responseDto = await this.foldersService.update(folderUuid, requestDto, user.userId);
 
     return ResponseBuilder.success<FolderResponseDto>()
       .status(HttpStatus.OK)
-      .message("폴더가 성공적으로 수정되었습니다")
+      .message("폴더 이름이 성공적으로 수정되었습니다.")
       .data(responseDto)
       .build();
   }
 
-  // 폴더 삭제
-  @Delete(":folderId")
+  /**
+   * 특정 폴더 삭제
+   * DELETE /folders/:folderUuid
+   */
+  @Delete(":folderUuid")
   @RequireScopes("folders:write")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param("folderId", ParseUUIDPipe) folderId: string) {
-    this.logger.log(`DELETE /api/folders/${folderId} - 폴더 삭제`);
+  async remove(@Param("folderUuid", ParseUUIDPipe) folderUuid: string, @CurrentUser() user: AuthenticatedUser) {
+    this.logger.log(`DELETE /folders/${folderUuid} - 특정 폴더 삭제 요청`);
 
-    await this.foldersService.remove(folderId);
+    await this.foldersService.remove(folderUuid, user.userId);
 
     // 204 No Content는 Response Body 없음
     return;

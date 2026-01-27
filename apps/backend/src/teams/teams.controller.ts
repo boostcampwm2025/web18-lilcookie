@@ -1,90 +1,143 @@
-import { Controller, Post, Get, Delete, Body, Param, UseGuards, HttpStatus, ParseUUIDPipe } from "@nestjs/common";
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  HttpStatus,
+  HttpCode,
+  ParseUUIDPipe,
+  Inject,
+  type LoggerService,
+} from "@nestjs/common";
 import { TeamsService } from "./teams.service";
 import { CreateTeamRequestDto } from "./dto/create-team.request.dto";
-import { TeamResponseDto } from "./dto/team.response.dto";
+import { TeamResponseDto, TeamPreviewResponseDto, TeamJoinResponseDto } from "./dto/team.response.dto";
 import { TeamMemberResponseDto } from "./dto/team-member.response.dto";
 import { OidcGuard } from "../oidc/guards/oidc.guard";
 import { CurrentUser } from "../oidc/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "../oidc/interfaces/oidc.interface";
 import { ResponseBuilder } from "../common/builders/response.builder";
+import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 
 @Controller("teams")
 export class TeamsController {
-  constructor(private readonly teamsService: TeamsService) {}
+  constructor(
+    private readonly teamsService: TeamsService,
+    @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService,
+  ) {}
 
-  // 팀 생성
+  /**
+   * 팀 생성
+   * POST /teams
+   */
   @Post()
   @UseGuards(OidcGuard)
-  async create(@Body() dto: CreateTeamRequestDto, @CurrentUser() user: AuthenticatedUser) {
-    const { team, member } = await this.teamsService.create(dto.name, user.userId);
+  @HttpCode(HttpStatus.CREATED)
+  async create(@Body() requestDto: CreateTeamRequestDto, @CurrentUser() user: AuthenticatedUser) {
+    this.logger.log(`POST /teams - 새로운 팀 생성 요청: ${requestDto.teamName}`);
+
+    const { team, member } = await this.teamsService.create(requestDto.teamName, user.userId);
     const responseDto = TeamResponseDto.from(team, member.role);
 
     return ResponseBuilder.success<TeamResponseDto>()
       .status(HttpStatus.CREATED)
-      .message("팀이 성공적으로 생성되었습니다")
+      .message("팀이 성공적으로 생성되었습니다.")
       .data(responseDto)
       .build();
   }
 
-  // 내 팀들 조회
+  /**
+   * 내가 속한 모든 팀 조회
+   * GET /teams/me
+   */
   @Get("me")
   @UseGuards(OidcGuard)
   async getMyTeams(@CurrentUser() user: AuthenticatedUser) {
+    this.logger.log(`GET /teams/me - 사용자(${user.userNickname})의 팀 목록 조회 요청`);
+
     const results = await this.teamsService.getMyTeams(user.userId);
-    const responseDtos = results.map((r) => TeamResponseDto.from(r.team, r.role));
+    const responseDtos = results.map(({ team, role }) => TeamResponseDto.from(team, role));
 
     return ResponseBuilder.success<TeamResponseDto[]>()
       .status(HttpStatus.OK)
-      .message("내 팀 정보를 성공적으로 조회했습니다")
+      .message("내 팀 정보를 성공적으로 조회했습니다.")
       .data(responseDtos)
       .build();
   }
 
-  // 초대 링크용 팀 정보 조회 (가입 전 확인용)
-  @Get(":uuid/invite")
-  async getTeamForInvite(@Param("uuid", ParseUUIDPipe) uuid: string) {
-    const team = await this.teamsService.getTeamByUuid(uuid);
+  /**
+   * 팀 정보 조회 (미리보기용)
+   * GET /teams/:teamUuid/preview
+   */
+  @Get(":teamUuid/preview")
+  async getTeamPreview(@Param("teamUuid", ParseUUIDPipe) teamUuid: string) {
+    this.logger.log(`GET /teams/${teamUuid}/preview - 팀 정보(미리보기) 조회 요청`);
 
-    return ResponseBuilder.success<{ name: string }>()
+    const team = await this.teamsService.getTeamByUuid(teamUuid);
+    const responseDto = TeamPreviewResponseDto.from(team);
+
+    return ResponseBuilder.success<TeamPreviewResponseDto>()
       .status(HttpStatus.OK)
-      .message("팀 정보를 성공적으로 조회했습니다")
-      .data({ name: team.name })
+      .message("팀 정보를 성공적으로 조회했습니다.")
+      .data(responseDto)
       .build();
   }
 
-  // 팀 가입
-  @Post(":uuid/join")
+  /**
+   * 팀 가입
+   * POST /teams/:teamUuid/join
+   */
+  @Post(":teamUuid/join")
   @UseGuards(OidcGuard)
-  async join(@Param("uuid", ParseUUIDPipe) uuid: string, @CurrentUser() user: AuthenticatedUser) {
-    await this.teamsService.join(uuid, user.userId);
-    return ResponseBuilder.success<{ success: true }>()
+  async join(@Param("teamUuid", ParseUUIDPipe) teamUuid: string, @CurrentUser() user: AuthenticatedUser) {
+    this.logger.log(`POST /teams/${teamUuid}/join - 사용자(${user.userNickname})의 팀 가입 요청`);
+
+    const { team, member } = await this.teamsService.join(teamUuid, user.userId);
+    const responseDto = TeamJoinResponseDto.from(team, member.joinedAt, member.role);
+
+    return ResponseBuilder.success<TeamJoinResponseDto>()
       .status(HttpStatus.OK)
-      .message("팀에 성공적으로 가입했습니다")
-      .data({ success: true })
+      .message("팀에 성공적으로 가입되었습니다.")
+      .data(responseDto)
       .build();
   }
 
-  // 팀 탈퇴
-  @Delete(":uuid")
+  /**
+   * 팀 탈퇴
+   * DELETE /teams/:teamUuid
+   */
+  @Delete(":teamUuid")
   @UseGuards(OidcGuard)
-  async leave(@Param("uuid", ParseUUIDPipe) uuid: string, @CurrentUser() user: AuthenticatedUser) {
-    await this.teamsService.leave(uuid, user.userId);
-    return ResponseBuilder.success<{ success: true }>()
+  async leave(@Param("teamUuid", ParseUUIDPipe) teamUuid: string, @CurrentUser() user: AuthenticatedUser) {
+    this.logger.log(`DELETE /teams/${teamUuid} - 사용자(${user.userNickname})의 팀 탈퇴 요청`);
+
+    await this.teamsService.leave(teamUuid, user.userId);
+
+    return ResponseBuilder.success<Record<string, never>>()
       .status(HttpStatus.OK)
-      .message("팀에서 성공적으로 탈퇴했습니다")
-      .data({ success: true })
+      .message("팀에서 성공적으로 탈퇴되었습니다.")
+      .data({})
       .build();
   }
 
-  // 팀 멤버 목록
-  @Get(":uuid/members")
+  /**
+   * 팀 멤버 조회
+   * GET /teams/:teamUuid/members
+   */
+  @Get(":teamUuid/members")
   @UseGuards(OidcGuard)
-  async getMembers(@Param("uuid", ParseUUIDPipe) uuid: string, @CurrentUser() user: AuthenticatedUser) {
-    const members = await this.teamsService.getMembers(uuid, user.userId);
-    const responseDtos = members.map((member) => TeamMemberResponseDto.from(member));
+  async getMembers(@Param("teamUuid", ParseUUIDPipe) teamUuid: string, @CurrentUser() user: AuthenticatedUser) {
+    this.logger.log(`GET /teams/${teamUuid}/members - 팀 멤버 조회 요청`);
+
+    const members = await this.teamsService.getMembers(teamUuid, user.userId);
+    const responseDtos = members.map(({ member, user: memberUser }) => TeamMemberResponseDto.from(member, memberUser));
+
     return ResponseBuilder.success<TeamMemberResponseDto[]>()
       .status(HttpStatus.OK)
-      .message("팀 멤버 목록을 성공적으로 조회했습니다")
+      .message("팀 멤버 정보를 성공적으로 조회했습니다.")
       .data(responseDtos)
       .build();
   }

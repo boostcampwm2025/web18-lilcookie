@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Delete,
   Body,
   Param,
@@ -17,82 +18,112 @@ import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { LinksService } from "./links.service";
 import { ResponseBuilder } from "../common/builders/response.builder";
 import { CreateLinkRequestDto } from "./dto/create-link.request.dto";
-import { CreateLinkResponseDto } from "./dto/create-link.response.dto";
+import { UpdateLinkRequestDto } from "./dto/update-link.request.dto";
 import { LinkResponseDto } from "./dto/link.response.dto";
 import { GetLinksQueryDto } from "./dto/get-links-query.dto";
 import { OidcGuard } from "../oidc/guards/oidc.guard";
-import { TeamGuard } from "../oidc/guards/team.guard";
 import { RequireScopes } from "../oidc/guards/scopes.decorator";
-import { CurrentUser } from "src/oidc/decorators/current-user.decorator";
-import type { AuthenticatedUser } from "src/oidc/interfaces/oidc.interface";
+import { CurrentUser } from "../oidc/decorators/current-user.decorator";
+import type { AuthenticatedUser } from "../oidc/interfaces/oidc.interface";
 
 @Controller("links")
-@UseGuards(OidcGuard, TeamGuard)
+@UseGuards(OidcGuard)
 export class LinksController {
   constructor(
     private readonly linksService: LinksService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService,
   ) {}
 
-  // 새로운 Link 생성
+  /**
+   * 새로운 링크 생성
+   * POST /links
+   */
   @Post()
   @RequireScopes("links:write")
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreateLinkRequestDto, @CurrentUser() user: AuthenticatedUser) {
-    this.logger.log(`POST /api/links - 링크 생성 요청: ${dto.title}`);
+  async create(@Body() requestDto: CreateLinkRequestDto, @CurrentUser() user: AuthenticatedUser) {
+    this.logger.log(`POST /links - 새로운 링크 생성 요청: ${requestDto.title}`);
 
-    const link = await this.linksService.create(dto, user.userId);
-    const responseDto = CreateLinkResponseDto.from(link.uuid, link.createdAt);
+    const responseDto = await this.linksService.create(requestDto, user.userId);
 
-    return ResponseBuilder.success<CreateLinkResponseDto>()
+    return ResponseBuilder.success<LinkResponseDto>()
       .status(HttpStatus.CREATED)
-      .message("링크가 성공적으로 생성되었습니다")
+      .message("링크가 성공적으로 생성되었습니다.")
       .data(responseDto)
       .build();
   }
 
-  // 목록 조회 (전체 또는 조건)
+  /**
+   * 링크 목록 조회 (전체 또는 조건)
+   * GET /links?teamUuid={teamUuid}&folderUuid={folderUuid}&tags={tags}
+   */
   @Get()
   @RequireScopes("links:read")
-  async findAll(@Query() query: GetLinksQueryDto) {
+  async findAll(@Query() query: GetLinksQueryDto, @CurrentUser() user: AuthenticatedUser) {
     this.logger.log(
-      `GET /api/links - 링크 목록 조회: teamId=${query.teamUuid}, tags=${query.tags}, createdAfter=${query.createdAfter}`,
+      `GET /links - 링크 목록 조회 요청: teamUuid=${query.teamUuid}, folderUuid=${query.folderUuid}, tags=${query.tags}`,
     );
 
-    const links = await this.linksService.findAll(query);
-    const responseDtos = links.map((link) => LinkResponseDto.from(link));
+    const responseDtos = await this.linksService.findAll(query, user.userId);
 
     return ResponseBuilder.success<LinkResponseDto[]>()
       .status(HttpStatus.OK)
-      .message("링크 목록을 성공적으로 조회했습니다")
+      .message("링크들을 성공적으로 조회했습니다.")
       .data(responseDtos)
       .build();
   }
 
-  // 단건 조회
+  /**
+   * 특정 링크 조회
+   * GET /links/:linkUuid
+   */
   @Get(":linkUuid")
   @RequireScopes("links:read")
-  async findOne(@Param("linkUuid", ParseUUIDPipe) linkUuid: string) {
-    this.logger.log(`GET /api/links/${linkUuid} - 링크 단건 조회`);
+  async findOne(@Param("linkUuid", ParseUUIDPipe) linkUuid: string, @CurrentUser() user: AuthenticatedUser) {
+    this.logger.log(`GET /links/${linkUuid} - 특정 링크 조회 요청`);
 
-    const link = await this.linksService.findOne(linkUuid);
-    const responseDto = LinkResponseDto.from(link);
+    const responseDto = await this.linksService.findOne(linkUuid, user.userId);
 
     return ResponseBuilder.success<LinkResponseDto>()
       .status(HttpStatus.OK)
-      .message("링크를 성공적으로 조회했습니다")
+      .message("링크 정보를 성공적으로 조회했습니다.")
       .data(responseDto)
       .build();
   }
 
-  // 단건 삭제
+  /**
+   * 특정 링크 수정
+   * PATCH /links/:linkUuid
+   */
+  @Patch(":linkUuid")
+  @RequireScopes("links:write")
+  async update(
+    @Param("linkUuid", ParseUUIDPipe) linkUuid: string,
+    @Body() requestDto: UpdateLinkRequestDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    this.logger.log(`PATCH /links/${linkUuid} - 특정 링크 수정 요청`);
+
+    const responseDto = await this.linksService.update(linkUuid, requestDto, user.userId);
+
+    return ResponseBuilder.success<LinkResponseDto>()
+      .status(HttpStatus.OK)
+      .message("링크 정보가 성공적으로 수정되었습니다.")
+      .data(responseDto)
+      .build();
+  }
+
+  /**
+   * 특정 링크 삭제
+   * DELETE /links/:linkUuid
+   */
   @Delete(":linkUuid")
   @RequireScopes("links:write")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param("linkUuid", ParseUUIDPipe) linkUuid: string) {
-    this.logger.log(`DELETE /api/links/${linkUuid} - 링크 단건 삭제`);
+  async remove(@Param("linkUuid", ParseUUIDPipe) linkUuid: string, @CurrentUser() user: AuthenticatedUser) {
+    this.logger.log(`DELETE /links/${linkUuid} - 특정 링크 삭제 요청`);
 
-    await this.linksService.remove(linkUuid);
+    await this.linksService.remove(linkUuid, user.userId);
 
     // 204 No Content는 Response Body 없음
     return;
