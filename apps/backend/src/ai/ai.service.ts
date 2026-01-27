@@ -1,9 +1,8 @@
 import { Injectable, InternalServerErrorException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { HttpService } from "@nestjs/axios";
-import { firstValueFrom, catchError } from "rxjs";
-import { AxiosError } from "axios";
-import { retryWithBackoff } from "../common/http.operators";
+import { firstValueFrom } from "rxjs";
+import { retryWithBackoff, throwOnAxiosError } from "../common/http.operators";
 import { SummarizeRequestDto } from "./dto/summarize.request.dto";
 
 interface ClovaStudioMessage {
@@ -114,16 +113,7 @@ ${content}
               "X-NCP-CLOVASTUDIO-REQUEST-ID": requestId,
             },
           })
-          .pipe(
-            retryWithBackoff(),
-            catchError((error: AxiosError) => {
-              const errorBody = error.response?.data ?? error.message;
-              console.error("Clova Studio API 에러 응답:", errorBody);
-              throw new InternalServerErrorException(
-                `Clova Studio API 호출 실패: ${error.response?.status} ${error.response?.statusText} - ${JSON.stringify(errorBody)}`,
-              );
-            }),
-          ),
+          .pipe(retryWithBackoff(), throwOnAxiosError(InternalServerErrorException, "Clova Studio API 호출 실패")),
       );
 
       if (data.status.code !== "20000") {

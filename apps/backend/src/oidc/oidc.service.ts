@@ -1,9 +1,8 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { HttpService } from "@nestjs/axios";
-import { firstValueFrom, catchError } from "rxjs";
-import { AxiosError } from "axios";
-import { retryWithBackoff } from "../common/http.operators";
+import { firstValueFrom } from "rxjs";
+import { retryWithBackoff, throwOnAxiosError } from "../common/http.operators";
 import * as jose from "jose";
 import { OidcAccessTokenPayloadSchema, type OidcAccessTokenPayload } from "./interfaces/oidc.interface";
 
@@ -119,13 +118,9 @@ export class OidcService {
 
   private async fetchJwksWithExponentialBackoff(url: string): Promise<JWKSResponse> {
     const { data } = await firstValueFrom(
-      this.httpService.get<JWKSResponse>(url).pipe(
-        retryWithBackoff(this.MAX_RETRIES),
-        catchError((error: AxiosError) => {
-          const errorMessage = error.message;
-          throw new UnauthorizedException(`Failed to fetch JWKS after ${this.MAX_RETRIES} attempts: ${errorMessage}`);
-        }),
-      ),
+      this.httpService
+        .get<JWKSResponse>(url)
+        .pipe(retryWithBackoff(this.MAX_RETRIES), throwOnAxiosError(UnauthorizedException, "Failed to fetch JWKS")),
     );
     return data;
   }
