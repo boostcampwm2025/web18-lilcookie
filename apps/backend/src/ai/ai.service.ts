@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom, catchError } from "rxjs";
 import { AxiosError } from "axios";
+import { retryWithBackoff } from "../common/http.operators";
 import { SummarizeRequestDto } from "./dto/summarize.request.dto";
 
 interface ClovaStudioMessage {
@@ -114,6 +115,7 @@ ${content}
             },
           })
           .pipe(
+            retryWithBackoff(),
             catchError((error: AxiosError) => {
               const errorBody = error.response?.data ?? error.message;
               console.error("Clova Studio API 에러 응답:", errorBody);
