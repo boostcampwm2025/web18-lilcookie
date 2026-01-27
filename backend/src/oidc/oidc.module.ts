@@ -9,6 +9,6 @@ import { UserModule } from "src/user/user.module";
 @Module({
   imports: [ConfigModule, UserModule],
   providers: [OidcService, OidcGuard, TeamGuard, ScopesGuard],
-  exports: [OidcService, OidcGuard, TeamGuard, ScopesGuard, UserModule],
+  exports: [OidcService, OidcGuard, TeamGuard, ScopesGuard],
 })
 export class OidcModule {}
