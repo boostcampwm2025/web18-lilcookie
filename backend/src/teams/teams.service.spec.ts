@@ -45,10 +45,7 @@ describe("TeamsService", () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        TeamsService,
-        { provide: TeamRepository, useValue: mockRepository },
-      ],
+      providers: [TeamsService, { provide: TeamRepository, useValue: mockRepository }],
     }).compile();
 
     service = module.get<TeamsService>(TeamsService);
@@ -104,9 +101,7 @@ describe("TeamsService", () => {
       repository.findByUuid.mockResolvedValue(null);
 
       // When & Then
-      await expect(service.getTeamByUuid("invalid-uuid")).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getTeamByUuid("invalid-uuid")).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -130,9 +125,7 @@ describe("TeamsService", () => {
       repository.findByUuid.mockResolvedValue(null);
 
       // When & Then
-      await expect(service.join("invalid-uuid", 2)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.join("invalid-uuid", 2)).rejects.toThrow(NotFoundException);
     });
 
     it("이미 팀 멤버면 ConflictException을 던져야 한다", async () => {
@@ -141,9 +134,7 @@ describe("TeamsService", () => {
       repository.findMember.mockResolvedValue(mockMember); // 이미 멤버
 
       // When & Then
-      await expect(service.join("team-uuid-123", 2)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.join("team-uuid-123", 2)).rejects.toThrow(ConflictException);
     });
   });
 
@@ -166,9 +157,7 @@ describe("TeamsService", () => {
       repository.findByUuid.mockResolvedValue(null);
 
       // When & Then
-      await expect(service.leave("invalid-uuid", 2)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.leave("invalid-uuid", 2)).rejects.toThrow(NotFoundException);
     });
 
     it("팀 멤버가 아니면 NotFoundException을 던져야 한다", async () => {
@@ -177,9 +166,7 @@ describe("TeamsService", () => {
       repository.findMember.mockResolvedValue(null); // 멤버 아님
 
       // When & Then
-      await expect(service.leave("team-uuid-123", 2)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.leave("team-uuid-123", 2)).rejects.toThrow(NotFoundException);
     });
 
     it("owner는 탈퇴할 수 없어야 한다", async () => {
@@ -188,9 +175,7 @@ describe("TeamsService", () => {
       repository.findMember.mockResolvedValue(mockOwnerMember); // owner
 
       // When & Then
-      await expect(service.leave("team-uuid-123", 1)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.leave("team-uuid-123", 1)).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -214,9 +199,7 @@ describe("TeamsService", () => {
       repository.findByUuid.mockResolvedValue(null);
 
       // When & Then
-      await expect(service.getMembers("invalid-uuid", 2)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getMembers("invalid-uuid", 2)).rejects.toThrow(NotFoundException);
     });
 
     it("팀 멤버가 아니면 ForbiddenException을 던져야 한다", async () => {
@@ -225,9 +208,7 @@ describe("TeamsService", () => {
       repository.findMember.mockResolvedValue(null); // 멤버 아님
 
       // When & Then
-      await expect(service.getMembers("team-uuid-123", 999)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.getMembers("team-uuid-123", 999)).rejects.toThrow(ForbiddenException);
     });
   });
 });
