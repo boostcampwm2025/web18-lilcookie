@@ -12,6 +12,12 @@ variable "authentik_url" {
   default = "https://auth.localhost"
 }
 
+# Authentik 인스턴스 도메인
+variable "authentik_domain" {
+  type    = string
+  default = "auth.localhost"
+}
+
 # ---테스트용 사용자 계정 정보---
 variable "test_user_username" {
   type    = string
