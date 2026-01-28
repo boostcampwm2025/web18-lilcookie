@@ -158,28 +158,28 @@ async function buildUserInfo(accessToken: string): Promise<UserInfo | null> {
   const basicInfo = extractBasicUserInfo(accessToken);
   if (!basicInfo) return null;
 
+  let teams: Team[] = [];
   try {
-    const teams = await fetchUserTeams(accessToken);
-    if (teams.length === 0) return null;
-
-    const { selected_team_uuid } = await chrome.storage.local.get(
-      "selected_team_uuid",
-    );
-    const selectedTeamUuid =
-      typeof selected_team_uuid === "string" &&
-      teams.some((t) => t.teamUuid === selected_team_uuid)
-        ? selected_team_uuid
-        : teams[0].teamUuid;
-
-    return {
-      userUuid: basicInfo.userUuid,
-      nickname: basicInfo.nickname,
-      teams,
-      selectedTeamUuid,
-    };
-  } catch {
-    return null;
+    teams = await fetchUserTeams(accessToken);
+  } catch (error) {
+    console.error("Failed to fetch teams:", error);
   }
+
+  const { selected_team_uuid } = await chrome.storage.local.get(
+    "selected_team_uuid",
+  );
+  const selectedTeamUuid =
+    typeof selected_team_uuid === "string" &&
+    teams.some((t) => t.teamUuid === selected_team_uuid)
+      ? selected_team_uuid
+      : teams[0]?.teamUuid ?? "";
+
+  return {
+    userUuid: basicInfo.userUuid,
+    nickname: basicInfo.nickname,
+    teams,
+    selectedTeamUuid,
+  };
 }
 
 export async function login(): Promise<{ success: boolean; error?: string }> {
@@ -273,7 +273,6 @@ export async function getAuthState(): Promise<AuthState> {
         await chrome.storage.local.set({ auth_tokens: newTokens });
         const userInfo = await buildUserInfo(newTokens.access_token);
         if (!userInfo) {
-          await logout();
           return { isLoggedIn: false };
         }
         return {
@@ -283,7 +282,6 @@ export async function getAuthState(): Promise<AuthState> {
         };
       }
 
-      await logout();
       return { isLoggedIn: false };
     }
     return { isLoggedIn: false };
@@ -291,7 +289,6 @@ export async function getAuthState(): Promise<AuthState> {
 
   const userInfo = await buildUserInfo(auth_tokens.access_token);
   if (!userInfo) {
-    await logout();
     return { isLoggedIn: false };
   }
 
