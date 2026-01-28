@@ -27,11 +27,11 @@
 
 ## 개발용 인프라 Docker Compose
 
-Project root에 .env.development.local 작성
+`./infra/docker/.env.development.local` 작성
 
-```
-docker compose --env-file .env.development.local -f compose.dev.yaml up -d
-```
+`pnpm run docker:dev:up`
+`pnpm run docker:dev:down`
+`pnpm run docker:dev:logs`
 
 ## Terraform
 

@@ -10,7 +10,7 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "start": "nest start",
     "prestart:dev": "npm run prisma:deploy && npm run prisma:generate",
-    "start:dev": "nest start --watch",
+    "dev": "nest start --watch",
     "prestart:debug": "npm run prisma:deploy && npm run prisma:generate",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
@@ -37,6 +37,7 @@
     "@prisma/adapter-better-sqlite3": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "axios": "^1.13.2",
+    "axios-retry": "^4.5.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.6.0",
     "class-transformer": "^0.5.1",
@@ -51,7 +52,8 @@
     "rxjs": "^7.8.1",
     "uuid": "^13.0.0",
     "winston": "^3.19.0",
-    "zod": "^4.3.5"
+    "zod": "^4.3.5",
+    "@repo/api": "workspace:*"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

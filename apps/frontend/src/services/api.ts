@@ -1,4 +1,5 @@
-import axios from "axios";
+import axios, { type InternalAxiosRequestConfig } from "axios";
+import axiosRetry from "axios-retry";
 import type { ApiResponse, Link, Folder, Team } from "../types";
 import {
   getStoredAccessToken,
@@ -18,6 +19,25 @@ const api = axios.create({
   withCredentials: true, // HttpOnly 쿠키를 포함하기 위해 필요
 });
 
+axiosRetry(api, {
+  retries: 3,
+  retryDelay: axiosRetry.exponentialDelay,
+  retryCondition: (error) => {
+    return (
+      axiosRetry.isNetworkOrIdempotentRequestError(error) ||
+      (error.response?.status !== undefined && error.response.status >= 500)
+    );
+  },
+});
+
+// 인증 필요 없는 공개 엔드포인트 목록
+const PUBLIC_ENDPOINTS = ["/health"];
+
+function isPublicEndpoint(url?: string): boolean {
+  if (!url) return false;
+  return PUBLIC_ENDPOINTS.some((endpoint) => url.includes(endpoint));
+}
+
 // 토큰 갱신 실패 시 호출될 콜백
 let onAuthErrorCallback: (() => void) | null = null;
 
@@ -26,21 +46,22 @@ export const setAuthErrorCallback = (callback: () => void) => {
   onAuthErrorCallback = callback;
 };
 
-// 재시도 방지를 위한 플래그
+// 토큰 갱신 중 플래그
 let isRefreshing = false;
+const tokenRefreshRetriedRequests = new WeakSet<InternalAxiosRequestConfig>();
 // 대기 중인 요청들을 저장할 배열
 let failedQueue: Array<{
-  resolve: (value?: unknown) => void;
+  resolve: (token: string) => void;
   reject: (reason?: unknown) => void;
 }> = [];
 
 // 대기 중인 요청들을 처리하는 함수
-const processQueue = (error: unknown = null) => {
+const processQueue = (error: unknown = null, token: string | null = null) => {
   failedQueue.forEach((promise) => {
     if (error) {
       promise.reject(error);
     } else {
-      promise.resolve();
+      promise.resolve(token!);
     }
   });
   failedQueue = [];
@@ -58,24 +79,26 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
+    const originalRequest: InternalAxiosRequestConfig | undefined =
+      error.config;
 
-    // 401 에러이고, 아직 재시도하지 않았으며, 공개 엔드포인트가 아닌 경우
     if (
       error.response?.status === 401 &&
-      !originalRequest._retry &&
+      originalRequest &&
+      !tokenRefreshRetriedRequests.has(originalRequest) &&
       !isPublicEndpoint(originalRequest.url)
     ) {
       // 이미 갱신 중이면 큐에 추가하고 대기
       if (isRefreshing) {
-        return new Promise((resolve, reject) => {
+        return new Promise<string>((resolve, reject) => {
           failedQueue.push({ resolve, reject });
-        })
-          .then(() => api(originalRequest))
-          .catch((err) => Promise.reject(err));
+        }).then((newToken) => {
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return api(originalRequest);
+        });
       }
 
-      originalRequest._retry = true;
+      tokenRefreshRetriedRequests.add(originalRequest);
       isRefreshing = true;
 
       try {
@@ -83,11 +106,14 @@ api.interceptors.response.use(
         const newTokens = await refreshAccessToken();
         isRefreshing = false;
 
-        // 대기 중인 모든 요청 성공 처리
         if (newTokens) {
-          processQueue();
+          const newToken = newTokens.access_token;
+
+          // 대기 중인 모든 요청에 새 토큰 전달
+          processQueue(null, newToken);
+
           // 원래 요청 재시도
-          originalRequest.headers.Authorization = `Bearer ${newTokens.access_token}`;
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
           return api(originalRequest);
         }
 
@@ -154,9 +180,9 @@ export const linkApi = {
 
 // 폴더 API 함수들
 export const folderApi = {
-  // GET /api/folders?teamId=1 - 팀의 모든 폴더 조회
-  getFolders: async (teamId: number): Promise<ApiResponse<Folder[]>> => {
-    const response = await api.get("/folders", { params: { teamId } });
+  // GET /folders?teamUuid={teamUuid} - 팀의 모든 폴더 조회
+  getFolders: async (teamUuid: string): Promise<ApiResponse<Folder[]>> => {
+    const response = await api.get("/folders", { params: { teamUuid } });
     return response.data;
   },
 
@@ -167,13 +193,10 @@ export const folderApi = {
     return response.data;
   },
 
-  // 1단계 폴더 구조로 단순화
-
   // POST /folders - 새 폴더 생성
   createFolder: async (data: {
-    teamId: number;
+    teamUuid: string;
     folderName: string;
-    userId: number;
   }): Promise<ApiResponse<Folder>> => {
     const response = await api.post("/folders", data);
     return response.data;
@@ -200,6 +223,12 @@ export const teamApi = {
   // GET /teams/me - 내 팀들 조회
   getMyTeams: async (): Promise<ApiResponse<Team[]>> => {
     const response = await api.get("/teams/me");
+    return response.data;
+  },
+
+  // POST /teams - 팀 생성
+  createTeam: async (teamName: string): Promise<ApiResponse<Team>> => {
+    const response = await api.post("/teams", { teamName });
     return response.data;
   },
 };

@@ -6,11 +6,12 @@ import { FolderRepository } from "../folders/repositories/folder.repository";
 import { DatabaseModule } from "../database/database.module";
 import { OidcModule } from "../oidc/oidc.module";
 import { UserModule } from "../user/user.module";
+import { TeamMemberGuard } from "./team-member.guard";
 
 @Module({
   imports: [DatabaseModule, OidcModule, UserModule],
   controllers: [TeamsController],
-  providers: [TeamsService, TeamRepository, FolderRepository],
-  exports: [TeamsService, TeamRepository],
+  providers: [TeamsService, TeamRepository, TeamMemberGuard, FolderRepository],
+  exports: [TeamsService, TeamMemberGuard, TeamRepository],
 })
 export class TeamsModule {}
