@@ -18,7 +18,7 @@ resource "authentik_provider_oauth2" "teamstash" {
 
   property_mappings = [
     data.authentik_property_mapping_provider_scope.openid.id,
-    data.authentik_property_mapping_provider_scope.profile.id,
+    authentik_property_mapping_provider_scope.teamstash_profile.id,
     data.authentik_property_mapping_provider_scope.email.id,
     data.authentik_property_mapping_provider_scope.offline_access.id,
     authentik_property_mapping_provider_scope.team_id.id,
@@ -30,7 +30,7 @@ resource "authentik_provider_oauth2" "teamstash" {
     authentik_property_mapping_provider_scope.folders_write.id
   ]
 
-  sub_mode = "hashed_user_id"
+  sub_mode = "user_uuid"
 }
 
 resource "authentik_application" "teamstash" {

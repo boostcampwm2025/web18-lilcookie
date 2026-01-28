@@ -41,3 +41,17 @@ resource "authentik_property_mapping_provider_scope" "folders_write" {
   scope_name = "folders:write"
   expression = "return {}"
 }
+
+resource "authentik_property_mapping_provider_scope" "teamstash_profile" {
+  name       = "teamstash_profile"
+  scope_name = "profile"
+  expression = <<-PY
+return {
+    "name": request.user.name,
+    "given_name": request.user.name,
+    "preferred_username": request.user.username,
+    "nickname": request.user.attributes.get("nickname", request.user.username),
+    "groups": [group.name for group in request.user.ak_groups.all()],
+}
+PY
+}

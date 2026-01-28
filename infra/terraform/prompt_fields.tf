@@ -10,7 +10,7 @@ resource "authentik_stage_prompt_field" "teamstash_email_field" {
 
 resource "authentik_stage_prompt_field" "teamstash_nickname_field" {
   name      = "teamstash-user-nickname"
-  field_key = "nickname"
+  field_key = "attributes.nickname"
   label     = "Nickname"
   type      = "text"
   order     = 200
