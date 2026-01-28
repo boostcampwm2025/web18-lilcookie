@@ -1,8 +1,7 @@
+import api from "./api";
 import { getAuthState } from "./auth.background";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const FE_BASE_URL = import.meta.env.VITE_FE_BASE_URL;
-const POST_URL = BASE_URL + "/links";
 
 export function setupAlarms() {
   chrome.alarms.create("pollLinks", { periodInMinutes: 0.5 });
@@ -32,11 +31,7 @@ export function setupNotificationHandlers() {
 async function checkNewLinks() {
   try {
     const authState = await getAuthState();
-    if (
-      !authState.isLoggedIn ||
-      !authState.accessToken ||
-      !authState.userInfo
-    ) {
+    if (!authState.isLoggedIn || !authState.userInfo) {
       return;
     }
 
@@ -51,38 +46,32 @@ async function checkNewLinks() {
       return;
     }
 
-    const url = new URL(POST_URL);
-    url.searchParams.append("teamId", teamId);
-    url.searchParams.append("createdAfter", String(lastCheck));
-
-    const response = await fetch(url.toString(), {
-      headers: {
-        Authorization: `Bearer ${authState.accessToken}`,
+    const response = await api.get<{ data: Array<{ createdBy: string }> }>("/links", {
+      params: {
+        teamId,
+        createdAfter: lastCheck,
       },
     });
 
-    if (response.ok) {
-      const json = await response.json();
-      const links = json.data || [];
-      const newLinks = links.filter((link: any) => link.createdBy !== userId);
+    const links = response.data.data || [];
+    const newLinks = links.filter((link) => link.createdBy !== userId);
 
-      if (Array.isArray(newLinks) && newLinks.length > 0) {
-        const { unseenLinkCount } =
-          await chrome.storage.local.get("unseenLinkCount");
-        const totalNewLinks = (Number(unseenLinkCount) || 0) + newLinks.length;
+    if (newLinks.length > 0) {
+      const { unseenLinkCount } =
+        await chrome.storage.local.get("unseenLinkCount");
+      const totalNewLinks = (Number(unseenLinkCount) || 0) + newLinks.length;
 
-        chrome.notifications.create("teamstash-new-links", {
-          type: "basic",
-          iconUrl: "images/icon-128.png",
-          title: "[TeamStash] 새로운 링크 알림",
-          message: `${totalNewLinks}개의 새로운 링크가 등록되었습니다.`,
-          priority: 2,
-        });
+      chrome.notifications.create("teamstash-new-links", {
+        type: "basic",
+        iconUrl: "images/icon-128.png",
+        title: "[TeamStash] 새로운 링크 알림",
+        message: `${totalNewLinks}개의 새로운 링크가 등록되었습니다.`,
+        priority: 2,
+      });
 
-        chrome.storage.local.set({ unseenLinkCount: totalNewLinks });
-      }
-
-      await chrome.storage.local.set({ lastCheck: formattedNow });
+      chrome.storage.local.set({ unseenLinkCount: totalNewLinks });
     }
+
+    await chrome.storage.local.set({ lastCheck: formattedNow });
   } catch (error) {}
 }
