@@ -78,6 +78,7 @@ resource "authentik_stage_prompt" "teamstash_enrollment_prompt" {
   name = "Teamstash Enrollment Prompt"
   fields = [
     authentik_stage_prompt_field.teamstash_email_field.id,
+    authentik_stage_prompt_field.teamstash_nickname_field.id,
     authentik_stage_prompt_field.teamstash_password_field.id,
   ]
   validation_policies = [

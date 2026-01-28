@@ -8,6 +8,14 @@ resource "authentik_stage_prompt_field" "teamstash_email_field" {
   order     = 100
 }
 
+resource "authentik_stage_prompt_field" "teamstash_nickname_field" {
+  name      = "teamstash-user-nickname"
+  field_key = "nickname"
+  label     = "Nickname"
+  type      = "text"
+  order     = 200
+}
+
 resource "authentik_stage_prompt_field" "teamstash_password_field" {
   name      = "teamstash-user-password"
   field_key = "password"
