@@ -52,7 +52,7 @@
     "uuid": "^13.0.0",
     "winston": "^3.19.0",
     "zod": "^4.3.5",
-    "@repo/shared": "workspace:*"
+    "@repo/api": "workspace:*"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
