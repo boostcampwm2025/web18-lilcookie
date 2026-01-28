@@ -1,19 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import {
-  LogOut,
-  Users,
-  ChevronDown,
-  ChevronRight,
-  Folder,
-  Link2,
-} from "lucide-react";
+import { LogOut, Link2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { teamApi, folderApi } from "../services/api";
 import type { Team, Folder as FolderType } from "../types";
+import TeamSidebar from "../components/layout/TeamSidebar";
 
 // TODO: 백엔드 연동 시 제거
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 // Mock 폴더 데이터 (팀별)
 const mockFoldersMap: Record<string, import("../types").Folder[]> = {
@@ -22,13 +16,13 @@ const mockFoldersMap: Record<string, import("../types").Folder[]> = {
       folderUuid: "folder-uuid-1",
       folderName: "기본 폴더",
       createdAt: "2024-06-15T10:20:30Z",
-      createdBy: { userUuid: "user-1", userName: "admin" },
+      createdBy: { userUuid: "user-1", userName: "owner" },
     },
     {
       folderUuid: "folder-uuid-2",
       folderName: "프론트엔드 자료",
       createdAt: "2024-06-16T11:21:31Z",
-      createdBy: { userUuid: "user-1", userName: "admin" },
+      createdBy: { userUuid: "user-1", userName: "owner" },
     },
     {
       folderUuid: "folder-uuid-3",
@@ -42,7 +36,7 @@ const mockFoldersMap: Record<string, import("../types").Folder[]> = {
       folderUuid: "folder-uuid-4",
       folderName: "기본 폴더",
       createdAt: "2024-06-16T11:21:31Z",
-      createdBy: { userUuid: "user-1", userName: "admin" },
+      createdBy: { userUuid: "user-1", userName: "owner" },
     },
     {
       folderUuid: "folder-uuid-5",
@@ -67,7 +61,6 @@ const TeamPage = () => {
   const [selectedFolder, setSelectedFolder] = useState<FolderType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isTeamExpanded, setIsTeamExpanded] = useState(true);
 
   // 팀 및 폴더 정보 조회
   useEffect(() => {
@@ -81,7 +74,7 @@ const TeamPage = () => {
             teamUuid: teamUuid || "",
             teamName: "새 팀",
             createdAt: new Date().toISOString(),
-            role: "admin",
+            role: "owner",
           };
           setCurrentTeam(team);
 
@@ -191,75 +184,14 @@ const TeamPage = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* 사이드바 */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
-        {/* 로고 */}
-        <div className="h-14 px-4 border-b border-gray-200 flex items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">TS</span>
-            </div>
-            <span className="font-bold text-lg text-gray-900">TeamStash</span>
-          </div>
-        </div>
-
-        {/* 네비게이션 */}
-        <nav className="flex-1 p-3 overflow-y-auto">
-          {/* 내 팀 섹션 */}
-          <div className="mb-2">
-            <button
-              onClick={() => navigate("/my-teams")}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
-            >
-              <Users className="w-4 h-4" />
-              <span className="text-sm font-medium">내 팀</span>
-            </button>
-          </div>
-
-          {/* 현재 팀 */}
-          {currentTeam && (
-            <div className="ml-2">
-              {/* 팀 헤더 */}
-              <div className="flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-50 text-blue-600">
-                <button
-                  onClick={() => setIsTeamExpanded(!isTeamExpanded)}
-                  className="p-0.5 hover:bg-blue-100 rounded cursor-pointer"
-                >
-                  {isTeamExpanded ? (
-                    <ChevronDown className="w-4 h-4" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4" />
-                  )}
-                </button>
-                <Users className="w-4 h-4" />
-                <span className="text-sm font-medium flex-1 wrap-break-word min-w-0">
-                  {currentTeam.teamName}
-                </span>
-              </div>
-
-              {/* 폴더 목록 */}
-              {isTeamExpanded && (
-                <div className="ml-6 mt-1 space-y-1">
-                  {folders.map((folder) => (
-                    <button
-                      key={folder.folderUuid}
-                      onClick={() => handleFolderClick(folder)}
-                      className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left text-sm transition-colors cursor-pointer ${
-                        selectedFolder?.folderUuid === folder.folderUuid
-                          ? "bg-blue-100 text-blue-700 font-medium"
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`}
-                    >
-                      <Folder className="w-4 h-4 shrink-0" />
-                      <span className="wrap-break-word min-w-0">{folder.folderName}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </nav>
-
-      </aside>
+      <TeamSidebar
+        currentTeam={currentTeam}
+        folders={folders}
+        teamUuid={teamUuid || ""}
+        selectedFolderUuid={selectedFolder?.folderUuid}
+        onFolderClick={handleFolderClick}
+        activePage="folder"
+      />
 
       {/* 메인 영역 */}
       <div className="flex-1 flex flex-col">
