@@ -233,8 +233,8 @@ export class LinksService {
         throw new NotFoundException("해당 폴더를 찾을 수 없습니다.");
       }
 
-      const member = await this.teamRepository.findMember(folder.folder.teamId, userId);
-      if (!member) {
+      const folderTeamMember = await this.teamRepository.findMember(folder.folder.teamId, userId);
+      if (!folderTeamMember) {
         throw new ForbiddenException("해당 팀에 접근 권한이 없습니다.");
       }
 
