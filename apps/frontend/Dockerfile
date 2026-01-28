@@ -9,16 +9,16 @@ RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Copy frontend package.json
-COPY frontend/package.json ./frontend/
+COPY apps/frontend/package.json ./apps/frontend/
 
 # Install frontend workspace dependencies
 RUN pnpm install --frozen-lockfile --filter frontend
 
 # Copy frontend source code
-COPY frontend ./frontend
+COPY apps/frontend ./apps/frontend
 
 # Build the application
-WORKDIR /app/frontend
+WORKDIR /app/apps/frontend
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN pnpm run build
@@ -27,10 +27,10 @@ RUN pnpm run build
 FROM nginx:alpine
 
 # Copy built files from builder
-COPY --from=builder /app/frontend/dist /usr/share/nginx/html
+COPY --from=builder /app/apps/frontend/dist /usr/share/nginx/html
 
 # Copy nginx configuration
-COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+COPY apps/frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 # keep nginx running in the foreground
 CMD ["nginx", "-g", "daemon off;"]

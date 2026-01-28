@@ -13,13 +13,14 @@ RUN apk add --no-cache \
 RUN corepack enable
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY backend/package.json ./backend/
+COPY apps/backend/package.json ./apps/backend/
 
 RUN pnpm install --frozen-lockfile --filter backend
 
-COPY backend ./backend
+COPY apps/backend ./apps/backend
 
-WORKDIR /app/backend
+WORKDIR /app/apps/backend
+RUN pnpm prisma:generate
 RUN pnpm run build
 
 # 2. Production stage
@@ -30,10 +31,10 @@ WORKDIR /app
 RUN corepack enable
 
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/backend/node_modules ./backend/node_modules
+COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
 
-COPY --from=builder /app/backend/dist ./backend/dist
-COPY --from=builder /app/backend/package.json ./backend/
+COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
+COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 
-WORKDIR /app/backend
-CMD ["node", "dist/main"]
+WORKDIR /app/apps/backend
+CMD ["node", "dist/src/main"]
