@@ -214,6 +214,9 @@ importers:
       '@mozilla/readability':
         specifier: ^0.6.0
         version: 0.6.0
+      axios-retry:
+        specifier: ^4.5.0
+        version: 4.5.0(axios@1.13.2)
       react:
         specifier: ^19.2.3
         version: 19.2.3
