@@ -63,8 +63,7 @@ api.interceptors.response.use(
     // 401 에러이고, 아직 재시도하지 않았으며, 공개 엔드포인트가 아닌 경우
     if (
       error.response?.status === 401 &&
-      !originalRequest._retry &&
-      !isPublicEndpoint(originalRequest.url)
+      !originalRequest._retry
     ) {
       // 이미 갱신 중이면 큐에 추가하고 대기
       if (isRefreshing) {
