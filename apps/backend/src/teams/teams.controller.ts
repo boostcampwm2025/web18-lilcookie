@@ -39,8 +39,7 @@ export class TeamsController {
   async create(@Body() requestDto: CreateTeamRequestDto, @CurrentUser() user: AuthenticatedUser) {
     this.logger.log(`POST /teams - 새로운 팀 생성 요청: ${requestDto.teamName}`);
 
-    const { team, member } = await this.teamsService.create(requestDto.teamName, user.userId);
-    const responseDto = TeamResponseDto.from(team, member.role);
+    const responseDto = await this.teamsService.create(requestDto.teamName, user.userId);
 
     return ResponseBuilder.success<TeamResponseDto>()
       .status(HttpStatus.CREATED)
@@ -58,8 +57,7 @@ export class TeamsController {
   async getMyTeams(@CurrentUser() user: AuthenticatedUser) {
     this.logger.log(`GET /teams/me - 사용자(${user.userNickname})의 팀 목록 조회 요청`);
 
-    const results = await this.teamsService.getMyTeams(user.userId);
-    const responseDtos = results.map(({ team, role }) => TeamResponseDto.from(team, role));
+    const responseDtos = await this.teamsService.getMyTeams(user.userId);
 
     return ResponseBuilder.success<TeamResponseDto[]>()
       .status(HttpStatus.OK)
@@ -76,8 +74,7 @@ export class TeamsController {
   async getTeamPreview(@Param("teamUuid", ParseUUIDPipe) teamUuid: string) {
     this.logger.log(`GET /teams/${teamUuid}/preview - 팀 정보(미리보기) 조회 요청`);
 
-    const team = await this.teamsService.getTeamByUuid(teamUuid);
-    const responseDto = TeamPreviewResponseDto.from(team);
+    const responseDto = await this.teamsService.getTeamByUuid(teamUuid);
 
     return ResponseBuilder.success<TeamPreviewResponseDto>()
       .status(HttpStatus.OK)
@@ -95,8 +92,7 @@ export class TeamsController {
   async join(@Param("teamUuid", ParseUUIDPipe) teamUuid: string, @CurrentUser() user: AuthenticatedUser) {
     this.logger.log(`POST /teams/${teamUuid}/join - 사용자(${user.userNickname})의 팀 가입 요청`);
 
-    const { team, member } = await this.teamsService.join(teamUuid, user.userId);
-    const responseDto = TeamJoinResponseDto.from(team, member.joinedAt, member.role);
+    const responseDto = await this.teamsService.join(teamUuid, user.userId);
 
     return ResponseBuilder.success<TeamJoinResponseDto>()
       .status(HttpStatus.OK)
@@ -132,8 +128,7 @@ export class TeamsController {
   async getMembers(@Param("teamUuid", ParseUUIDPipe) teamUuid: string, @CurrentUser() user: AuthenticatedUser) {
     this.logger.log(`GET /teams/${teamUuid}/members - 팀 멤버 조회 요청`);
 
-    const members = await this.teamsService.getMembers(teamUuid, user.userId);
-    const responseDtos = members.map(({ member, user: memberUser }) => TeamMemberResponseDto.from(member, memberUser));
+    const responseDtos = await this.teamsService.getMembers(teamUuid, user.userId);
 
     return ResponseBuilder.success<TeamMemberResponseDto[]>()
       .status(HttpStatus.OK)

@@ -7,10 +7,10 @@ import {
 } from "@nestjs/common";
 import { TeamRepository } from "./repositories/team.repository";
 import { FolderRepository } from "../folders/repositories/folder.repository";
-import { Team } from "./entities/team.entity";
 import { TeamRole } from "./constants/team-role.constants";
-import { TeamCreateResult, TeamJoinResult, MemberWithUser, TeamWithRole } from "./types/team.types";
 import { DEFAULT_FOLDER_NAME } from "../folders/constants/folder.constants";
+import { TeamResponseDto, TeamPreviewResponseDto, TeamJoinResponseDto } from "./dto/team.response.dto";
+import { TeamMemberResponseDto } from "./dto/team-member.response.dto";
 
 @Injectable()
 export class TeamsService {
@@ -23,9 +23,9 @@ export class TeamsService {
    * 새로운 팀 생성
    * @param teamName 생성할 팀 이름
    * @param userId 팀을 생성하는 사용자 ID
-   * @returns 생성된 팀과 멤버 정보
+   * @returns 생성된 팀 응답 DTO
    */
-  async create(teamName: string, userId: number): Promise<TeamCreateResult> {
+  async create(teamName: string, userId: number): Promise<TeamResponseDto> {
     const team = await this.teamRepository.create(teamName);
     const member = await this.teamRepository.addMember(team.teamId, userId, TeamRole.OWNER);
 
@@ -36,40 +36,41 @@ export class TeamsService {
       createdBy: userId,
     });
 
-    return { team, member };
+    return TeamResponseDto.from(team, member.role);
   }
 
   /**
    * 사용자가 속한 팀 목록 조회
    * @param userId 조회할 사용자 ID
-   * @returns 팀과 해당 사용자의 역할 정보 배열
+   * @returns 팀 응답 DTO 배열
    */
-  async getMyTeams(userId: number): Promise<TeamWithRole[]> {
-    return this.teamRepository.findTeamsWithRoleByUserId(userId);
+  async getMyTeams(userId: number): Promise<TeamResponseDto[]> {
+    const results = await this.teamRepository.findTeamsWithRoleByUserId(userId);
+    return results.map(({ team, role }) => TeamResponseDto.from(team, role));
   }
 
   /**
    * 팀 UUID로 팀 조회
    * @param teamUuid 조회할 팀 UUID
-   * @returns 팀 엔티티
+   * @returns 팀 미리보기 응답 DTO
    */
-  async getTeamByUuid(teamUuid: string): Promise<Team> {
+  async getTeamByUuid(teamUuid: string): Promise<TeamPreviewResponseDto> {
     const team = await this.teamRepository.findByUuid(teamUuid);
     if (!team) {
       throw new NotFoundException("해당 팀을 찾을 수 없습니다.");
     }
     //프리뷰 용도라서, 권한 검증 안함
 
-    return team;
+    return TeamPreviewResponseDto.from(team);
   }
 
   /**
    * 팀 UUID로 팀 가입
    * @param teamUuid 가입할 팀 UUID
    * @param userId 가입하는 사용자 ID
-   * @returns 가입된 팀과 멤버 정보
+   * @returns 팀 가입 응답 DTO
    */
-  async join(teamUuid: string, userId: number): Promise<TeamJoinResult> {
+  async join(teamUuid: string, userId: number): Promise<TeamJoinResponseDto> {
     const team = await this.teamRepository.findByUuid(teamUuid);
     if (!team) {
       throw new NotFoundException("해당 팀을 찾을 수 없습니다.");
@@ -81,14 +82,14 @@ export class TeamsService {
     }
 
     const member = await this.teamRepository.addMember(team.teamId, userId, TeamRole.MEMBER);
-    return { team, member };
+    return TeamJoinResponseDto.from(team, member.joinedAt, member.role);
   }
 
   /**
    * 팀 탈퇴
    * @param teamUuid 탈퇴할 팀 UUID
    * @param userId 탈퇴하는 사용자 ID
-   * @Returns void
+   * @returns void
    */
   async leave(teamUuid: string, userId: number): Promise<void> {
     const team = await this.teamRepository.findByUuid(teamUuid);
@@ -116,9 +117,9 @@ export class TeamsService {
    * 팀 멤버 조회
    * @param teamUuid 팀 UUID
    * @param userId 요청한 사용자 ID
-   * @returns 멤버와 유저 정보 배열
+   * @returns 팀 멤버 응답 DTO 배열
    */
-  async getMembers(teamUuid: string, userId: number): Promise<MemberWithUser[]> {
+  async getMembers(teamUuid: string, userId: number): Promise<TeamMemberResponseDto[]> {
     const team = await this.teamRepository.findByUuid(teamUuid);
     if (!team) {
       throw new NotFoundException("해당 팀을 찾을 수 없습니다.");
@@ -129,6 +130,7 @@ export class TeamsService {
       throw new NotFoundException("해당 팀에 소속되어 있지 않습니다.");
     }
 
-    return this.teamRepository.findMembersByTeamId(team.teamId);
+    const members = await this.teamRepository.findMembersByTeamId(team.teamId);
+    return members.map(({ member, user }) => TeamMemberResponseDto.from(member, user));
   }
 }

@@ -14,7 +14,6 @@ import { LinkRepository } from "./repositories/link.repository";
 import { TeamRepository } from "../teams/repositories/team.repository";
 import { FolderRepository } from "../folders/repositories/folder.repository";
 import { GetLinksQueryDto } from "./dto/get-links-query.dto";
-import { LinkMapper } from "./mappers/link.mapper";
 import { Folder } from "../folders/entities/folder.entity";
 import { Team } from "../teams/entities/team.entity";
 
@@ -67,7 +66,7 @@ export class LinksService {
       .notifyLinkCreated(LinkNotificationDto.fromLink(link, DEFAULT_SLACK_CHANNEL_ID))
       .catch(() => {});
 
-    return LinkMapper.toResponse(link, creator);
+    return LinkResponseDto.from(link, creator);
   }
 
   /**
@@ -92,7 +91,7 @@ export class LinksService {
       tags,
     });
 
-    return results.map(({ link, creator }) => LinkMapper.toResponse(link, creator));
+    return results.map(({ link, creator }) => LinkResponseDto.from(link, creator));
   }
 
   /**
@@ -188,7 +187,7 @@ export class LinksService {
       throw new ForbiddenException("해당 팀에 접근 권한이 없습니다.");
     }
 
-    return LinkMapper.toResponse(link.link, link.creator);
+    return LinkResponseDto.from(link.link, link.creator);
   }
 
   /**
@@ -270,7 +269,7 @@ export class LinksService {
       throw new InternalServerErrorException("링크 수정 중 오류가 발생했습니다.");
     }
 
-    return LinkMapper.toResponse(updated.link, updated.creator);
+    return LinkResponseDto.from(updated.link, updated.creator);
   }
 
   /**

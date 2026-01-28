@@ -10,7 +10,6 @@ import { UpdateFolderRequestDto } from "./dto/update-folder.request.dto";
 import { FolderResponseDto } from "./dto/folder.response.dto";
 import { FolderRepository } from "./repositories/folder.repository";
 import { TeamRepository } from "../teams/repositories/team.repository";
-import { FolderMapper } from "./mappers/folder.mapper";
 import { DEFAULT_FOLDER_NAME } from "./constants/folder.constants";
 
 @Injectable()
@@ -48,7 +47,7 @@ export class FoldersService {
       createdBy: userId,
     });
 
-    return FolderMapper.toResponse(result.folder, result.creator);
+    return FolderResponseDto.from(result.folder, result.creator);
   }
 
   /**
@@ -69,7 +68,7 @@ export class FoldersService {
     }
 
     const results = await this.folderRepository.findAllByTeam(team.teamId);
-    return results.map((result) => FolderMapper.toResponse(result.folder, result.creator));
+    return results.map((result) => FolderResponseDto.from(result.folder, result.creator));
   }
 
   /**
@@ -89,7 +88,7 @@ export class FoldersService {
       throw new ForbiddenException("해당 팀에 접근 권한이 없습니다.");
     }
 
-    return FolderMapper.toResponse(folder.folder, folder.creator);
+    return FolderResponseDto.from(folder.folder, folder.creator);
   }
 
   /**
@@ -123,7 +122,7 @@ export class FoldersService {
       throw new InternalServerErrorException("폴더 업데이트 중 오류가 발생했습니다.");
     }
 
-    return FolderMapper.toResponse(updated.folder, updated.creator);
+    return FolderResponseDto.from(updated.folder, updated.creator);
   }
 
   /**

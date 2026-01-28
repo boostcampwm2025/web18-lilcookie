@@ -1,5 +1,8 @@
+import { Link } from "../entities/link.entity";
+import { User } from "../../user/entities/user.entity";
+
 /**
- * 생성한 사용자 정보 인터페이스
+ * 생성한 사용자 정보
  */
 export interface CreatorInfo {
   userUuid: string;
@@ -40,5 +43,28 @@ export class LinkResponseDto {
     this.summary = data.summary;
     this.createdAt = data.createdAt;
     this.createdBy = data.createdBy;
+  }
+
+  /**
+   * Link 엔티티 + User 엔티티 → 링크 응답 DTO 변환
+   * @param link 링크 엔티티
+   * @param creator 생성한 사용자 엔티티
+   * @returns 클라이언트 응답용 링크 DTO
+   */
+  static from(link: Link, creator: User): LinkResponseDto {
+    return new LinkResponseDto({
+      linkUuid: link.linkUuid,
+      teamUuid: link.teamUuid,
+      folderUuid: link.folderUuid,
+      url: link.linkUrl,
+      title: link.linkTitle,
+      tags: link.getParsedTags(),
+      summary: link.linkSummary,
+      createdAt: link.createdAt.toISOString(),
+      createdBy: {
+        userUuid: creator.userUuid,
+        userName: creator.userNickname,
+      },
+    });
   }
 }
