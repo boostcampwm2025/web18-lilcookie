@@ -62,3 +62,8 @@ variable "app_redirect_uri" {
 variable "chrome_extension_id" {
   type = string
 }
+
+# Post-logout redirect allowed hosts (for open redirect protection)
+variable "post_logout_allowed_hosts" {
+  type = list(string)
+}

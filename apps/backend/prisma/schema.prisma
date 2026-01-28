@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// 회원 테이블
+model User {
+  id                   Int             @id @default(autoincrement())
+  uuid                 String          @unique @map("uuid")
+  nickname             String
+  createdAt            DateTime        @default(now()) @map("created_at")
+
+  teamMembers          TeamMember[]
+
+  @@map("users")
+}
+
+model Team {
+  id              Int       @id @default(autoincrement())
+  uuid            String    @unique @default(uuid()) @map("uuid")
+  name            String
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  members         TeamMember[]
+  folders         Folder[]
+  links           Link[]
+
+  @@map("teams")
+}
+
+model TeamMember {
+  id        Int       @id @default(autoincrement())
+  teamId    Int       @map("team_id")
+  userId    Int       @map("user_id")
+  role      String    @default("member") // "owner" | "member"
+  joinedAt  DateTime  @default(now()) @map("joined_at")
+
+  team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([userId])
+  @@map("team_members")
+}
+
+
+// 폴더 테이블
+model Folder {
+  id          Int       @id @default(autoincrement())
+  uuid        String    @unique @default(uuid()) @map("uuid")
+  teamId      Int       @map("team_id")
+  name        String
+  createdAt   DateTime  @default(now()) @map("created_at")
+  createdBy   Int       @map("created_by")
+
+  team        Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  links       Link[]
+
+  @@index([teamId])
+  @@map("folders")
+}
+
+// 링크 테이블
+model Link {
+  id          Int       @id @default(autoincrement())
+  uuid        String    @unique @default(uuid()) @map("uuid")
+  teamId      Int       @map("team_id")
+  folderId    Int?      @map("folder_id")
+  url         String
+  title       String
+  tags        String    // JSON 문자열
+  summary     String
+  createdAt   DateTime  @default(now()) @map("created_at")
+  createdBy   Int       @map("created_by")
+
+  team        Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  folder      Folder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  @@index([teamId])
+  @@index([folderId])
+  @@index([createdAt])
+  @@map("links")
+}
+
