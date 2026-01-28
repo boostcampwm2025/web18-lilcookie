@@ -1,13 +1,16 @@
 import api from "./api";
 import { getAuthState } from "./auth.background";
+import { API_CONFIG } from "../../config/api";
 
 const MAX_AI_INPUT_CHARACTER_COUNT = 300;
 
 export async function summarizeContent(content: string) {
   try {
-    const response = await api.post<{ data: unknown }>("/ai/summary", {
-      content: content.slice(0, MAX_AI_INPUT_CHARACTER_COUNT),
-    });
+    const response = await api.post<{ data: unknown }>(
+      "/ai/summary",
+      { content: content.slice(0, MAX_AI_INPUT_CHARACTER_COUNT) },
+      { "axios-retry": { retries: API_CONFIG.retry.ai.maxRetries } },
+    );
     return { success: true, data: response.data.data };
   } catch (error) {
     if (error instanceof Error && error.message.includes("401")) {

@@ -1,19 +1,19 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
 import axiosRetry from "axios-retry";
+import { API_CONFIG } from "../../config/api";
 import { getAuthState, logout, type AuthTokens } from "./auth.background";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_CONFIG.baseUrl,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
 axiosRetry(api, {
-  retries: 3,
-  retryDelay: axiosRetry.exponentialDelay,
+  retries: API_CONFIG.retry.default.maxRetries,
+  retryDelay: (retryCount, error) =>
+    axiosRetry.exponentialDelay(retryCount, error, API_CONFIG.retry.default.delayFactor),
   retryCondition: (error) => {
     return (
       axiosRetry.isNetworkOrIdempotentRequestError(error) ||
