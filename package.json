@@ -4,11 +4,14 @@
   "description": "URL 원클릭 저장 기획 사용자 테스트를 위한 프로토타입",
   "private": true,
   "scripts": {
-    "start:dev": "concurrently \"pnpm --filter backend start:dev\" \"pnpm --filter frontend dev\" \"pnpm --filter extension-wxt dev\"",
-    "build": "pnpm --filter frontend build && pnpm --filter backend build"
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "turbo": "^2.7.6"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

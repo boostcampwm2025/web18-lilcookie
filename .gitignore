@@ -243,8 +243,6 @@ terraform.rc
 
 # End of https://www.toptal.com/developers/gitignore/api/terraform
 
-
-
 # Sqlite 데이터베이스 파일
 *.db
 *.db-shm
@@ -261,3 +259,6 @@ infra/authentik/custom-templates
 # Caddy data directory
 infra/caddy/data
 infra/caddy/config
+
+# Turbo cache
+.turbo
