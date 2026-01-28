@@ -18,7 +18,7 @@ const Sidebar = ({ teams, onCreateTeam }: SidebarProps) => {
   };
 
   return (
-    <aside className="w-56 bg-white border-r border-gray-200 flex flex-col h-full">
+    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
       {/* 로고 */}
       <div className="h-14 px-4 border-b border-gray-200 flex items-center">
         <div className="flex items-center gap-2">
@@ -51,7 +51,7 @@ const Sidebar = ({ teams, onCreateTeam }: SidebarProps) => {
               <button
                 key={team.teamUuid}
                 onClick={() => handleTeamClick(team.teamUuid)}
-                className="w-full text-left px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                className="w-full text-left px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer wrap-break-word"
               >
                 {team.teamName}
               </button>

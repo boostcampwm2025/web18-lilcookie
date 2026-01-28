@@ -159,11 +159,11 @@ const MyTeams = () => {
                       <span className="text-xs font-medium">Admin</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <div className="flex items-center gap-3 mb-3 pr-16">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
                       <Users className="w-5 h-5 text-blue-600" />
                     </div>
-                    <h3 className="font-semibold text-gray-900">
+                    <h3 className="font-semibold text-gray-900 wrap-break-word min-w-0">
                       {team.teamName}
                     </h3>
                   </div>
