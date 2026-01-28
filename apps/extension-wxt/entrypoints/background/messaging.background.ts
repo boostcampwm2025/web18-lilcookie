@@ -20,21 +20,30 @@ export async function summarizeContent(content: string) {
   }
 }
 
-export async function saveLink(formData: any) {
+interface SaveLinkFormData {
+  url: string;
+  title: string;
+  tags: string[];
+  summary: string;
+  folderUuid?: string;
+}
+
+export async function saveLink(formData: SaveLinkFormData) {
   try {
     const authState = await getAuthState();
     if (!authState.userInfo) {
       return { success: false, error: "로그인이 필요합니다." };
     }
 
-    const { teamId, userId } = authState.userInfo;
+    const { teamUuid } = authState.userInfo;
 
     const response = await api.post("/links", {
-      ...formData,
-      teamId,
-      userId,
-    }, {
-      params: { teamId },
+      teamUuid,
+      folderUuid: formData.folderUuid,
+      url: formData.url,
+      title: formData.title,
+      tags: formData.tags,
+      summary: formData.summary,
     });
 
     return { success: true, data: response.data };

@@ -26,8 +26,8 @@ export interface AuthTokens {
 }
 
 export interface UserInfo {
-  userId: string;
-  teamId: string;
+  userUuid: string;
+  teamUuid: string;
   nickname?: string;
 }
 
@@ -72,15 +72,15 @@ function extractUserInfo(accessToken: string): UserInfo | null {
   if (!payload) return null;
 
   const sub = payload.sub;
-  const teamId = payload.team_id;
+  const teamUuid = payload.team_id;
 
-  if (typeof sub !== "string" || typeof teamId !== "string") {
+  if (typeof sub !== "string" || typeof teamUuid !== "string") {
     return null;
   }
 
   return {
-    userId: sub,
-    teamId,
+    userUuid: sub,
+    teamUuid,
     nickname:
       typeof payload.nickname === "string" ? payload.nickname : undefined,
   };

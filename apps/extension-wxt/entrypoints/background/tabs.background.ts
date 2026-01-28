@@ -26,9 +26,9 @@ async function checkDashboardVisit(tab: chrome.tabs.Tab) {
     if (!tab || !tab.url) return;
 
     const authState = await getAuthState();
-    if (!authState.isLoggedIn || !authState.userInfo?.teamId) return;
+    if (!authState.isLoggedIn || !authState.userInfo?.teamUuid) return;
 
-    const dashboardUrl = `${FE_BASE_URL}/${authState.userInfo.teamId.toLowerCase()}`;
+    const dashboardUrl = `${FE_BASE_URL}/${authState.userInfo.teamUuid.toLowerCase()}`;
 
     if (tab.url.startsWith(dashboardUrl)) {
       await chrome.storage.local.set({ unseenLinkCount: 0 });
