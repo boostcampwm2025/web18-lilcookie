@@ -217,8 +217,8 @@ export class LinksService {
         throw new NotFoundException("해당 팀을 찾을 수 없습니다.");
       }
 
-      const member = await this.teamRepository.findMember(team.teamId, userId);
-      if (!member) {
+      const teamMember = await this.teamRepository.findMember(team.teamId, userId);
+      if (!teamMember) {
         throw new ForbiddenException("해당 팀에 접근 권한이 없습니다.");
       }
 
