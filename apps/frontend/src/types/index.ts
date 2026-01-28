@@ -14,11 +14,13 @@ export interface Link {
 
 // 폴더 타입 - 백엔드 응답 구조
 export interface Folder {
-  id: number;
-  uuid: string;
-  teamId: number;
-  name: string;
-  createdBy: number;
+  folderUuid: string;
+  folderName: string;
+  createdAt: string;
+  createdBy: {
+    userUuid: string;
+    userName: string;
+  };
 }
 
 // API 응답 타입
@@ -38,8 +40,8 @@ export interface User {
 
 // 팀 타입
 export interface Team {
-  uuid: string;
-  name: string;
-  createdAt: Date;
-  role: string; // "owner" | "member"
+  teamUuid: string;
+  teamName: string;
+  createdAt: string;
+  role: "admin" | "member";
 }

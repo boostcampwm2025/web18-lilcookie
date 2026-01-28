@@ -3,8 +3,28 @@ import { LogOut, Users, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import Sidebar from "../components/layout/Sidebar";
+import CreateTeamModal from "../components/teams/CreateTeamModal";
 import { teamApi } from "../services/api";
 import type { Team } from "../types";
+
+// TODO: 백엔드 연동 시 제거
+const USE_MOCK_DATA = true;
+
+// Mock 데이터
+const mockTeams: Team[] = [
+  {
+    teamUuid: "team-uuid-1",
+    teamName: "개발팀",
+    createdAt: "2024-06-15T10:20:30Z",
+    role: "admin",
+  },
+  {
+    teamUuid: "team-uuid-2",
+    teamName: "디자인팀",
+    createdAt: "2024-06-16T11:21:31Z",
+    role: "member",
+  },
+];
 
 const MyTeams = () => {
   const navigate = useNavigate();
@@ -13,6 +33,7 @@ const MyTeams = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 팀 목록 조회
   useEffect(() => {
@@ -20,9 +41,18 @@ const MyTeams = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await teamApi.getMyTeams();
-        if (response.success) {
-          setTeams(response.data);
+
+        if (USE_MOCK_DATA) {
+          // Mock 데이터 사용
+          setTeams(mockTeams);
+        } else {
+          // 실제 API 호출
+          const response = await teamApi.getMyTeams();
+          if (response.success) {
+            setTeams(response.data);
+          } else {
+            setError(response.message || "팀 목록을 불러오는데 실패했습니다.");
+          }
         }
       } catch {
         setError("팀 목록을 불러오는데 실패했습니다.");
@@ -39,18 +69,20 @@ const MyTeams = () => {
     navigate("/login");
   };
 
-  const handleCreateTeam = () => {
-    // TODO: 팀 생성 모달 또는 페이지로 이동
+  const handleTeamCreated = (newTeam: Team) => {
+    // 팀 목록에 새 팀 추가
+    setTeams([...teams, newTeam]);
   };
 
-  const handleTeamClick = (teamUuid: string) => {
-    navigate(`/team/${teamUuid}`);
+  const handleTeamClick = (team: Team) => {
+    // 팀 정보를 state로 전달
+    navigate(`/team/${team.teamUuid}`, { state: { team } });
   };
 
   return (
     <div className="flex h-screen bg-gray-50">
       {/* 사이드바 */}
-      <Sidebar teams={teams} onCreateTeam={handleCreateTeam} />
+      <Sidebar teams={teams} onCreateTeam={() => setIsModalOpen(true)} />
 
       {/* 메인 영역 */}
       <div className="flex-1 flex flex-col">
@@ -105,7 +137,7 @@ const MyTeams = () => {
                   새로운 팀을 만들거나 기존 팀에 가입하여 시작하세요
                 </p>
                 <button
-                  onClick={handleCreateTeam}
+                  onClick={() => setIsModalOpen(true)}
                   className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium cursor-pointer"
                 >
                   팀 만들기
@@ -117,21 +149,23 @@ const MyTeams = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {teams.map((team) => (
                 <button
-                  key={team.uuid}
-                  onClick={() => handleTeamClick(team.uuid)}
+                  key={team.teamUuid}
+                  onClick={() => handleTeamClick(team)}
                   className="bg-white rounded-xl border border-gray-200 p-6 text-left hover:border-blue-300 hover:shadow-md transition-all cursor-pointer relative"
                 >
-                  {team.role === "owner" && (
+                  {team.role === "admin" && (
                     <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-600 rounded-full">
                       <Crown className="w-3 h-3" />
-                      <span className="text-xs font-medium">Owner</span>
+                      <span className="text-xs font-medium">Admin</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <div className="flex items-center gap-3 mb-3 pr-16">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
                       <Users className="w-5 h-5 text-blue-600" />
                     </div>
-                    <h3 className="font-semibold text-gray-900">{team.name}</h3>
+                    <h3 className="font-semibold text-gray-900 wrap-break-word min-w-0">
+                      {team.teamName}
+                    </h3>
                   </div>
                 </button>
               ))}
@@ -139,6 +173,13 @@ const MyTeams = () => {
           )}
         </main>
       </div>
+
+      {/* 팀 만들기 모달 */}
+      <CreateTeamModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onTeamCreated={handleTeamCreated}
+      />
     </div>
   );
 };

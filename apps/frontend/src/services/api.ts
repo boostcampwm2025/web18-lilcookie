@@ -63,8 +63,7 @@ api.interceptors.response.use(
     // 401 에러이고, 아직 재시도하지 않았으며, 공개 엔드포인트가 아닌 경우
     if (
       error.response?.status === 401 &&
-      !originalRequest._retry &&
-      !isPublicEndpoint(originalRequest.url)
+      !originalRequest._retry
     ) {
       // 이미 갱신 중이면 큐에 추가하고 대기
       if (isRefreshing) {
@@ -154,9 +153,9 @@ export const linkApi = {
 
 // 폴더 API 함수들
 export const folderApi = {
-  // GET /api/folders?teamId=1 - 팀의 모든 폴더 조회
-  getFolders: async (teamId: number): Promise<ApiResponse<Folder[]>> => {
-    const response = await api.get("/folders", { params: { teamId } });
+  // GET /folders?teamUuid={teamUuid} - 팀의 모든 폴더 조회
+  getFolders: async (teamUuid: string): Promise<ApiResponse<Folder[]>> => {
+    const response = await api.get("/folders", { params: { teamUuid } });
     return response.data;
   },
 
@@ -167,13 +166,10 @@ export const folderApi = {
     return response.data;
   },
 
-  // 1단계 폴더 구조로 단순화
-
   // POST /folders - 새 폴더 생성
   createFolder: async (data: {
-    teamId: number;
+    teamUuid: string;
     folderName: string;
-    userId: number;
   }): Promise<ApiResponse<Folder>> => {
     const response = await api.post("/folders", data);
     return response.data;
@@ -200,6 +196,12 @@ export const teamApi = {
   // GET /teams/me - 내 팀들 조회
   getMyTeams: async (): Promise<ApiResponse<Team[]>> => {
     const response = await api.get("/teams/me");
+    return response.data;
+  },
+
+  // POST /teams - 팀 생성
+  createTeam: async (teamName: string): Promise<ApiResponse<Team>> => {
+    const response = await api.post("/teams", { teamName });
     return response.data;
   },
 };
