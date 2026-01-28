@@ -25,7 +25,10 @@ export class Link {
     try {
       const parsed: unknown = JSON.parse(this.linkTags);
       if (Array.isArray(parsed)) {
-        return parsed as string[];
+        return parsed
+          .filter((tag): tag is string => typeof tag === "string")
+          .map((s) => s.trim())
+          .filter(Boolean);
       }
       return [];
     } catch {
