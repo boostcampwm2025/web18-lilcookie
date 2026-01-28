@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
-import Dashboard from "./pages/Dashboard";
+import TeamPage from "./pages/TeamPage";
 import MyTeams from "./pages/MyTeams";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
@@ -28,12 +28,12 @@ function App() {
             }
           />
 
-          {/* 보호된 라우트 - 팀 대시보드 */}
+          {/* 보호된 라우트 - 팀 페이지 */}
           <Route
-            path="/team/:teamId"
+            path="/team/:teamUuid"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <TeamPage />
               </ProtectedRoute>
             }
           />
