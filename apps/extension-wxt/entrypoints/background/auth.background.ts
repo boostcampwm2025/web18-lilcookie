@@ -1,22 +1,34 @@
-// OAuth and authentication logic for the extension
+import axios from "axios";
+import axiosRetry from "axios-retry";
+import { AUTHENTIK_CONFIG } from "../../config/authentik";
+import {
+  generateCodeVerifier,
+  generateCodeChallenge,
+  generateState,
+  storeOAuthParams,
+  getStoredOAuthParams,
+  clearStoredOAuthParams,
+} from "../../utils/pkce";
 
-// Authentik OAuth settings (from env)
-const AUTHENTIK_URL = import.meta.env.VITE_AUTHENTIK_URL;
-const CLIENT_ID = import.meta.env.VITE_AUTHENTIK_CLIENT_ID;
-const SCOPES =
-  "openid profile email roles offline_access team_id links:read links:write ai:use folders:read folders:write";
+export interface TokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  refresh_token?: string;
+  id_token?: string;
+  scope: string;
+}
 
-// Token storage type
 export interface AuthTokens {
   access_token: string;
   refresh_token: string;
-  expires_at: number; // timestamp
+  expires_at: number;
 }
 
 export interface UserInfo {
-  userId: string; // sub claim
-  teamId: string; // team_id claim
-  nickname?: string; // nickname claim
+  userId: string;
+  teamId: string;
+  nickname?: string;
 }
 
 export interface AuthState {
@@ -25,7 +37,23 @@ export interface AuthState {
   userInfo?: UserInfo;
 }
 
-// JWT helpers
+const authClient = axios.create({
+  headers: {
+    "Content-Type": "application/x-www-form-urlencoded",
+  },
+});
+
+axiosRetry(authClient, {
+  retries: 3,
+  retryDelay: axiosRetry.exponentialDelay,
+  retryCondition: (error) => {
+    return (
+      axiosRetry.isNetworkOrIdempotentRequestError(error) ||
+      (error.response?.status !== undefined && error.response.status >= 500)
+    );
+  },
+});
+
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
     const parts = token.split(".");
@@ -58,116 +86,74 @@ function extractUserInfo(accessToken: string): UserInfo | null {
   };
 }
 
-// PKCE helpers
-function generateCodeVerifier(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return base64UrlEncode(array);
-}
-
-function base64UrlEncode(buffer: Uint8Array): string {
-  const base64 = btoa(String.fromCharCode(...buffer));
-  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-async function generateCodeChallenge(verifier: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(verifier);
-  const hash = await crypto.subtle.digest("SHA-256", data);
-  return base64UrlEncode(new Uint8Array(hash));
-}
-
-// Token exchange
 async function exchangeCodeForToken(code: string): Promise<AuthTokens> {
-  const { oauth_code_verifier } = await chrome.storage.local.get(
-    "oauth_code_verifier",
-  );
+  const { codeVerifier } = await getStoredOAuthParams();
 
-  if (!oauth_code_verifier || typeof oauth_code_verifier !== "string") {
+  if (!codeVerifier) {
     throw new Error("code_verifier가 없습니다.");
   }
 
-  const response = await fetch(`${AUTHENTIK_URL}/application/o/token/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
+  const response = await authClient.post<TokenResponse>(
+    AUTHENTIK_CONFIG.tokenUrl,
+    new URLSearchParams({
       grant_type: "authorization_code",
-      client_id: CLIENT_ID,
+      client_id: AUTHENTIK_CONFIG.clientId,
       code: code,
-      redirect_uri: chrome.identity.getRedirectURL(),
-      code_verifier: oauth_code_verifier,
+      redirect_uri: AUTHENTIK_CONFIG.redirectUri,
+      code_verifier: codeVerifier,
     }),
-  });
-
-  if (!response.ok) {
-    throw new Error("토큰 교환 실패");
-  }
-
-  const data = await response.json();
+  );
 
   return {
-    access_token: data.access_token,
-    refresh_token: data.refresh_token,
-    expires_at: Date.now() + data.expires_in * 1000,
+    access_token: response.data.access_token,
+    refresh_token: response.data.refresh_token ?? "",
+    expires_at: Date.now() + response.data.expires_in * 1000,
   };
 }
 
-// Refresh access token
-async function refreshAccessToken(refreshToken: string): Promise<AuthTokens> {
-  const response = await fetch(`${AUTHENTIK_URL}/application/o/token/`, {
-    method: "POST",
-    headers: {
-      "Content-type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      client_id: CLIENT_ID,
-      refresh_token: refreshToken,
-    }),
-  });
+async function refreshAccessToken(
+  refreshToken: string,
+): Promise<AuthTokens | null> {
+  try {
+    const response = await authClient.post<TokenResponse>(
+      AUTHENTIK_CONFIG.tokenUrl,
+      new URLSearchParams({
+        grant_type: "refresh_token",
+        client_id: AUTHENTIK_CONFIG.clientId,
+        refresh_token: refreshToken,
+      }),
+    );
 
-  if (!response.ok) {
-    throw new Error("토큰 갱신 실패");
+    return {
+      access_token: response.data.access_token,
+      refresh_token: response.data.refresh_token ?? refreshToken,
+      expires_at: Date.now() + response.data.expires_in * 1000,
+    };
+  } catch {
+    return null;
   }
-
-  const data = await response.json();
-
-  return {
-    access_token: data.access_token,
-    refresh_token: data.refresh_token,
-    expires_at: Date.now() + data.expires_in * 1000,
-  };
 }
 
-// Login - start OAuth flow
 export async function login(): Promise<{ success: boolean; error?: string }> {
   try {
-    // Generate state
-    const state = crypto.randomUUID();
-    // Generate PKCE: code_verifier, code_challenge
+    const state = generateState();
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = await generateCodeChallenge(codeVerifier);
 
-    // Store state and code_verifier temporarily
-    await chrome.storage.local.set({
-      oauth_state: state,
-      oauth_code_verifier: codeVerifier,
+    await storeOAuthParams(codeVerifier, state);
+
+    const params = new URLSearchParams({
+      client_id: AUTHENTIK_CONFIG.clientId,
+      redirect_uri: AUTHENTIK_CONFIG.redirectUri,
+      response_type: "code",
+      scope: AUTHENTIK_CONFIG.scope,
+      state: state,
+      code_challenge: codeChallenge,
+      code_challenge_method: "S256",
     });
 
-    // Build authorization URL
-    const authUrl =
-      `${AUTHENTIK_URL}/application/o/authorize/?` +
-      `client_id=${CLIENT_ID}&` +
-      `response_type=code&` +
-      `redirect_uri=${encodeURIComponent(chrome.identity.getRedirectURL())}&` +
-      `scope=${encodeURIComponent(SCOPES)}&` +
-      `state=${state}&` +
-      `code_challenge=${codeChallenge}&` +
-      `code_challenge_method=S256`;
+    const authUrl = `${AUTHENTIK_CONFIG.authorizeUrl}?${params.toString()}`;
 
-    // Launch browser popup for login
     const responseUrl = await chrome.identity.launchWebAuthFlow({
       url: authUrl,
       interactive: true,
@@ -177,34 +163,23 @@ export async function login(): Promise<{ success: boolean; error?: string }> {
       return { success: false, error: "로그인이 취소되었습니다." };
     }
 
-    // Extract code from redirect URL
     const url = new URL(responseUrl);
 
-    // Validate state
     const returnedState = url.searchParams.get("state");
-    const { oauth_state: savedState } =
-      await chrome.storage.local.get("oauth_state");
+    const { state: savedState } = await getStoredOAuthParams();
     if (returnedState !== savedState) {
       return { success: false, error: "보안 검증 실패(state mismatch)" };
     }
-    await chrome.storage.local.remove("oauth_state");
 
-    // Extract code
     const code = url.searchParams.get("code");
     if (!code) {
       return { success: false, error: "인가 코드를 받지 못했습니다." };
     }
 
-    // Exchange code for token
     const tokens = await exchangeCodeForToken(code);
 
-    // Store tokens
-    await chrome.storage.local.set({
-      auth_tokens: tokens,
-    });
-
-    // Clean up PKCE data
-    await chrome.storage.local.remove("oauth_code_verifier");
+    await chrome.storage.local.set({ auth_tokens: tokens });
+    await clearStoredOAuthParams();
 
     return { success: true };
   } catch (error) {
@@ -216,19 +191,19 @@ export async function login(): Promise<{ success: boolean; error?: string }> {
   }
 }
 
-// Logout
 export async function logout(): Promise<void> {
   await chrome.storage.local.remove("auth_tokens");
 
-  const logoutUrl = `${AUTHENTIK_URL}/application/o/teamstash/end-session/`;
-  const tab = await chrome.tabs.create({ url: logoutUrl, active: false });
+  const tab = await chrome.tabs.create({
+    url: AUTHENTIK_CONFIG.logoutUrl,
+    active: false,
+  });
 
   setTimeout(() => {
     if (tab.id) chrome.tabs.remove(tab.id);
   }, 2000);
 }
 
-// Get current auth state
 export async function getAuthState(): Promise<AuthState> {
   const { auth_tokens } = (await chrome.storage.local.get("auth_tokens")) as {
     auth_tokens?: AuthTokens;
@@ -238,12 +213,11 @@ export async function getAuthState(): Promise<AuthState> {
     return { isLoggedIn: false };
   }
 
-  // Check token expiration
   if (auth_tokens.expires_at < Date.now()) {
-    // Expired - try refresh
     if (auth_tokens.refresh_token) {
-      try {
-        const newTokens = await refreshAccessToken(auth_tokens.refresh_token);
+      const newTokens = await refreshAccessToken(auth_tokens.refresh_token);
+
+      if (newTokens) {
         await chrome.storage.local.set({ auth_tokens: newTokens });
         const userInfo = extractUserInfo(newTokens.access_token);
         if (!userInfo) {
@@ -255,10 +229,10 @@ export async function getAuthState(): Promise<AuthState> {
           accessToken: newTokens.access_token,
           userInfo,
         };
-      } catch {
-        await logout();
-        return { isLoggedIn: false };
       }
+
+      await logout();
+      return { isLoggedIn: false };
     }
     return { isLoggedIn: false };
   }
@@ -268,6 +242,7 @@ export async function getAuthState(): Promise<AuthState> {
     await logout();
     return { isLoggedIn: false };
   }
+
   return {
     isLoggedIn: true,
     accessToken: auth_tokens.access_token,
