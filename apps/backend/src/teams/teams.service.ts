@@ -106,8 +106,8 @@ export class TeamsService {
       throw new ForbiddenException("팀 소유자는 탈퇴할 수 없습니다. 팀을 삭제하거나 소유권을 위임해주세요.");
     }
 
-    const leaved = await this.teamRepository.removeMember(team.teamId, userId);
-    if (!leaved) {
+    const removed = await this.teamRepository.removeMember(team.teamId, userId);
+    if (!removed) {
       throw new InternalServerErrorException("팀 탈퇴 중 오류가 발생했습니다.");
     }
   }
