@@ -1,6 +1,5 @@
 import { Inject, Injectable, type LoggerService } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
-import { ILinkRepository } from "./link.repository.interface";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { LinkMapper } from "../mappers/link.mapper";
 import { UserMapper } from "../../user/mappers/user.mapper";
@@ -16,7 +15,7 @@ const LINK_INCLUDE = {
 } as const;
 
 @Injectable()
-export class LinkRepository implements ILinkRepository {
+export class LinkRepository {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService,
@@ -42,8 +41,8 @@ export class LinkRepository implements ILinkRepository {
     });
 
     return {
-      link: LinkMapper.toDomain(created),
-      creator: UserMapper.toDomain(created.creator),
+      link: LinkMapper.fromPrisma(created),
+      creator: UserMapper.fromPrisma(created.creator),
     };
   }
 
@@ -74,8 +73,8 @@ export class LinkRepository implements ILinkRepository {
     });
 
     let result = links.map((l) => ({
-      link: LinkMapper.toDomain(l),
-      creator: UserMapper.toDomain(l.creator),
+      link: LinkMapper.fromPrisma(l),
+      creator: UserMapper.fromPrisma(l.creator),
     }));
 
     // 태그 필터링 (클라이언트 사이드 - SQLite JSON 지원 제한)
@@ -109,8 +108,8 @@ export class LinkRepository implements ILinkRepository {
     }
 
     return {
-      link: LinkMapper.toDomain(link),
-      creator: UserMapper.toDomain(link.creator),
+      link: LinkMapper.fromPrisma(link),
+      creator: UserMapper.fromPrisma(link.creator),
     };
   }
 
@@ -137,8 +136,8 @@ export class LinkRepository implements ILinkRepository {
       });
 
       return {
-        link: LinkMapper.toDomain(updated),
-        creator: UserMapper.toDomain(updated.creator),
+        link: LinkMapper.fromPrisma(updated),
+        creator: UserMapper.fromPrisma(updated.creator),
       };
     } catch {
       return null;

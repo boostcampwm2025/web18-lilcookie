@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import type { Folder as PrismaFolder, User as PrismaUser } from "@prisma/client";
 import { PrismaService } from "../../database/prisma.service";
-import { IFolderRepository } from "./folder.repository.interface";
 import { Folder } from "../entities/folder.entity";
 import { FolderMapper } from "../mappers/folder.mapper";
 import { UserMapper } from "../../user/mappers/user.mapper";
@@ -17,7 +16,7 @@ type PrismaFolderWithCreator = PrismaFolder & {
 };
 
 @Injectable()
-export class FolderRepository implements IFolderRepository {
+export class FolderRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -38,8 +37,8 @@ export class FolderRepository implements IFolderRepository {
     });
 
     return {
-      folder: FolderMapper.toDomain(created as PrismaFolderWithCreator),
-      creator: UserMapper.toDomain(created.creator),
+      folder: FolderMapper.fromPrisma(created as PrismaFolderWithCreator),
+      creator: UserMapper.fromPrisma(created.creator),
     };
   }
 
@@ -62,8 +61,8 @@ export class FolderRepository implements IFolderRepository {
     });
 
     return folders.map((f) => ({
-      folder: FolderMapper.toDomain(f as PrismaFolderWithCreator),
-      creator: UserMapper.toDomain(f.creator),
+      folder: FolderMapper.fromPrisma(f as PrismaFolderWithCreator),
+      creator: UserMapper.fromPrisma(f.creator),
     }));
   }
 
@@ -87,8 +86,8 @@ export class FolderRepository implements IFolderRepository {
     }
 
     return {
-      folder: FolderMapper.toDomain(folder as PrismaFolderWithCreator),
-      creator: UserMapper.toDomain(folder.creator),
+      folder: FolderMapper.fromPrisma(folder as PrismaFolderWithCreator),
+      creator: UserMapper.fromPrisma(folder.creator),
     };
   }
 
@@ -113,8 +112,8 @@ export class FolderRepository implements IFolderRepository {
       });
 
       return {
-        folder: FolderMapper.toDomain(updated as PrismaFolderWithCreator),
-        creator: UserMapper.toDomain(updated.creator),
+        folder: FolderMapper.fromPrisma(updated as PrismaFolderWithCreator),
+        creator: UserMapper.fromPrisma(updated.creator),
       };
     } catch {
       return null;
@@ -149,7 +148,7 @@ export class FolderRepository implements IFolderRepository {
       },
     });
 
-    return folder ? FolderMapper.toDomain(folder) : null;
+    return folder ? FolderMapper.fromPrisma(folder) : null;
   }
 
   /**
