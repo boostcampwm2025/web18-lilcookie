@@ -3,11 +3,11 @@ import { Member } from "../entities/member.entity";
 
 export class MemberMapper {
   /**
-   * Prisma Member → 도메인 Member 엔티티 변환
-   * @param prismaMember - 프리즈마 멤버 객체
-   * @returns 도메인 멤버 엔티티
+   * Prisma Member → Member 엔티티 변환
+   * @param prismaMember Prisma Member 객체
+   * @returns 애플리케이션에서 사용할 멤버 엔티티
    */
-  static toDomain(prismaMember: PrismaMember): Member {
+  static fromPrisma(prismaMember: PrismaMember): Member {
     return new Member({
       memberId: prismaMember.id,
       teamId: prismaMember.teamId,

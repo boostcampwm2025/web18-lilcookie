@@ -3,11 +3,11 @@ import { Team } from "../entities/team.entity";
 
 export class TeamMapper {
   /**
-   * Prisma Team → 도메인 Team 엔티티 변환
-   * @param prismaTeam - 프리즈마 팀 객체
-   * @returns 도메인 팀 엔티티
+   * Prisma Team → Team 엔티티 변환
+   * @param prismaTeam Prisma Team 객체
+   * @returns 애플리케이션에서 사용할 팀 엔티티
    */
-  static toDomain(prismaTeam: PrismaTeam): Team {
+  static fromPrisma(prismaTeam: PrismaTeam): Team {
     return new Team({
       teamId: prismaTeam.id,
       teamUuid: prismaTeam.uuid,
