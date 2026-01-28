@@ -1,0 +1,23 @@
+import { z } from "zod";
+
+/** 폴더 생성 요청 */
+export const CreateFolderRequestSchema = z.object({
+  teamUuid: z.string().uuid(),
+  folderName: z.string().min(1),
+});
+
+/** 폴더 공통 응답 data */
+export const FolderResponseDataSchema = z.object({
+  folderUuid: z.string().uuid(),
+  folderName: z.string(),
+  createdAt: z.string().datetime(),
+  createdBy: z.object({
+    userUuid: z.string().uuid(),
+    userName: z.string(),
+  }),
+});
+
+/** 폴더이름 수정 요청 */
+export const PatchFolderRequestSchema = z.object({
+  folderName: z.string(),
+});
