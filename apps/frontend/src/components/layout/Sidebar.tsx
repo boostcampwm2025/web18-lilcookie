@@ -1,20 +1,128 @@
-import { Users } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
-import type { Team } from "../../types";
+import { useEffect, useState } from "react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
+import {
+  Users,
+  ChevronRight,
+  Folder,
+  FolderPlus,
+  Settings,
+} from "lucide-react";
+import type { Team, Folder as FolderType } from "../../types";
+import { teamApi, folderApi } from "../../services/api";
 
 interface SidebarProps {
-  teams: Team[];
   onCreateTeam?: () => void;
+  onCreateFolder?: (teamUuid: string) => void;
 }
 
-const Sidebar = ({ teams, onCreateTeam }: SidebarProps) => {
+const Sidebar = ({ onCreateTeam, onCreateFolder }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { teamUuid: selectedTeamUuid } = useParams<{ teamUuid: string }>();
+
+  // URL에서 선택된 폴더 UUID 가져오기
+  const selectedFolderUuid = location.state?.selectedFolderUuid as
+    | string
+    | undefined;
 
   const isMyTeamsActive = location.pathname === "/my-teams";
+  const isSettingPage = location.pathname.endsWith("/setting");
 
-  const handleTeamClick = (teamUuid: string) => {
-    navigate(`/team/${teamUuid}`);
+  // 데이터 상태
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [teamFolders, setTeamFolders] = useState<Record<string, FolderType[]>>(
+    {},
+  );
+  const [loading, setLoading] = useState(true);
+
+  // 각 팀의 펼침/접힘 상태 관리
+  const [expandedTeams, setExpandedTeams] = useState<Record<string, boolean>>(
+    {},
+  );
+
+  // 호버 중인 팀
+  const [hoveredTeamUuid, setHoveredTeamUuid] = useState<string | null>(null);
+
+  // 팀 목록 조회
+  useEffect(() => {
+    const fetchTeams = async () => {
+      try {
+        setLoading(true);
+        const teamsResponse = await teamApi.getMyTeams();
+        if (teamsResponse.success) {
+          setTeams(teamsResponse.data);
+        }
+      } catch (error) {
+        console.error("팀 목록 조회 실패:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTeams();
+  }, []);
+
+  // 선택된 팀이 바뀌면 펼침 + 폴더 조회
+  useEffect(() => {
+    if (selectedTeamUuid) {
+      setExpandedTeams((prev) => ({ ...prev, [selectedTeamUuid]: true }));
+
+      // 폴더가 없으면 조회
+      if (!teamFolders[selectedTeamUuid]) {
+        folderApi.getFolders(selectedTeamUuid).then((response) => {
+          if (response.success) {
+            setTeamFolders((prev) => ({
+              ...prev,
+              [selectedTeamUuid]: response.data,
+            }));
+          }
+        });
+      }
+    }
+  }, [selectedTeamUuid, teamFolders]);
+
+  const toggleTeamExpand = async (teamUuid: string) => {
+    const willExpand = !expandedTeams[teamUuid];
+
+    setExpandedTeams((prev) => ({
+      ...prev,
+      [teamUuid]: willExpand,
+    }));
+
+    // 펼칠 때 폴더가 없으면 조회
+    if (willExpand && !teamFolders[teamUuid]) {
+      try {
+        const foldersResponse = await folderApi.getFolders(teamUuid);
+        if (foldersResponse.success) {
+          setTeamFolders((prev) => ({
+            ...prev,
+            [teamUuid]: foldersResponse.data,
+          }));
+        }
+      } catch (error) {
+        console.error("폴더 조회 실패:", error);
+      }
+    }
+  };
+
+  const handleTeamClick = (team: Team) => {
+    navigate(`/team/${team.teamUuid}`, { state: { team } });
+  };
+
+  const handleFolderClick = (team: Team, folder: FolderType) => {
+    navigate(`/team/${team.teamUuid}`, {
+      state: { team, selectedFolderUuid: folder.folderUuid },
+    });
+  };
+
+  const handleSettingClick = (e: React.MouseEvent, teamUuid: string) => {
+    e.stopPropagation();
+    navigate(`/team/${teamUuid}/setting`);
+  };
+
+  const handleCreateFolderClick = (e: React.MouseEvent, teamUuid: string) => {
+    e.stopPropagation();
+    onCreateFolder?.(teamUuid);
   };
 
   return (
@@ -30,8 +138,8 @@ const Sidebar = ({ teams, onCreateTeam }: SidebarProps) => {
       </div>
 
       {/* 네비게이션 */}
-      <nav className="flex-1 p-3">
-        {/* 내 팀 */}
+      <nav className="flex-1 p-3 overflow-y-auto">
+        {/* 내 팀 헤더 */}
         <button
           onClick={() => navigate("/my-teams")}
           className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer ${
@@ -45,21 +153,114 @@ const Sidebar = ({ teams, onCreateTeam }: SidebarProps) => {
         </button>
 
         {/* 팀 목록 */}
-        {teams.length > 0 && (
-          <div className="mt-2 ml-4 space-y-1">
-            {teams.map((team) => (
-              <button
-                key={team.teamUuid}
-                onClick={() => handleTeamClick(team.teamUuid)}
-                className="w-full text-left px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer wrap-break-word"
-              >
-                {team.teamName}
-              </button>
-            ))}
+        {loading ? (
+          <div className="mt-4 flex justify-center">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600" />
           </div>
-        )}
+        ) : teams.length > 0 ? (
+          <div className="mt-2 space-y-1">
+            {teams.map((team) => {
+              const isExpanded = expandedTeams[team.teamUuid] ?? false;
+              const isSelected = selectedTeamUuid === team.teamUuid;
+              const isHovered = hoveredTeamUuid === team.teamUuid;
+              const folders = teamFolders[team.teamUuid] || [];
 
-        {teams.length === 0 && (
+              return (
+                <div key={team.teamUuid} className="ml-2">
+                  {/* 팀 헤더 */}
+                  <div
+                    className={`group flex items-center gap-1 px-2 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                      isSelected && !isSettingPage
+                        ? "bg-blue-50 text-blue-600"
+                        : "text-gray-700 hover:bg-gray-100"
+                    }`}
+                    onMouseEnter={() => setHoveredTeamUuid(team.teamUuid)}
+                    onMouseLeave={() => setHoveredTeamUuid(null)}
+                    onClick={() => handleTeamClick(team)}
+                  >
+                    {/* 펼침/접힘 버튼 */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTeamExpand(team.teamUuid);
+                      }}
+                      className="p-0.5 hover:bg-gray-200 rounded cursor-pointer transition-transform duration-200"
+                    >
+                      <ChevronRight
+                        className={`w-4 h-4 transition-transform duration-200 ${
+                          isExpanded ? "rotate-90" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {/* 팀 아이콘 */}
+                    <Users className="w-4 h-4 shrink-0" />
+
+                    {/* 팀 이름 */}
+                    <span className="text-sm font-medium flex-1 truncate">
+                      {team.teamName}
+                    </span>
+
+                    {/* 호버 시 액션 버튼들 - opacity로 표시/숨김 */}
+                    <div
+                      className={`flex items-center gap-0.5 transition-opacity duration-150 ${
+                        isHovered ? "opacity-100" : "opacity-0"
+                      }`}
+                    >
+                      <button
+                        onClick={(e) =>
+                          handleCreateFolderClick(e, team.teamUuid)
+                        }
+                        className="p-1 hover:bg-gray-200 rounded cursor-pointer"
+                        title="폴더 생성"
+                      >
+                        <FolderPlus className="w-4 h-4 text-gray-500" />
+                      </button>
+                      <button
+                        onClick={(e) => handleSettingClick(e, team.teamUuid)}
+                        className="p-1 hover:bg-gray-200 rounded cursor-pointer"
+                        title="팀 설정"
+                      >
+                        <Settings className="w-4 h-4 text-gray-500" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 폴더 목록 - 애니메이션 적용 */}
+                  <div
+                    className={`ml-6 space-y-0.5 overflow-hidden transition-all duration-200 ease-in-out ${
+                      isExpanded && folders.length > 0
+                        ? "max-h-96 opacity-100 mt-1"
+                        : "max-h-0 opacity-0"
+                    }`}
+                  >
+                    {folders.map((folder) => {
+                      const isFolderSelected =
+                        isSelected &&
+                        selectedFolderUuid === folder.folderUuid &&
+                        !isSettingPage;
+
+                      return (
+                        <button
+                          key={folder.folderUuid}
+                          onClick={() => handleFolderClick(team, folder)}
+                          className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left text-sm transition-colors cursor-pointer ${
+                            isFolderSelected
+                              ? "bg-blue-100 text-blue-700 font-medium"
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          <Folder className="w-4 h-4 shrink-0" />
+                          <span className="truncate">{folder.folderName}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
           <p className="mt-2 ml-6 text-xs text-gray-400">
             가입한 팀이 없습니다
           </p>

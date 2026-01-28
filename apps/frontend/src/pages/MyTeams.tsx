@@ -82,7 +82,7 @@ const MyTeams = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* 사이드바 */}
-      <Sidebar teams={teams} onCreateTeam={() => setIsModalOpen(true)} />
+      <Sidebar onCreateTeam={() => setIsModalOpen(true)} />
 
       {/* 메인 영역 */}
       <div className="flex-1 flex flex-col">

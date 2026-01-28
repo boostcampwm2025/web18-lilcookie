@@ -1,17 +1,18 @@
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import type { Folder, Team } from "../types";
+import type { Team } from "../types";
 import type { GetTeamMembersResponseData } from "@repo/api";
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { folderApi, teamApi } from "../services/api";
+import { teamApi } from "../services/api";
 import { Users, Copy, LogOut, Check, Crown } from "lucide-react";
-import TeamSidebar from "../components/layout/TeamSidebar";
+import Sidebar from "../components/layout/Sidebar";
+import CreateTeamModal from "../components/teams/CreateTeamModal";
 
 const SettingPage = () => {
   const { teamUuid } = useParams<{ teamUuid: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const teamFromState = location.state?.team as Team | undefined;
 
@@ -21,7 +22,7 @@ const SettingPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  const [folders, setFolders] = useState<Folder[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 팀 정보 및 멤버 조회
   useEffect(() => {
@@ -66,11 +67,6 @@ const SettingPage = () => {
               membersResponse.message || "멤버 목록을 불러오는데 실패했습니다.",
             );
           }
-          // 폴더 목록 가져오기
-          const foldersResponse = await folderApi.getFolders(teamUuid);
-          if (foldersResponse.success) {
-            setFolders(foldersResponse.data);
-          }
         }
       } catch {
         setError("데이터를 불러오는 중 오류가 발생했습니다.");
@@ -109,6 +105,11 @@ const SettingPage = () => {
     }
   };
 
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
+
   // 날짜 포맷
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("ko-KR", {
@@ -132,17 +133,7 @@ const SettingPage = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* 사이드바 */}
-      <TeamSidebar
-        currentTeam={currentTeam}
-        folders={folders}
-        teamUuid={teamUuid || ""}
-        activePage="setting"
-        onFolderClick={(folder) =>
-          navigate(`/team/${teamUuid}`, {
-            state: { selectedFolderUuid: folder.folderUuid },
-          })
-        }
-      />
+      <Sidebar onCreateTeam={() => setIsModalOpen(true)} />
 
       {/* 메인 영역 */}
       <div className="flex-1 flex flex-col">
@@ -153,9 +144,7 @@ const SettingPage = () => {
               {user?.nickname || user?.email?.split("@")[0]}
             </span>
             <button
-              onClick={() => {
-                /* logout 필요시 추가 */
-              }}
+              onClick={handleLogout}
               className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
@@ -283,6 +272,13 @@ const SettingPage = () => {
           </div>
         </main>
       </div>
+
+      {/* 팀 만들기 모달 */}
+      <CreateTeamModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onTeamCreated={() => setIsModalOpen(false)}
+      />
     </div>
   );
 };

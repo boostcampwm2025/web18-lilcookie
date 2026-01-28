@@ -4,48 +4,8 @@ import { LogOut, Link2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { teamApi, folderApi } from "../services/api";
 import type { Team, Folder as FolderType } from "../types";
-import TeamSidebar from "../components/layout/TeamSidebar";
-
-// TODO: 백엔드 연동 시 제거
-const USE_MOCK_DATA = false;
-
-// Mock 폴더 데이터 (팀별)
-const mockFoldersMap: Record<string, import("../types").Folder[]> = {
-  "team-uuid-1": [
-    {
-      folderUuid: "folder-uuid-1",
-      folderName: "기본 폴더",
-      createdAt: "2024-06-15T10:20:30Z",
-      createdBy: { userUuid: "user-1", userName: "owner" },
-    },
-    {
-      folderUuid: "folder-uuid-2",
-      folderName: "프론트엔드 자료",
-      createdAt: "2024-06-16T11:21:31Z",
-      createdBy: { userUuid: "user-1", userName: "owner" },
-    },
-    {
-      folderUuid: "folder-uuid-3",
-      folderName: "백엔드 자료",
-      createdAt: "2024-06-17T12:22:32Z",
-      createdBy: { userUuid: "user-2", userName: "junho" },
-    },
-  ],
-  "team-uuid-2": [
-    {
-      folderUuid: "folder-uuid-4",
-      folderName: "기본 폴더",
-      createdAt: "2024-06-16T11:21:31Z",
-      createdBy: { userUuid: "user-1", userName: "owner" },
-    },
-    {
-      folderUuid: "folder-uuid-5",
-      folderName: "UI/UX 레퍼런스",
-      createdAt: "2024-06-17T12:22:32Z",
-      createdBy: { userUuid: "user-3", userName: "minsu" },
-    },
-  ],
-};
+import Sidebar from "../components/layout/Sidebar";
+import CreateTeamModal from "../components/teams/CreateTeamModal";
 
 const TeamPage = () => {
   const { teamUuid } = useParams<{ teamUuid: string }>();
@@ -53,14 +13,17 @@ const TeamPage = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
 
-  // navigate state로 전달받은 팀 정보
+  // navigate state로 전달받은 정보
   const teamFromState = location.state?.team as Team | undefined;
+  const selectedFolderUuidFromState = location.state?.selectedFolderUuid as
+    | string
+    | undefined;
 
   const [currentTeam, setCurrentTeam] = useState<Team | null>(null);
-  const [folders, setFolders] = useState<FolderType[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<FolderType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 팀 및 폴더 정보 조회
   useEffect(() => {
@@ -68,72 +31,41 @@ const TeamPage = () => {
       try {
         setLoading(true);
 
-        if (USE_MOCK_DATA) {
-          // state로 전달받은 팀 정보 사용, 없으면 URL 기반으로 생성
-          const team: Team = teamFromState || {
-            teamUuid: teamUuid || "",
-            teamName: "새 팀",
-            createdAt: new Date().toISOString(),
-            role: "owner",
-          };
-          setCurrentTeam(team);
-
-          // 팀별 mock 폴더 데이터 사용, 없으면 기본 폴더 생성
-          const mockFolders = mockFoldersMap[teamUuid || ""];
-          if (mockFolders && mockFolders.length > 0) {
-            setFolders(mockFolders);
-            setSelectedFolder(mockFolders[0]);
-          } else {
-            // 새로 생성한 팀은 기본 폴더만
-            const defaultFolder: FolderType = {
-              folderUuid: "default-folder",
-              folderName: "기본 폴더",
-              createdAt: new Date().toISOString(),
-              createdBy: {
-                userUuid: "user-1",
-                userName: user?.nickname || "사용자",
-              },
-            };
-            setFolders([defaultFolder]);
-            setSelectedFolder(defaultFolder);
-          }
+        // 팀 정보 설정
+        if (teamFromState) {
+          setCurrentTeam(teamFromState);
         } else {
-          // 실제 API 호출
-          if (teamFromState) {
-            setCurrentTeam(teamFromState);
-          } else {
-            const teamsResponse = await teamApi.getMyTeams();
-            if (teamsResponse.success) {
-              const team = teamsResponse.data.find(
-                (t) => t.teamUuid === teamUuid,
-              );
-              if (team) {
-                setCurrentTeam(team);
-              } else {
-                setError("팀을 찾을 수 없습니다.");
-                return;
-              }
+          const teamsResponse = await teamApi.getMyTeams();
+          if (teamsResponse.success) {
+            const team = teamsResponse.data.find(
+              (t) => t.teamUuid === teamUuid,
+            );
+            if (team) {
+              setCurrentTeam(team);
             } else {
-              setError(
-                teamsResponse.message || "팀 정보를 불러오는데 실패했습니다.",
-              );
+              setError("팀을 찾을 수 없습니다.");
               return;
             }
+          } else {
+            setError(
+              teamsResponse.message || "팀 정보를 불러오는데 실패했습니다.",
+            );
+            return;
           }
+        }
 
-          // 폴더 조회
-          if (teamUuid) {
-            const foldersResponse = await folderApi.getFolders(teamUuid);
-            if (foldersResponse.success) {
-              setFolders(foldersResponse.data);
-              if (foldersResponse.data.length > 0) {
-                setSelectedFolder(foldersResponse.data[0]);
-              }
-            } else {
-              setError(
-                foldersResponse.message ||
-                  "폴더 목록을 불러오는데 실패했습니다.",
+        // 폴더 조회 및 선택된 폴더 설정
+        if (teamUuid) {
+          const foldersResponse = await folderApi.getFolders(teamUuid);
+          if (foldersResponse.success && foldersResponse.data.length > 0) {
+            // state로 전달받은 폴더가 있으면 해당 폴더 선택, 없으면 첫번째 폴더
+            if (selectedFolderUuidFromState) {
+              const folder = foldersResponse.data.find(
+                (f) => f.folderUuid === selectedFolderUuidFromState,
               );
+              setSelectedFolder(folder || foldersResponse.data[0]);
+            } else {
+              setSelectedFolder(foldersResponse.data[0]);
             }
           }
         }
@@ -146,15 +78,11 @@ const TeamPage = () => {
     };
 
     fetchData();
-  }, [teamUuid, teamFromState, user?.nickname]);
+  }, [teamUuid, teamFromState, selectedFolderUuidFromState]);
 
   const handleLogout = async () => {
     await logout();
     navigate("/login");
-  };
-
-  const handleFolderClick = (folder: FolderType) => {
-    setSelectedFolder(folder);
   };
 
   if (loading) {
@@ -184,14 +112,7 @@ const TeamPage = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* 사이드바 */}
-      <TeamSidebar
-        currentTeam={currentTeam}
-        folders={folders}
-        teamUuid={teamUuid || ""}
-        selectedFolderUuid={selectedFolder?.folderUuid}
-        onFolderClick={handleFolderClick}
-        activePage="folder"
-      />
+      <Sidebar onCreateTeam={() => setIsModalOpen(true)} />
 
       {/* 메인 영역 */}
       <div className="flex-1 flex flex-col">
@@ -239,6 +160,16 @@ const TeamPage = () => {
           </div>
         </main>
       </div>
+
+      {/* 팀 만들기 모달 */}
+      <CreateTeamModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onTeamCreated={() => {
+          // 사이드바가 자체적으로 팀 목록을 다시 조회하므로 여기서는 모달만 닫음
+          setIsModalOpen(false);
+        }}
+      />
     </div>
   );
 };
