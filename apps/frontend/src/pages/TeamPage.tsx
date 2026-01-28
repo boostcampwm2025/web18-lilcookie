@@ -265,7 +265,7 @@ const TeamPage = () => {
             onClick={() => navigate("/my-teams")}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer font-medium text-sm"
           >
-            <span>+ 팀 만들기</span>
+            <span>내 팀 목록으로 돌아가기</span>
           </button>
         </div>
       </aside>
