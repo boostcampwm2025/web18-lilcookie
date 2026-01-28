@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CreatedBySchema } from "../common/common.schema";
 
 /** 링크 생성 요청 */
 export const CreateLinkRequestSchema = z.object({
@@ -6,7 +7,7 @@ export const CreateLinkRequestSchema = z.object({
   folderUuid: z.string().uuid().optional(),
   url: z.string(),
   title: z.string().min(1),
-  tags: z.string().array().min(1),
+  tags: z.array(z.string()).min(1),
   summary: z.string().min(1),
 });
 
@@ -17,21 +18,11 @@ export const LinkResponseDataSchema = z.object({
   folderUuid: z.string().uuid(),
   url: z.string(),
   title: z.string(),
-  tags: z.string().array(),
+  tags: z.array(z.string()).min(1),
   summary: z.string(),
   createdAt: z.string().datetime(),
-  createdBy: z.object({
-    userUuid: z.string().uuid(),
-    userName: z.string(),
-  }),
+  createdBy: CreatedBySchema,
 });
 
 /** 링크 수정 요청 */
-export const PatchLinkRequestSchema = z.object({
-  teamUuid: z.string().uuid().optional(),
-  folderUuid: z.string().uuid().optional(),
-  url: z.string().optional(),
-  title: z.string().min(1).optional(),
-  tags: z.string().array().min(1).optional(),
-  summary: z.string().min(1).optional(),
-});
+export const PatchLinkRequestSchema = CreateLinkRequestSchema.partial();

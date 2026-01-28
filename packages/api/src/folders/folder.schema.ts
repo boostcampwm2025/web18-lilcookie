@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CreatedBySchema, FolderBaseSchema } from "../common/common.schema";
 
 /** 폴더 생성 요청 */
 export const CreateFolderRequestSchema = z.object({
@@ -7,14 +8,8 @@ export const CreateFolderRequestSchema = z.object({
 });
 
 /** 폴더 공통 응답 data */
-export const FolderResponseDataSchema = z.object({
-  folderUuid: z.string().uuid(),
-  folderName: z.string(),
-  createdAt: z.string().datetime(),
-  createdBy: z.object({
-    userUuid: z.string().uuid(),
-    userName: z.string(),
-  }),
+export const FolderResponseDataSchema = FolderBaseSchema.extend({
+  createdBy: CreatedBySchema,
 });
 
 /** 폴더이름 수정 요청 */
