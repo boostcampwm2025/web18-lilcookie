@@ -49,3 +49,11 @@
 1. 프로젝트 루트에서 `pnpm run start:dev`
 2. 백엔드: 브라우저에서 `https://api.localhost/health` 접속 시도
 3. 프론트엔드: 브라우저에서 `https://app.localhost` 접속 시도
+
+## 개발 환경 TLS 인증서
+
+### 윈도우10 기준 인증서 세팅법:
+`web18-lilcookie\infra\caddy\data\caddy\pki\authorities\local\root.crt` 우클릭 -> 인증서 설치 -> 저장소 위치(로컬 컴퓨터) -> 모든 인증서를 다음 위치에 저장 -> 찾아보기 -> 신뢰할 수 있는 루트 기관 -> 다음다음 -> END
+
+### MacOS 기반 인증서 세팅 방법
+`web18-lilcookie/infra/caddy/data/caddy/pki/authorities/local/root.crt` 더블 클릭 → Keychain Access에 인증서 설치된 것 확인 (관리자 인증) → Caddy Local Authority 우클릭 → get info → Trust → When using this certificate: Always Trust (관리자 인증)

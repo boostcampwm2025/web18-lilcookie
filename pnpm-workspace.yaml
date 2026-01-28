@@ -1,5 +1,3 @@
 packages:
-  - "frontend"
-  - "backend"
-  - "extension"
-  - "extension-wxt"
+  - "apps/*"
+  - "packages/*"
