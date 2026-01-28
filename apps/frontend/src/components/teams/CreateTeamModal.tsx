@@ -4,7 +4,7 @@ import { teamApi } from "../../services/api";
 import type { Team } from "../../types";
 
 // TODO: 백엔드 연동 시 제거
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 interface CreateTeamModalProps {
   isOpen: boolean;
@@ -47,7 +47,7 @@ const CreateTeamModal = ({
           teamUuid: `team-uuid-${Date.now()}`,
           teamName: teamName.trim(),
           createdAt: new Date().toISOString(),
-          role: "admin",
+          role: "owner",
         };
         onTeamCreated(newTeam);
         setTeamName("");
@@ -92,7 +92,9 @@ const CreateTeamModal = ({
             <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
               <Users className="w-5 h-5 text-blue-600" />
             </div>
-            <h2 className="text-lg font-semibold text-gray-900">새 팀 만들기</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              새 팀 만들기
+            </h2>
           </div>
           <button
             onClick={handleClose}
@@ -121,9 +123,7 @@ const CreateTeamModal = ({
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-colors"
               disabled={loading}
             />
-            {error && (
-              <p className="mt-2 text-xs text-red-500">{error}</p>
-            )}
+            {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
           </div>
 
           {/* 버튼 */}

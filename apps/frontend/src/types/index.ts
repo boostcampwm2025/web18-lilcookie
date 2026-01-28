@@ -43,5 +43,5 @@ export interface Team {
   teamUuid: string;
   teamName: string;
   createdAt: string;
-  role: "admin" | "member";
+  role: "owner" | "member";
 }
