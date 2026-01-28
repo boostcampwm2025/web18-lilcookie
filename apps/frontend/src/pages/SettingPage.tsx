@@ -168,9 +168,9 @@ const SettingPage = () => {
         <main className="flex-1 p-8 overflow-auto">
           <h1 className="text-2xl font-bold text-gray-900 mb-8">팀 설정</h1>
 
-          <div className="max-w-2xl space-y-6">
-            {/* 팀 정보 카드 */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="max-w-4xl space-y-8">
+            {/* 팀 정보 섹션 */}
+            <div className="bg-white rounded-xl p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 팀 정보
               </h2>
@@ -191,42 +191,38 @@ const SettingPage = () => {
               </div>
             </div>
 
-            {/* 초대 링크 카드 */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                팀원 초대
-              </h2>
-              <p className="text-sm text-gray-600 mb-4">
-                아래 버튼을 눌러 초대 링크를 복사하고, 팀원에게 공유하세요.
-              </p>
-              <button
-                onClick={handleCopyInviteLink}
-                className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    복사됨!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    초대 링크 복사
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* 멤버 목록 카드 */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                팀 멤버 ({members.length}명)
-              </h2>
-              <div className="space-y-3">
+            {/* 멤버 목록 섹션 */}
+            <div className="bg-white rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  팀원 ({members.length}명)
+                </h2>
+                <button
+                  onClick={handleCopyInviteLink}
+                  className={`flex items-center justify-center gap-2 px-3 py-1.5 text-sm min-w-[120px] rounded-lg transition-colors cursor-pointer ${
+                    copied
+                      ? "text-blue-600 border border-blue-300 bg-blue-50"
+                      : "text-blue-600 border border-blue-200 hover:bg-blue-50"
+                  }`}
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>복사됨!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      <span>초대 링크 복사</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <div className="space-y-1">
                 {members.map((member) => (
                   <div
                     key={member.userUuid}
-                    className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0"
+                    className="flex items-center justify-between py-3"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
@@ -250,7 +246,8 @@ const SettingPage = () => {
                           )}
                         </div>
                         <span className="text-sm text-gray-500">
-                          {formatDate(member.joinedAt)} 가입
+                          {/* TODO: API에서 email 반환 시 변경 */}
+                          {member.userName}@example.com
                         </span>
                       </div>
                     </div>
@@ -259,25 +256,25 @@ const SettingPage = () => {
               </div>
             </div>
 
-            {/* 팀 탈퇴 카드 */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            {/* 팀 탈퇴 섹션 */}
+            <div className="bg-white rounded-xl p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">
                 팀 탈퇴
               </h2>
               {isAdmin ? (
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-gray-500 mb-4">
                   관리자는 팀에서 탈퇴할 수 없습니다. 다른 멤버에게 관리자
                   권한을 넘긴 후 탈퇴해주세요.
                 </p>
               ) : (
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-gray-500 mb-4">
                   팀에서 탈퇴하면 더 이상 이 팀의 콘텐츠에 접근할 수 없습니다.
                 </p>
               )}
               <button
                 onClick={handleLeaveTeam}
                 disabled={isAdmin || leaving}
-                className="flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <LogOut className="w-4 h-4" />
                 {leaving ? "탈퇴 중..." : "팀 탈퇴"}
