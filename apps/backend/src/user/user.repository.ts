@@ -15,7 +15,7 @@ export class UserRepository {
    */
   async findByUuid(userUuid: string): Promise<User | null> {
     const prismaUser = await this.prisma.user.findUnique({ where: { uuid: userUuid } });
-    return prismaUser ? UserMapper.toDomain(prismaUser) : null;
+    return prismaUser ? UserMapper.fromPrisma(prismaUser) : null;
   }
 
   /**
@@ -25,17 +25,7 @@ export class UserRepository {
    */
   async findById(userId: number): Promise<User | null> {
     const prismaUser = await this.prisma.user.findUnique({ where: { id: userId } });
-    return prismaUser ? UserMapper.toDomain(prismaUser) : null;
-  }
-
-  /**
-   * 사용자 생성
-   * @param data 생성 데이터
-   * @return 생성된 사용자 엔티티
-   */
-  async create(data: UpsertUserInput): Promise<User> {
-    const created = await this.prisma.user.create({ data });
-    return UserMapper.toDomain(created);
+    return prismaUser ? UserMapper.fromPrisma(prismaUser) : null;
   }
 
   /**
@@ -49,6 +39,6 @@ export class UserRepository {
       create: data,
       update: { nickname: data.nickname },
     });
-    return UserMapper.toDomain(upserted);
+    return UserMapper.fromPrisma(upserted);
   }
 }

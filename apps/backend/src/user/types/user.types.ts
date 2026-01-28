@@ -7,16 +7,3 @@ export interface UpsertUserInput {
   uuid: string;
   nickname: string;
 }
-
-/**
- * 간단한 사용자 정보 타입 (createdBy 등에 사용)
- */
-export interface SimpleUserInfo {
-  userUuid: string;
-  userName: string;
-}
-
-/**
- * 사용자 조회 결과 타입
- */
-export type UserResult = User | null;
