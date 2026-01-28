@@ -310,7 +310,7 @@ export class LinksService {
         throw new NotFoundException("해당 폴더를 찾을 수 없습니다.");
       }
 
-      if (folder.folder.teamId != teamId) {
+      if (folder.folder.teamId !== teamId) {
         throw new BadRequestException("해당 팀에 속해있는 폴더가 아닙니다.");
       }
 
