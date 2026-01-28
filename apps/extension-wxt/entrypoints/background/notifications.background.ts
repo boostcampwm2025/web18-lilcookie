@@ -34,9 +34,9 @@ export function setupNotificationHandlers() {
   chrome.notifications.onClicked.addListener(async (notificationId) => {
     if (notificationId === "teamstash-new-links") {
       const authState = await getAuthState();
-      if (authState.isLoggedIn && authState.userInfo?.teamUuid) {
+      if (authState.isLoggedIn && authState.userInfo?.selectedTeamUuid) {
         chrome.tabs.create({
-          url: `${FE_BASE_URL}/${authState.userInfo.teamUuid.toLowerCase()}`,
+          url: `${FE_BASE_URL}/${authState.userInfo.selectedTeamUuid.toLowerCase()}`,
         });
       }
       chrome.notifications.clear(notificationId);
@@ -52,7 +52,7 @@ async function checkNewLinks() {
       return;
     }
 
-    const { teamUuid, userUuid } = authState.userInfo;
+    const { selectedTeamUuid: teamUuid, userUuid } = authState.userInfo;
     const { lastCheck } = await chrome.storage.local.get("lastCheck");
 
     const now = new Date();

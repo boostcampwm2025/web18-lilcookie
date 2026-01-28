@@ -38,7 +38,7 @@ export async function saveLink(formData: SaveLinkFormData) {
       return { success: false, error: "로그인이 필요합니다." };
     }
 
-    const { teamUuid } = authState.userInfo;
+    const { selectedTeamUuid: teamUuid } = authState.userInfo;
 
     const response = await api.post("/links", {
       teamUuid,

@@ -1,6 +1,7 @@
 import axios from "axios";
 import axiosRetry from "axios-retry";
 import { AUTHENTIK_CONFIG } from "../../config/authentik";
+import { API_CONFIG } from "../../config/api";
 import {
   generateCodeVerifier,
   generateCodeChallenge,
@@ -25,10 +26,18 @@ export interface AuthTokens {
   expires_at: number;
 }
 
+export interface Team {
+  teamUuid: string;
+  teamName: string;
+  createdAt: string;
+  role: "admin" | "member";
+}
+
 export interface UserInfo {
   userUuid: string;
-  teamUuid: string;
   nickname?: string;
+  teams: Team[];
+  selectedTeamUuid: string;
 }
 
 export interface AuthState {
@@ -67,23 +76,34 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
   }
 }
 
-function extractUserInfo(accessToken: string): UserInfo | null {
+function extractBasicUserInfo(
+  accessToken: string,
+): { userUuid: string; nickname?: string } | null {
   const payload = decodeJwtPayload(accessToken);
   if (!payload) return null;
 
   const sub = payload.sub;
-  const teamUuid = payload.team_id;
-
-  if (typeof sub !== "string" || typeof teamUuid !== "string") {
+  if (typeof sub !== "string") {
     return null;
   }
 
   return {
     userUuid: sub,
-    teamUuid,
     nickname:
       typeof payload.nickname === "string" ? payload.nickname : undefined,
   };
+}
+
+async function fetchUserTeams(accessToken: string): Promise<Team[]> {
+  const response = await axios.get<{ data: Team[] }>(
+    `${API_CONFIG.baseUrl}/teams/me`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  );
+  return response.data.data;
 }
 
 async function exchangeCodeForToken(code: string): Promise<AuthTokens> {
@@ -128,6 +148,34 @@ async function refreshAccessToken(
       access_token: response.data.access_token,
       refresh_token: response.data.refresh_token ?? refreshToken,
       expires_at: Date.now() + response.data.expires_in * 1000,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function buildUserInfo(accessToken: string): Promise<UserInfo | null> {
+  const basicInfo = extractBasicUserInfo(accessToken);
+  if (!basicInfo) return null;
+
+  try {
+    const teams = await fetchUserTeams(accessToken);
+    if (teams.length === 0) return null;
+
+    const { selected_team_uuid } = await chrome.storage.local.get(
+      "selected_team_uuid",
+    );
+    const selectedTeamUuid =
+      typeof selected_team_uuid === "string" &&
+      teams.some((t) => t.teamUuid === selected_team_uuid)
+        ? selected_team_uuid
+        : teams[0].teamUuid;
+
+    return {
+      userUuid: basicInfo.userUuid,
+      nickname: basicInfo.nickname,
+      teams,
+      selectedTeamUuid,
     };
   } catch {
     return null;
@@ -192,7 +240,7 @@ export async function login(): Promise<{ success: boolean; error?: string }> {
 }
 
 export async function logout(): Promise<void> {
-  await chrome.storage.local.remove("auth_tokens");
+  await chrome.storage.local.remove(["auth_tokens", "selected_team_uuid"]);
 
   const tab = await chrome.tabs.create({
     url: AUTHENTIK_CONFIG.logoutUrl,
@@ -202,6 +250,10 @@ export async function logout(): Promise<void> {
   setTimeout(() => {
     if (tab.id) chrome.tabs.remove(tab.id);
   }, 2000);
+}
+
+export async function selectTeam(teamUuid: string): Promise<void> {
+  await chrome.storage.local.set({ selected_team_uuid: teamUuid });
 }
 
 export async function getAuthState(): Promise<AuthState> {
@@ -219,7 +271,7 @@ export async function getAuthState(): Promise<AuthState> {
 
       if (newTokens) {
         await chrome.storage.local.set({ auth_tokens: newTokens });
-        const userInfo = extractUserInfo(newTokens.access_token);
+        const userInfo = await buildUserInfo(newTokens.access_token);
         if (!userInfo) {
           await logout();
           return { isLoggedIn: false };
@@ -237,7 +289,7 @@ export async function getAuthState(): Promise<AuthState> {
     return { isLoggedIn: false };
   }
 
-  const userInfo = extractUserInfo(auth_tokens.access_token);
+  const userInfo = await buildUserInfo(auth_tokens.access_token);
   if (!userInfo) {
     await logout();
     return { isLoggedIn: false };
