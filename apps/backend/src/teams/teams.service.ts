@@ -56,7 +56,7 @@ export class TeamsService {
    * @throws {ConflictException} 이미 해당 팀에 가입된 경우
    * @returns 생성된 팀 멤버 정보
    */
-  async join(uuid: string, userId: number): Promise<{ team: Team; member: TeamMember }> {
+  async join(uuid: string, userId: number): Promise<TeamMember> {
     const team = await this.teamRepository.findByUuid(uuid);
     if (!team) {
       throw new NotFoundException("팀을 찾을 수 없습니다.");
@@ -68,8 +68,7 @@ export class TeamsService {
       throw new ConflictException("이미 해당 팀에 가입되어 있습니다.");
     }
 
-    const member = await this.teamRepository.addMember(team.id, userId, TeamRole.MEMBER);
-    return { team, member };
+    return this.teamRepository.addMember(team.id, userId, TeamRole.MEMBER);
   }
 
   /**
