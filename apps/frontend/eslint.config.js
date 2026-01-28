@@ -14,6 +14,7 @@ export default defineConfig([
   globalIgnores(['dist']),
   {
     files: ['**/*.{ts,tsx}'],
+    ignores: ['vite.config.ts'],
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,

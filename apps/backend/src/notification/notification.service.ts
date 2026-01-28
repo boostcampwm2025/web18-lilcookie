@@ -1,6 +1,7 @@
 import { ConfigService } from "@nestjs/config";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
+import { retryWithBackoff } from "../common/http.operators";
 import { LinkNotificationDto } from "./dto/link-notification.dto";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { Inject, Injectable, type LoggerService } from "@nestjs/common";
@@ -32,29 +33,31 @@ export class NotificationService {
       this.logger.log(`슬랙 알림 전송 시작: linkId=${linkNotificationDto.linkId}`);
 
       await firstValueFrom(
-        this.httpService.post(
-          this.webhookUrl,
-          {
-            event: "link.created",
-            data: {
-              linkId: linkNotificationDto.linkId,
-              teamId: linkNotificationDto.teamId,
-              url: linkNotificationDto.url,
-              title: linkNotificationDto.title,
-              tags: linkNotificationDto.tags,
-              summary: linkNotificationDto.summary,
-              createdBy: linkNotificationDto.createdBy,
-              createdAt: linkNotificationDto.createdAt,
-              slackChannelId: linkNotificationDto.slackChannelId,
+        this.httpService
+          .post(
+            this.webhookUrl,
+            {
+              event: "link.created",
+              data: {
+                linkId: linkNotificationDto.linkId,
+                teamId: linkNotificationDto.teamId,
+                url: linkNotificationDto.url,
+                title: linkNotificationDto.title,
+                tags: linkNotificationDto.tags,
+                summary: linkNotificationDto.summary,
+                createdBy: linkNotificationDto.createdBy,
+                createdAt: linkNotificationDto.createdAt,
+                slackChannelId: linkNotificationDto.slackChannelId,
+              },
             },
-          },
-          {
-            timeout: 5000,
-            headers: {
-              "Content-Type": "application/json",
+            {
+              timeout: 5000,
+              headers: {
+                "Content-Type": "application/json",
+              },
             },
-          },
-        ),
+          )
+          .pipe(retryWithBackoff()),
       );
 
       this.logger.log(`슬랙 알림 전송 성공: linkId=${linkNotificationDto.linkId}`);
