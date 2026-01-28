@@ -231,7 +231,7 @@ const TeamPage = () => {
                   )}
                 </button>
                 <Users className="w-4 h-4" />
-                <span className="text-sm font-medium flex-1">
+                <span className="text-sm font-medium flex-1 wrap-break-word min-w-0">
                   {currentTeam.teamName}
                 </span>
               </div>
@@ -249,8 +249,8 @@ const TeamPage = () => {
                           : "text-gray-600 hover:bg-gray-100"
                       }`}
                     >
-                      <Folder className="w-4 h-4" />
-                      <span>{folder.folderName}</span>
+                      <Folder className="w-4 h-4 shrink-0" />
+                      <span className="wrap-break-word min-w-0">{folder.folderName}</span>
                     </button>
                   ))}
                 </div>
@@ -259,15 +259,6 @@ const TeamPage = () => {
           )}
         </nav>
 
-        {/* 하단 버튼 */}
-        <div className="p-3 border-t border-gray-200">
-          <button
-            onClick={() => navigate("/my-teams")}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer font-medium text-sm"
-          >
-            <span>내 팀 목록으로 돌아가기</span>
-          </button>
-        </div>
       </aside>
 
       {/* 메인 영역 */}
