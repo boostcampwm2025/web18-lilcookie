@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
 import { OidcService } from "../oidc.service";
 import type { AuthenticatedRequest } from "../interfaces/oidc.interface";
-import { UserService } from "src/user/user.service";
+import { UserService } from "../../user/user.service";
 
 @Injectable()
 export class OidcGuard implements CanActivate {

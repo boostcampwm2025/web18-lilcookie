@@ -3,7 +3,7 @@ import { HttpModule } from "@nestjs/axios";
 import { AiController } from "./ai.controller";
 import { AiService } from "./ai.service";
 import { OidcModule } from "../oidc/oidc.module";
-import { UserModule } from "src/user/user.module";
+import { UserModule } from "../user/user.module";
 
 @Module({
   imports: [

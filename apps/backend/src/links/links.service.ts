@@ -15,8 +15,8 @@ import { TeamRepository } from "../teams/repositories/team.repository";
 import { FolderRepository } from "../folders/repositories/folder.repository";
 import { GetLinksQueryDto } from "./dto/get-links-query.dto";
 import { LinkMapper } from "./mappers/link.mapper";
-import { Folder } from "src/folders/entities/folder.entity";
-import { Team } from "src/teams/entities/team.entity";
+import { Folder } from "../folders/entities/folder.entity";
+import { Team } from "../teams/entities/team.entity";
 
 /**
  * 디폴트로 설정된 슬랙 채널 ID (임시 하드코딩)
