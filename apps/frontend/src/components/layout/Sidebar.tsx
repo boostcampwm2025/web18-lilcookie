@@ -49,11 +49,11 @@ const Sidebar = ({ teams, onCreateTeam }: SidebarProps) => {
           <div className="mt-2 ml-4 space-y-1">
             {teams.map((team) => (
               <button
-                key={team.uuid}
-                onClick={() => handleTeamClick(team.uuid)}
+                key={team.teamUuid}
+                onClick={() => handleTeamClick(team.teamUuid)}
                 className="w-full text-left px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
               >
-                {team.name}
+                {team.teamName}
               </button>
             ))}
           </div>
