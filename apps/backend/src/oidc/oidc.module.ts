@@ -5,7 +5,7 @@ import { OidcService } from "./oidc.service";
 import { OidcGuard } from "./guards/oidc.guard";
 import { TeamGuard } from "./guards/team.guard";
 import { ScopesGuard } from "./guards/scopes.guard";
-import { UserModule } from "src/user/user.module";
+import { UserModule } from "../user/user.module";
 
 @Module({
   imports: [

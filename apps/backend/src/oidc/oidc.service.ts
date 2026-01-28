@@ -19,7 +19,7 @@ export class OidcService {
   private audience: string;
   private cachedJwks: JWKSResponse | null;
   private cacheExpiry: number;
-  private jwksFetchPromise: Promise<JWKSResponse> | null; // Cache the fetch promise
+  private jwksFetchPromise: Promise<JWKSResponse> | null; // 현재 진행 중인 JWKS fetch 프로미스
   private readonly CACHE_DURATION = 300000;
   private readonly MAX_RETRIES = 3;
 
@@ -35,12 +35,16 @@ export class OidcService {
     this.jwksFetchPromise = null;
   }
 
+  /**
+   * 토큰 검증 및 페이로드 반환
+   * @param token OIDC 액세스 토큰
+   * @returns 검증된 토큰의 페이로드
+   */
   async validateToken(token: string): Promise<OidcAccessTokenPayload> {
     try {
       const header = jose.decodeProtectedHeader(token);
-
       if (!header.kid) {
-        throw new UnauthorizedException("Invalid token: missing kid");
+        throw new UnauthorizedException("유효하지 않은 토큰: kid가 없습니다.");
       }
 
       const publicKey = await this.getPublicKey(header.kid);
@@ -53,21 +57,23 @@ export class OidcService {
       return this.validatePayload(payload);
     } catch (error) {
       if (error instanceof jose.errors.JOSEError) {
-        throw new UnauthorizedException("Invalid token signature");
+        throw new UnauthorizedException("유효하지 않은 토큰 서명입니다.");
       }
-      // Preserve original error context for better debugging
-      throw new UnauthorizedException(
-        `Token validation failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      // 기타 오류 처리
+      throw new UnauthorizedException(`토큰 검증 실패: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
+  /**
+   * 캐시된 JWKS에서 공개 키를 가져오거나, 없으면 원격에서 가져옴
+   * @param kid 키 ID
+   * @returns 공개 키
+   */
   private async getPublicKey(kid: string): Promise<CryptoKey | Uint8Array> {
     const now = Date.now();
 
     if (this.cachedJwks && now < this.cacheExpiry) {
       const key = this.cachedJwks.keys.find((k) => k.kid === kid);
-
       if (!key) {
         throw new UnauthorizedException("Invalid token: key not found");
       }
@@ -75,47 +81,58 @@ export class OidcService {
       return jose.importJWK(key);
     }
 
-    // If a fetch is already in progress, wait for it
+    // JWKS가 캐시되어 있지 않거나 만료된 경우
     if (this.jwksFetchPromise) {
       const jwks = await this.jwksFetchPromise;
       const key = jwks.keys.find((k) => k.kid === kid);
       if (!key) {
-        throw new UnauthorizedException("Invalid token: key not found");
+        throw new UnauthorizedException("유효하지 않은 토큰: 키를 찾을 수 없습니다.");
       }
+
       return jose.importJWK(key);
     }
 
-    // Start a new fetch and cache the promise
+    // 새로운 JWKS fetch 시작
     this.jwksFetchPromise = this.fetchJwksWithExponentialBackoff(this.jwksUrl);
 
     try {
       const jwks = await this.jwksFetchPromise;
       this.cachedJwks = jwks;
       this.cacheExpiry = now + this.CACHE_DURATION;
-      this.jwksFetchPromise = null; // Clear the promise after success
+      this.jwksFetchPromise = null; // 성공 후 프로미스 초기화
 
       const key = jwks.keys.find((k) => k.kid === kid);
       if (!key) {
-        throw new UnauthorizedException("Invalid token: key not found");
+        throw new UnauthorizedException("유효하지 않은 토큰: 키를 찾을 수 없습니다.");
       }
+
       return jose.importJWK(key);
     } catch (error) {
-      this.jwksFetchPromise = null; // Clear on error too
+      this.jwksFetchPromise = null; // 오류 발생 시에도 프로미스 초기화
       throw error;
     }
   }
 
+  /**
+   * 토큰 페이로드 유효성 검사
+   * @param payload 토큰 페이로드
+   * @returns 유효한 OidcAccessTokenPayload
+   */
   private validatePayload(payload: jose.JWTPayload): OidcAccessTokenPayload {
     const result = OidcAccessTokenPayloadSchema.safeParse(payload);
-
     if (!result.success) {
       const errorMessage = result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(", ");
-      throw new UnauthorizedException(`Invalid token: ${errorMessage}`);
+      throw new UnauthorizedException(`유효하지 않은 토큰 페이로드: ${errorMessage}`);
     }
 
     return result.data;
   }
 
+  /**
+   * JWKS를 지수 백오프로 가져오기
+   * @param url JWKS URL
+   * @returns JWKS 응답
+   */
   private async fetchJwksWithExponentialBackoff(url: string): Promise<JWKSResponse> {
     const { data } = await firstValueFrom(
       this.httpService
