@@ -10,7 +10,7 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "start": "nest start",
     "prestart:dev": "npm run prisma:deploy && npm run prisma:generate",
-    "start:dev": "nest start --watch",
+    "dev": "nest start --watch",
     "prestart:debug": "npm run prisma:deploy && npm run prisma:generate",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",

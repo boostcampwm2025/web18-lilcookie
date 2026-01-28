@@ -5,8 +5,10 @@
   "private": true,
   "scripts": {
     "preinstall": "npx only-allow pnpm && corepack enable",
-    "start:dev": "concurrently \"pnpm --filter backend start:dev\" \"pnpm --filter frontend dev\" \"pnpm --filter extension-wxt dev\"",
-    "build": "pnpm --filter frontend build && pnpm --filter backend build",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
     "docker:dev:up": "docker compose --env-file infra/docker/.env.development.local -f infra/docker/compose.dev.yaml up -d",
     "docker:dev:down": "docker compose --env-file infra/docker/.env.development.local -f infra/docker/compose.dev.yaml down",
     "docker:dev:logs": "docker compose --env-file infra/docker/.env.development.local -f infra/docker/compose.dev.yaml logs -f",
@@ -16,7 +18,8 @@
     "docker:clean": "docker system prune -f"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "turbo": "^2.7.6"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
