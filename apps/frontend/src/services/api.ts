@@ -8,6 +8,7 @@ import {
 } from "./authentikAuth";
 import type {
   GetTeamMembersResponseData,
+  GetTeamWebhooksResponseData,
   JoinTeamResponseData,
 } from "@repo/api";
 
@@ -273,6 +274,54 @@ export const teamApi = {
   // DELETE /teams/:teamUuid - 팀 탈퇴
   leaveTeam: async (teamUuid: string): Promise<void> => {
     await api.delete(`teams/${teamUuid}`);
+  },
+
+  // ---------- webhook ---------
+  // GET /teams/:teamUuid/webhooks - 팀에 등록된 웹훅 조회
+  getTeamWebhooks: async (
+    teamUuid: string,
+  ): Promise<ApiResponse<GetTeamWebhooksResponseData[]>> => {
+    const response = await api.get(`teams/${teamUuid}/webhooks`);
+    return response.data;
+  },
+
+  // POST /teams/:teamUuid/webhooks - 웹훅 등록
+  addTeamWebhooks: async (
+    teamUuid: string,
+    url: string,
+  ): Promise<ApiResponse<GetTeamWebhooksResponseData>> => {
+    const response = await api.post(`teams/${teamUuid}/webhooks`, { url });
+    return response.data;
+  },
+
+  // DELETE /teams/:teamUuid/webhooks/:webhookdUuid - 웹훅 삭제
+  deleteTeamWebhooks: async (
+    teamUuid: string,
+    webhookUuid: string,
+  ): Promise<void> => {
+    await api.delete(`teams/${teamUuid}/webhooks/${webhookUuid}`);
+  },
+
+  // PATCH /teams:teamUuid/webhooks/:webhookUuid/activate - 특정 훅을 활성화
+  activateTeamWebhooks: async (
+    teamUuid: string,
+    webhookUuid: string,
+  ): Promise<ApiResponse<GetTeamWebhooksResponseData>> => {
+    const response = await api.patch(
+      `teams/${teamUuid}/webhooks/${webhookUuid}/activate`,
+    );
+    return response.data;
+  },
+
+  // PATCH /teams:teamUuid/webhooks/:webhookUuid/deactivate - 특정 훅을 비활성화
+  deactivateTeamWebhooks: async (
+    teamUuid: string,
+    webhookUuid: string,
+  ): Promise<ApiResponse<GetTeamWebhooksResponseData>> => {
+    const response = await api.patch(
+      `teams/${teamUuid}/webhooks/${webhookUuid}/deactivate`,
+    );
+    return response.data;
   },
 };
 
