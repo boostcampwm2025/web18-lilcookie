@@ -1,6 +1,9 @@
 import type { Request } from "express";
 import { z } from "zod";
 
+/**
+ * OIDC 액세스 토큰 페이로드 스키마 (Zod validation)
+ */
 export const OidcAccessTokenPayloadSchema = z.object({
   sub: z.string(),
   iss: z.string(),
@@ -19,8 +22,6 @@ export const OidcAccessTokenPayloadSchema = z.object({
   preferred_username: z.string().optional(),
   nickname: z.string().optional(),
   groups: z.array(z.string()).optional(),
-  roles: z.array(z.string()),
-  team_id: z.string().nullable(),
   azp: z.string().optional(),
   uid: z.string().optional(),
   scope: z.string(),
@@ -36,4 +37,24 @@ export type AuthenticatedUser = OidcAccessTokenPayload & {
 
 export interface AuthenticatedRequest extends Request {
   user: AuthenticatedUser;
+}
+
+/**
+ * JWK with required kid field
+ */
+export interface JWKWithKid {
+  kty: string;
+  kid: string;
+  use?: string;
+  alg?: string;
+  n?: string;
+  e?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * JWKS 응답 타입
+ */
+export interface JWKSResponse {
+  keys: JWKWithKid[];
 }

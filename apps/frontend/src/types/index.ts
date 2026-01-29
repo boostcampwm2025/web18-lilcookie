@@ -47,3 +47,19 @@ export interface Team {
   createdAt: string;
   role: "owner" | "member";
 }
+
+// OAuth App 타입
+export interface OAuthApp {
+  oauthAppUuid: string;
+  name: string;
+  clientId: string;
+  redirectUris: string[];
+  scopes: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+// OAuth App 생성 응답 (Secret 포함)
+export interface OAuthAppCreated extends OAuthApp {
+  clientSecret: string;
+}

@@ -4,7 +4,7 @@ import { TeamsController } from "./teams.controller";
 import { TeamsService } from "./teams.service";
 import { Team, TeamMember } from "./entities/team.entity";
 import { TeamRole } from "./constants/team-role.constants";
-import type { AuthenticatedUser } from "../oidc/interfaces/oidc.interface";
+import type { AuthenticatedUser } from "../oidc/types/oidc.types";
 import type { SuccessResponse } from "../common/builders/response.type";
 import type { TeamResponseDto } from "./dto/team.response.dto";
 

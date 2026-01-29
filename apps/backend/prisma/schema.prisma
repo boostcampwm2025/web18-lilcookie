@@ -16,9 +16,10 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
 
   // 관계 설정
-  memberships Member[] // 사용자가 '멤버'로서 소속된 팀 목록
-  folders     Folder[] // 사용자가 직접 생성한 폴더들
-  links       Link[]   // 사용자가 직접 생성한 링크들
+  memberships Member[]   // 사용자가 '멤버'로서 소속된 팀 목록
+  folders     Folder[]   // 사용자가 직접 생성한 폴더들
+  links       Link[]     // 사용자가 직접 생성한 링크들
+  oauthApps   OAuthApp[] // 사용자가 생성한 OAuth 앱들
 
   @@map("users")
 }
@@ -141,7 +142,35 @@ model TeamWebhook {
 }
 
 // --------------------------------------------------------
-// 7. TeamTokenUsage (팀별 ai 토큰 사용량 관리)
+// 7. OAuthApp (사용자가 생성한 OAuth 클라이언트 앱)
+// --------------------------------------------------------
+model OAuthApp {
+  id           Int      @id @default(autoincrement())
+  uuid         String   @unique @default(uuid()) // 외부 노출용 식별자
+  name         String // 앱 이름 (사용자 지정)
+  clientId     String   @unique @map("client_id") // Authentik에서 사용할 Client ID
+  redirectUris String   @map("redirect_uris") // JSON 배열 문자열
+  scopes       String   @default("openid profile links:read") // 허용된 스코프
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Authentik 연동 정보
+  authentikProviderId Int    @unique @map("authentik_provider_id") // Authentik OAuth2 Provider PK
+  authentikAppId      String @unique @map("authentik_app_id") // Authentik Application UUID
+  issuer              String @default("https://auth.localhost/application/o/teamstash/") // JWT issuer
+  jwksUrl             String @default("https://auth.localhost/application/o/teamstash/jwks/") @map("jwks_url") // JWKS 엔드포인트 URL
+
+  // 소유자 정보
+  ownerId Int  @map("owner_id")
+  owner   User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([issuer])
+  @@map("oauth_apps")
+}
+
+// --------------------------------------------------------
+// 8. TeamTokenUsage (팀별 ai 토큰 사용량 관리)
 // --------------------------------------------------------
 model TeamTokenUsage {
   id         Int      @id @default(autoincrement())

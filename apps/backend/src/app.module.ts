@@ -9,6 +9,7 @@ import { FoldersModule } from "./folders/folders.module";
 import { OidcModule } from "./oidc/oidc.module";
 import { TeamsModule } from "./teams/teams.module";
 import { WebhooksModule } from "./webhooks/webhooks.module";
+import { OAuthAppsModule } from "./oauth-apps/oauth-apps.module";
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { WebhooksModule } from "./webhooks/webhooks.module";
     OidcModule,
     TeamsModule,
     WebhooksModule,
+    OAuthAppsModule,
   ],
 })
 export class AppModule {}

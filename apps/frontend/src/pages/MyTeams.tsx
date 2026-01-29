@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LogOut, Users, Crown } from "lucide-react";
+import { LogOut, Users, Crown, Key } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import Sidebar from "../components/layout/Sidebar";
@@ -39,9 +39,16 @@ const MyTeams = () => {
         <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-end">
           <div className="flex items-center gap-3">
             {/* 사용자 이름 */}
-            <span className="text-sm font-medium text-gray-700">
-              {user?.nickname || user?.email?.split("@")[0]}
-            </span>
+            <span className="text-sm font-medium text-gray-700">{user?.nickname || user?.email?.split("@")[0]}</span>
+
+            {/* OAuth 연결하기 버튼 */}
+            <button
+              onClick={() => navigate("/oauth-apps")}
+              className="flex items-center gap-2 px-3 py-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+            >
+              <Key className="w-4 h-4" />
+              <span className="text-sm">OAuth 연결</span>
+            </button>
 
             {/* 로그아웃 */}
             <button
@@ -69,12 +76,8 @@ const MyTeams = () => {
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                   <Users className="w-8 h-8 text-gray-400" />
                 </div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                  가입한 팀이 없습니다
-                </h2>
-                <p className="text-sm text-gray-500 mb-6">
-                  새로운 팀을 만들거나 기존 팀에 가입하여 시작하세요
-                </p>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">가입한 팀이 없습니다</h2>
+                <p className="text-sm text-gray-500 mb-6">새로운 팀을 만들거나 기존 팀에 가입하여 시작하세요</p>
                 <button
                   onClick={() => setIsModalOpen(true)}
                   className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium cursor-pointer"
@@ -102,9 +105,7 @@ const MyTeams = () => {
                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
                       <Users className="w-5 h-5 text-blue-600" />
                     </div>
-                    <h3 className="font-semibold text-gray-900 wrap-break-word min-w-0">
-                      {team.teamName}
-                    </h3>
+                    <h3 className="font-semibold text-gray-900 wrap-break-word min-w-0">{team.teamName}</h3>
                   </div>
                 </button>
               ))}
@@ -114,11 +115,7 @@ const MyTeams = () => {
       </div>
 
       {/* 팀 만들기 모달 */}
-      <CreateTeamModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onTeamCreated={handleTeamCreated}
-      />
+      <CreateTeamModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onTeamCreated={handleTeamCreated} />
     </div>
   );
 };

@@ -24,7 +24,7 @@ import { GetLinksQueryDto } from "./dto/get-links-query.dto";
 import { OidcGuard } from "../oidc/guards/oidc.guard";
 import { RequireScopes } from "../oidc/guards/scopes.decorator";
 import { CurrentUser } from "../oidc/decorators/current-user.decorator";
-import type { AuthenticatedUser } from "../oidc/interfaces/oidc.interface";
+import type { AuthenticatedUser } from "../oidc/types/oidc.types";
 
 @Controller("links")
 @UseGuards(OidcGuard)
