@@ -10,14 +10,18 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Copy frontend package.json
 COPY apps/frontend/package.json ./apps/frontend/
+COPY packages/api/package.json ./packages/api/
 
 # Install frontend workspace dependencies
-RUN pnpm install --frozen-lockfile --filter frontend
+RUN pnpm install --frozen-lockfile --filter frontend...
 
 # Copy frontend source code
+COPY packages/api ./packages/api
 COPY apps/frontend ./apps/frontend
 
 # Build the application
+RUN pnpm --filter @repo/api build
+
 WORKDIR /app/apps/frontend
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
