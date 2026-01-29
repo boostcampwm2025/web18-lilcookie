@@ -1,5 +1,9 @@
 # Team Stash
 
+[홈페이지](https://docs.teamstash.eupthere.uk)
+
+[대시보드](https://app.teamstash.eupthere.uk)
+
 https://github.com/user-attachments/assets/c3df09bc-d69c-4263-80c4-af6e89b5e62d
 
 ### **📖 프로젝트 소개**
