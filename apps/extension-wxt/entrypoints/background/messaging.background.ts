@@ -13,6 +13,10 @@ export async function summarizeContent(content: string) {
 
     const { selectedTeamUuid: teamUuid } = authState.userInfo;
 
+    if (!teamUuid) {
+      return { success: false, error: "팀을 선택해주세요." };
+    }
+
     const response = await api.post<{ data: unknown }>(
       "/ai/summary",
       { content: content.slice(0, MAX_AI_INPUT_CHARACTER_COUNT) },
