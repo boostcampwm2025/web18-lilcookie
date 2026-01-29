@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CreatedBySchema, FolderBaseSchema } from "../common/common.schema";
+import { CreatedBySchema, FolderBaseSchema } from "../common/common.schema.js";
 
 /** 폴더 생성 요청 */
 export const CreateFolderRequestSchema = z.object({

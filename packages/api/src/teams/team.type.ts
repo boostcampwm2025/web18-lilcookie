@@ -5,7 +5,7 @@ import {
   JoinTeamResponseDataSchema,
   PreviewTeamRespondDataSchema,
   TeamResponseDataSchema,
-} from "./team.schema";
+} from "./team.schema.js";
 
 export type CreateTeamRequest = z.infer<typeof CreateTeamRequestSchema>;
 export type TeamResponseData = z.infer<typeof TeamResponseDataSchema>;
