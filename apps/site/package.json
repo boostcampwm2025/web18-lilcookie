@@ -1,0 +1,13 @@
+{
+  "name": "site",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "packageManager": "pnpm@10.28.0",
+  "devDependencies": {
+    "vitepress": "2.0.0-alpha.15"
+  }
+}
