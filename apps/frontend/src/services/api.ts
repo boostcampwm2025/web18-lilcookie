@@ -217,12 +217,12 @@ export const folderApi = {
     return response.data;
   },
 
-  // PUT /api/folders/:folderId - 폴더 이름 수정
+  // PATCH /folders/:folderUuid - 폴더 이름 수정
   updateFolder: async (
-    folderId: string,
+    folderUuid: string,
     data: { folderName: string },
   ): Promise<ApiResponse<Folder>> => {
-    const response = await api.put(`/folders/${folderId}`, data);
+    const response = await api.patch(`/folders/${folderUuid}`, data);
     return response.data;
   },
 

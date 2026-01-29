@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Folder,
   FolderPlus,
+  Trash2,
   Settings,
 } from "lucide-react";
 import type { Team, Folder as FolderType } from "../../types";
@@ -14,18 +15,28 @@ import { useTeams } from "../../contexts/TeamContext";
 interface SidebarProps {
   onCreateTeam?: () => void;
   onCreateFolder?: (teamUuid: string) => void;
+  onDeleteFolder?: (
+    teamUuid: string,
+    folderUuid: string,
+    folderName: string,
+  ) => void;
+  selectedFolderUuid?: string | null;
+  onFolderSelect?: (folder: FolderType) => void;
+  folderRefreshKey?: number; // 이 값이 변경되면 선택된 팀의 폴더 캐시를 무효화하고 다시 조회
 }
 
-const Sidebar = ({ onCreateTeam, onCreateFolder }: SidebarProps) => {
+const Sidebar = ({
+  onCreateTeam,
+  onCreateFolder,
+  onDeleteFolder,
+  selectedFolderUuid,
+  onFolderSelect,
+  folderRefreshKey,
+}: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { teams, loading } = useTeams();
   const { teamUuid: selectedTeamUuid } = useParams<{ teamUuid: string }>();
-
-  // URL에서 선택된 폴더 UUID 가져오기
-  const selectedFolderUuid = location.state?.selectedFolderUuid as
-    | string
-    | undefined;
 
   const isMyTeamsActive = location.pathname === "/my-teams";
   const isSettingPage = location.pathname.endsWith("/setting");
@@ -40,6 +51,10 @@ const Sidebar = ({ onCreateTeam, onCreateFolder }: SidebarProps) => {
   >({});
   // 호버 중인 팀
   const [hoveredTeamUuid, setHoveredTeamUuid] = useState<string | null>(null);
+  // 호버 중인 폴더
+  const [hoveredFolderUuid, setHoveredFolderUuid] = useState<string | null>(
+    null,
+  );
 
   // 이미 폴더를 조회한 팀 추적 (중복 API 호출 방지)
   const fetchedFoldersRef = useRef<Set<string>>(new Set());
@@ -66,7 +81,9 @@ const Sidebar = ({ onCreateTeam, onCreateFolder }: SidebarProps) => {
   // 선택된 팀의 폴더 조회 (URL 변경 시)
   useEffect(() => {
     if (!selectedTeamUuid) return;
-    if (fetchedFoldersRef.current.has(selectedTeamUuid)) return;
+
+    // 이미 폴더 데이터가 있으면 스킵
+    if (teamFolders[selectedTeamUuid]) return;
 
     let cancelled = false;
 
@@ -93,16 +110,48 @@ const Sidebar = ({ onCreateTeam, onCreateFolder }: SidebarProps) => {
     return () => {
       cancelled = true;
     };
-  }, [selectedTeamUuid]);
+  }, [selectedTeamUuid, teamFolders]);
 
-  // 팀이 펼쳐져 있는지 계산 (선택된 팀 또는 수동 펼침)
+  // folderRefreshKey가 변경되면 선택된 팀의 폴더 캐시 무효화 및 재조회
+  useEffect(() => {
+    if (folderRefreshKey === undefined || folderRefreshKey === 0) return;
+    if (!selectedTeamUuid) return;
+
+    // 폴더 다시 조회 (캐시 무효화 포함)
+    const refetchFolders = async () => {
+      fetchedFoldersRef.current.delete(selectedTeamUuid);
+
+      try {
+        fetchedFoldersRef.current.add(selectedTeamUuid);
+        const response = await folderApi.getFolders(selectedTeamUuid);
+        if (response.success) {
+          setTeamFolders((prev) => ({
+            ...prev,
+            [selectedTeamUuid]: response.data,
+          }));
+        }
+      } catch (error) {
+        console.error("폴더 조회 실패:", error);
+        fetchedFoldersRef.current.delete(selectedTeamUuid);
+      }
+    };
+
+    refetchFolders();
+    // selectedTeamUuid 변경 시에는 실행하지 않고, folderRefreshKey 변경 시에만 실행
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [folderRefreshKey]);
+
+  // 팀이 펼쳐져 있는지 계산 (수동 상태 우선, 없으면 선택된 팀만 펼침)
   const isTeamExpanded = (teamUuid: string): boolean => {
-    // 수동으로 토글한 상태가 있으면 그 값 사용
+    // 수동 상태가 있으면 그것을 따름 (선택된 팀도 접기 가능)
     if (manualExpandedTeams[teamUuid] !== undefined) {
       return manualExpandedTeams[teamUuid];
     }
-    // 기본: 선택된 팀은 펼침
-    return selectedTeamUuid === teamUuid;
+    // 선택된 팀은 기본적으로 펼침
+    if (selectedTeamUuid === teamUuid) {
+      return true;
+    }
+    return false;
   };
 
   const toggleTeamExpand = async (teamUuid: string) => {
@@ -123,10 +172,19 @@ const Sidebar = ({ onCreateTeam, onCreateFolder }: SidebarProps) => {
     navigate(`/team/${team.teamUuid}`, { state: { team } });
   };
 
-  const handleFolderClick = (team: Team, folder: FolderType) => {
-    navigate(`/team/${team.teamUuid}`, {
-      state: { team, selectedFolderUuid: folder.folderUuid },
-    });
+  const handleFolderClick = (folder: FolderType, team: Team) => {
+    // 이미 선택된 폴더면 아무것도 하지 않음
+    if (selectedFolderUuid === folder.folderUuid) return;
+
+    // 현재 선택된 팀의 폴더면 콜백으로 처리 (페이지 이동 없이)
+    if (selectedTeamUuid === team.teamUuid) {
+      onFolderSelect?.(folder);
+    } else {
+      // 다른 팀의 폴더면 해당 팀 페이지로 이동 + 폴더 선택
+      navigate(`/team/${team.teamUuid}`, {
+        state: { team, selectedFolderUuid: folder.folderUuid },
+      });
+    }
   };
 
   const handleSettingClick = (e: React.MouseEvent, teamUuid: string) => {
@@ -241,35 +299,88 @@ const Sidebar = ({ onCreateTeam, onCreateFolder }: SidebarProps) => {
                   </div>
 
                   {/* 폴더 목록 - 애니메이션 적용 */}
-                  <div
-                    className={`ml-6 space-y-0.5 overflow-hidden transition-all duration-200 ease-in-out ${
-                      isExpanded && folders.length > 0
-                        ? "max-h-96 opacity-100 mt-1"
-                        : "max-h-0 opacity-0"
-                    }`}
-                  >
-                    {folders.map((folder) => {
-                      const isFolderSelected =
-                        isSelected &&
-                        selectedFolderUuid === folder.folderUuid &&
-                        !isSettingPage;
+                  {(() => {
+                    // 선택된 폴더가 현재 폴더 목록에 있는지 확인
+                    const selectedFolderInList =
+                      selectedFolderUuid &&
+                      folders.some((f) => f.folderUuid === selectedFolderUuid);
 
-                      return (
-                        <button
-                          key={folder.folderUuid}
-                          onClick={() => handleFolderClick(team, folder)}
-                          className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left text-sm transition-colors cursor-pointer ${
-                            isFolderSelected
-                              ? "bg-blue-100 text-blue-700 font-medium"
-                              : "text-gray-600 hover:bg-gray-100"
-                          }`}
-                        >
-                          <Folder className="w-4 h-4 shrink-0" />
-                          <span className="truncate">{folder.folderName}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                    return (
+                      <div
+                        className={`ml-6 space-y-0.5 overflow-hidden transition-all duration-200 ease-in-out ${
+                          isExpanded && folders.length > 0
+                            ? "max-h-96 opacity-100 mt-1"
+                            : "max-h-0 opacity-0"
+                        }`}
+                      >
+                        {folders.map((folder, index) => {
+                          // 선택된 폴더가 없거나 폴더 목록에 없으면 첫번째 폴더(기본 폴더)를 자동 선택
+                          const isFolderSelected =
+                            isSelected &&
+                            !isSettingPage &&
+                            (selectedFolderUuid === folder.folderUuid ||
+                              (!selectedFolderInList && index === 0));
+
+                          const isFolderHovered =
+                            hoveredFolderUuid === folder.folderUuid;
+                          const isDefaultFolder = index === 0; // 첫번째 폴더는 기본 폴더
+
+                          return (
+                            <div
+                              key={folder.folderUuid}
+                              role="button"
+                              tabIndex={0}
+                              className={`group flex items-center gap-1 px-2 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                                isFolderSelected
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "text-gray-600 hover:bg-gray-100"
+                              }`}
+                              onMouseEnter={() =>
+                                setHoveredFolderUuid(folder.folderUuid)
+                              }
+                              onMouseLeave={() => setHoveredFolderUuid(null)}
+                              onClick={() => handleFolderClick(folder, team)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  handleFolderClick(folder, team);
+                                }
+                              }}
+                            >
+                              <Folder className="w-4 h-4 shrink-0" />
+                              <span
+                                className={`text-sm flex-1 truncate ${isFolderSelected ? "font-medium" : ""}`}
+                              >
+                                {folder.folderName}
+                              </span>
+
+                              {/* 호버 시 삭제 버튼 (기본 폴더 제외) */}
+                              {!isDefaultFolder && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteFolder?.(
+                                      team.teamUuid,
+                                      folder.folderUuid,
+                                      folder.folderName,
+                                    );
+                                  }}
+                                  className={`p-1 hover:bg-gray-200 rounded cursor-pointer transition-opacity duration-150 ${
+                                    isFolderHovered
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  }`}
+                                  title="폴더 삭제"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 text-gray-500" />
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })}
