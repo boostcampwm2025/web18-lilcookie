@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
 import { OidcService } from "../oidc.service";
-import type { AuthenticatedRequest } from "../interfaces/oidc.interface";
+import type { AuthenticatedRequest } from "../types/oidc.types";
 import { UserService } from "../../user/user.service";
 
 @Injectable()
@@ -27,8 +27,8 @@ export class OidcGuard implements CanActivate {
     const token = parts[1];
 
     try {
-      // 토큰 검증 및 페이로드 추출
-      const payload = await this.oidcService.validateToken(token);
+      // 토큰 검증 및 페이로드 추출 (issuer 기반 동적 검증)
+      const payload = await this.oidcService.validateTokenWithIssuer(token);
 
       const preferred_username = payload.preferred_username;
       if (!preferred_username) {
