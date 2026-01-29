@@ -5,10 +5,12 @@ import {
   useContext,
   useState,
   useEffect,
+  useCallback,
   type ReactNode,
 } from "react";
 import { teamApi } from "../services/api";
 import type { Team } from "../types";
+import { useAuth } from "./AuthContext";
 
 interface TeamsContextType {
   teams: Team[];
@@ -20,10 +22,17 @@ interface TeamsContextType {
 const TeamsContext = createContext<TeamsContextType | null>(null);
 
 export const TeamsProvider = ({ children }: { children: ReactNode }) => {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const refreshTeams = async () => {
+  const refreshTeams = useCallback(async () => {
+    if (!isAuthenticated) {
+      setTeams([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await teamApi.getMyTeams();
@@ -35,15 +44,23 @@ export const TeamsProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated]);
 
-  const addTeam = (team: Team) => {
+  const addTeam = useCallback((team: Team) => {
     setTeams((prev) => [...prev, team]);
-  };
-
-  useEffect(() => {
-    refreshTeams();
   }, []);
+
+  // 인증 상태가 확정되고 로그인된 경우에만 팀 목록 조회
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (isAuthenticated) {
+      refreshTeams();
+    } else {
+      setTeams([]);
+      setLoading(false);
+    }
+  }, [isAuthenticated, authLoading, refreshTeams]);
 
   return (
     <TeamsContext.Provider value={{ teams, loading, refreshTeams, addTeam }}>
