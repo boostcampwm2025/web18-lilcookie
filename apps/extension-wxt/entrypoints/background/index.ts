@@ -1,4 +1,4 @@
-import { login, logout, getAuthState } from "./auth.background";
+import { login, logout, getAuthState, selectTeam } from "./auth.background";
 import { summarizeContent, saveLink } from "./messaging.background";
 import {
   setupAlarms,
@@ -31,6 +31,16 @@ export default defineBackground(() => {
         return true;
       case "getAuthState":
         getAuthState().then(sendResponse);
+        return true;
+      case "selectTeam":
+        selectTeam(request.teamUuid)
+          .then(() => sendResponse({ success: true }))
+          .catch((error) =>
+            sendResponse({
+              success: false,
+              error: error instanceof Error ? error.message : "팀 변경 실패",
+            }),
+          );
         return true;
     }
   });

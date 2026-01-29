@@ -10,7 +10,7 @@ import CreateTeamModal from "../components/teams/CreateTeamModal";
 import LinkGrid from "../components/dashboard/LinkGrid";
 
 // TODO: 백엔드 연동 시 제거
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 // Mock 폴더 데이터 (팀별)
 const mockFoldersMap: Record<string, FolderType[]> = {

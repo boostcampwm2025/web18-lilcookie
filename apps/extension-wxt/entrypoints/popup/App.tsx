@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import type { Team } from "../../schemas/auth.type";
 import "./App.css";
 
 // 상수 정의
@@ -26,6 +27,8 @@ function App() {
   const [dashboardUrl, setDashboardUrl] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [selectedTeamUuid, setSelectedTeamUuid] = useState("");
 
   const aiButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -42,8 +45,15 @@ function App() {
       // 로그인 안 됐으면 나머지 로직 스킵
       if (!authState?.isLoggedIn) return;
 
-      if (authState.userInfo?.teamId) {
-        setDashboardUrl(`${BASE_URL}/${authState.userInfo.teamId.toLowerCase()}`);
+      if (authState.userInfo) {
+        const { teams: userTeams, selectedTeamUuid: storedTeamUuid } =
+          authState.userInfo;
+        setTeams(userTeams ?? []);
+        const nextTeamUuid = storedTeamUuid || userTeams?.[0]?.teamUuid || "";
+        setSelectedTeamUuid(nextTeamUuid);
+        if (nextTeamUuid) {
+          setDashboardUrl(`${BASE_URL}/team/${nextTeamUuid.toLowerCase()}`);
+        }
       }
 
       // 기존 탭 정보 가져오기 로직
@@ -315,6 +325,31 @@ function App() {
     }
   };
 
+  const handleTeamChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const nextTeamUuid = e.target.value;
+    const previousTeamUuid = selectedTeamUuid;
+
+    setSelectedTeamUuid(nextTeamUuid);
+    setDashboardUrl(
+      nextTeamUuid ? `${BASE_URL}/team/${nextTeamUuid.toLowerCase()}` : "",
+    );
+
+    const response = await chrome.runtime.sendMessage({
+      action: "selectTeam",
+      teamUuid: nextTeamUuid,
+    });
+
+    if (!response?.success) {
+      setSelectedTeamUuid(previousTeamUuid);
+      setDashboardUrl(
+        previousTeamUuid
+          ? `${BASE_URL}/team/${previousTeamUuid.toLowerCase()}`
+          : "",
+      );
+      alert("팀 변경 실패: " + (response?.error || "알 수 없는 오류"));
+    }
+  };
+
   // 로딩 중
   if (isAuthLoading) {
     return (
@@ -423,6 +458,27 @@ function App() {
           <h2 className="page-title">{tab?.title || "Loading..."}</h2>
           <p className="page-url">{tab?.url || "Loading..."}</p>
         </div>
+      </div>
+
+      {/* Team Selection */}
+      <div className="team-select">
+        <label htmlFor="teamSelect">팀 선택</label>
+        <select
+          id="teamSelect"
+          value={selectedTeamUuid}
+          onChange={handleTeamChange}
+          disabled={teams.length === 0}
+        >
+          {teams.length === 0 ? (
+            <option value="">참여 중인 팀이 없습니다</option>
+          ) : (
+            teams.map((team) => (
+              <option key={team.teamUuid} value={team.teamUuid}>
+                {team.teamName}
+              </option>
+            ))
+          )}
+        </select>
       </div>
 
       {/* Form Section */}

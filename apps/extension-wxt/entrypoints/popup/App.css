@@ -310,6 +310,43 @@ input[type="text"]::placeholder {
   border-top: 1px solid #f3f4f6;
 }
 
+.team-select {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.team-select label {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.team-select select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #374151;
+  background-color: #ffffff;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.team-select select:focus {
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.1);
+}
+
+.team-select select:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
 .dashboard-link {
   font-size: 13px;
   color: #4f46e5;
