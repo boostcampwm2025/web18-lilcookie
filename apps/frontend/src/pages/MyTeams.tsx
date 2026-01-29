@@ -16,7 +16,7 @@ const mockTeams: Team[] = [
     teamUuid: "team-uuid-1",
     teamName: "개발팀",
     createdAt: "2024-06-15T10:20:30Z",
-    role: "admin",
+    role: "owner",
   },
   {
     teamUuid: "team-uuid-2",
@@ -153,10 +153,10 @@ const MyTeams = () => {
                   onClick={() => handleTeamClick(team)}
                   className="bg-white rounded-xl border border-gray-200 p-6 text-left hover:border-blue-300 hover:shadow-md transition-all cursor-pointer relative"
                 >
-                  {team.role === "admin" && (
+                  {team.role === "owner" && (
                     <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-600 rounded-full">
                       <Crown className="w-3 h-3" />
-                      <span className="text-xs font-medium">Admin</span>
+                      <span className="text-xs font-medium">Owner</span>
                     </div>
                   )}
                   <div className="flex items-center gap-3 mb-3 pr-16">
