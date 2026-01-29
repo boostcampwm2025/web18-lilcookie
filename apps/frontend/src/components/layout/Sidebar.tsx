@@ -194,7 +194,33 @@ const Sidebar = ({
 
   const handleCreateFolderClick = (e: React.MouseEvent, teamUuid: string) => {
     e.stopPropagation();
+
+    // 선택된 팀이 아닌 경우 alert 표시
+    if (teamUuid !== selectedTeamUuid) {
+      const targetTeam = teams.find((t) => t.teamUuid === teamUuid);
+      const teamName = targetTeam?.teamName || "해당";
+      alert(`${teamName} 팀 페이지에서 폴더를 생성할 수 있습니다.`);
+      return;
+    }
+
     onCreateFolder?.(teamUuid);
+  };
+
+  const handleDeleteFolderClick = (
+    e: React.MouseEvent,
+    team: Team,
+    folderUuid: string,
+    folderName: string,
+  ) => {
+    e.stopPropagation();
+
+    // 선택된 팀이 아닌 경우 alert 표시
+    if (team.teamUuid !== selectedTeamUuid) {
+      alert(`${team.teamName} 팀 페이지에서 폴더를 삭제할 수 있습니다.`);
+      return;
+    }
+
+    onDeleteFolder?.(team.teamUuid, folderUuid, folderName);
   };
 
   return (
@@ -357,14 +383,14 @@ const Sidebar = ({
                               {/* 호버 시 삭제 버튼 (기본 폴더 제외) */}
                               {!isDefaultFolder && (
                                 <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDeleteFolder?.(
-                                      team.teamUuid,
+                                  onClick={(e) =>
+                                    handleDeleteFolderClick(
+                                      e,
+                                      team,
                                       folder.folderUuid,
                                       folder.folderName,
-                                    );
-                                  }}
+                                    )
+                                  }
                                   className={`p-1 hover:bg-gray-200 rounded cursor-pointer transition-opacity duration-150 ${
                                     isFolderHovered
                                       ? "opacity-100"
