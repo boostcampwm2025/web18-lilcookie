@@ -1,11 +1,14 @@
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Team } from "../types";
-import type { GetTeamMembersResponseData } from "@repo/api";
+import type {
+  GetTeamMembersResponseData,
+  GetTeamWebhooksResponseData,
+} from "@repo/api";
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useTeams } from "../contexts/TeamContext";
 import { teamApi } from "../services/api";
-import { Users, Copy, LogOut, Check, Crown } from "lucide-react";
+import { Users, Copy, LogOut, Check, Crown, Plus, Trash2 } from "lucide-react";
 import Sidebar from "../components/layout/Sidebar";
 import CreateTeamModal from "../components/teams/CreateTeamModal";
 
@@ -25,6 +28,12 @@ const SettingPage = () => {
   const [copied, setCopied] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // 웹훅 관련 state 추가
+  const [webhooks, setWebhooks] = useState<GetTeamWebhooksResponseData[]>([]);
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [isAddingWebhook, setIsAddingWebhook] = useState(false);
+  const [showWebhookInput, setShowWebhookInput] = useState(false);
 
   // 팀 정보 및 멤버 조회
   useEffect(() => {
@@ -70,6 +79,14 @@ const SettingPage = () => {
             );
           }
         }
+
+        // 웹훅 목록 가져오기
+        if (teamUuid) {
+          const webhooksResponse = await teamApi.getTeamWebhooks(teamUuid);
+          if (webhooksResponse.success) {
+            setWebhooks(webhooksResponse.data);
+          }
+        }
       } catch {
         setError("데이터를 불러오는 중 오류가 발생했습니다.");
       } finally {
@@ -107,9 +124,65 @@ const SettingPage = () => {
     }
   };
 
+  // 로그아웃
   const handleLogout = async () => {
     await logout();
     navigate("/login");
+  };
+
+  // 웹훅 추가
+  const handleAddWebhook = async () => {
+    if (!webhookUrl.trim() || !teamUuid) return;
+
+    try {
+      setIsAddingWebhook(true);
+      const response = await teamApi.addTeamWebhooks(
+        teamUuid,
+        webhookUrl.trim(),
+      );
+      if (response.success) {
+        setWebhooks((prev) => [...prev, response.data]);
+        setWebhookUrl("");
+        setShowWebhookInput(false);
+      }
+    } catch {
+      setError("웹훅 추가에 실패했습니다.");
+    } finally {
+      setIsAddingWebhook(false);
+    }
+  };
+
+  // 웹훅 삭제
+  const handleDeleteWebhook = async (webhookUuid: string) => {
+    if (!teamUuid) return;
+
+    try {
+      await teamApi.deleteTeamWebhooks(teamUuid, webhookUuid);
+      setWebhooks((prev) => prev.filter((w) => w.webhookUuid !== webhookUuid));
+    } catch {
+      setError("웹훅 삭제에 실패했습니다.");
+    }
+  };
+
+  // 웹훅 활성화/비활성화 토글
+  const handleToggleWebhook = async (webhook: GetTeamWebhooksResponseData) => {
+    if (!teamUuid) return;
+
+    try {
+      const response = webhook.isActive
+        ? await teamApi.deactivateTeamWebhooks(teamUuid, webhook.webhookUuid)
+        : await teamApi.activateTeamWebhooks(teamUuid, webhook.webhookUuid);
+
+      if (response.success) {
+        setWebhooks((prev) =>
+          prev.map((w) =>
+            w.webhookUuid === webhook.webhookUuid ? response.data : w,
+          ),
+        );
+      }
+    } catch {
+      setError("웹훅 상태 변경에 실패했습니다.");
+    }
   };
 
   // 날짜 포맷
@@ -245,6 +318,113 @@ const SettingPage = () => {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* 웹훅 관리 섹션 */}
+            <div className="bg-white rounded-xl p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                웹훅 관리 {isAdmin && <span className="text-sm font-normal text-gray-500">(Owner)</span>}
+              </h2>
+              <p className="text-sm text-gray-500 mb-4">
+                팀 내 이벤트 발생 시 데이터를 전송할 URL을 관리합니다.
+              </p>
+
+              {/* 웹훅 목록 */}
+              <div className="space-y-3 mb-4">
+                {webhooks.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-2">등록된 웹훅이 없습니다.</p>
+                ) : (
+                  webhooks.map((webhook) => (
+                    <div
+                      key={webhook.webhookUuid}
+                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
+                    >
+                      {/* 토글 스위치 - owner만 클릭 가능 */}
+                      {isAdmin ? (
+                        <button
+                          onClick={() => handleToggleWebhook(webhook)}
+                          className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${
+                            webhook.isActive ? "bg-blue-600" : "bg-gray-300"
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                              webhook.isActive ? "translate-x-5" : "translate-x-0"
+                            }`}
+                          />
+                        </button>
+                      ) : (
+                        <div
+                          className={`relative w-11 h-6 rounded-full ${
+                            webhook.isActive ? "bg-blue-600" : "bg-gray-300"
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full ${
+                              webhook.isActive ? "translate-x-5" : "translate-x-0"
+                            }`}
+                          />
+                        </div>
+                      )}
+
+                      {/* URL */}
+                      <span className="flex-1 text-sm text-gray-700 truncate">
+                        {webhook.url}
+                      </span>
+
+                      {/* 삭제 버튼 - owner만 표시 */}
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDeleteWebhook(webhook.webhookUuid)}
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* 웹훅 추가 - owner만 표시 */}
+              {isAdmin && (
+                showWebhookInput ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={webhookUrl}
+                      onChange={(e) => setWebhookUrl(e.target.value)}
+                      placeholder="https://전송받을-주소를-입력하세요..."
+                      className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={isAddingWebhook}
+                    />
+                    <button
+                      onClick={handleAddWebhook}
+                      disabled={!webhookUrl.trim() || isAddingWebhook}
+                      className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isAddingWebhook ? "추가 중..." : "추가"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowWebhookInput(false);
+                        setWebhookUrl("");
+                      }}
+                      className="px-3 py-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                    >
+                      취소
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowWebhookInput(true)}
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    웹훅 추가
+                  </button>
+                )
+              )}
             </div>
 
             {/* 팀 탈퇴 섹션 */}
