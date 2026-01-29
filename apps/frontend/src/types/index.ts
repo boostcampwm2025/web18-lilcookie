@@ -1,15 +1,17 @@
 // 링크 타입 - 백엔드 응답 구조
 export interface Link {
-  id: number;
-  uuid: string;
-  teamId: number;
+  linkUuid: string;
+  teamUuid: string;
+  folderUuid: string | null;
   url: string;
   title: string;
   tags: string[];
   summary: string;
-  createdAt: Date;
-  createdBy: number;
-  folderId: number | null;
+  createdAt: string;
+  createdBy: {
+    userUuid: string;
+    userName: string;
+  };
 }
 
 // 폴더 타입 - 백엔드 응답 구조
@@ -43,5 +45,5 @@ export interface Team {
   teamUuid: string;
   teamName: string;
   createdAt: string;
-  role: "admin" | "member";
+  role: "owner" | "member";
 }
