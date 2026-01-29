@@ -60,3 +60,21 @@ export async function saveLink(formData: SaveLinkFormData) {
     };
   }
 }
+
+export async function getFolders(teamUuid: string) {
+  try {
+    const response = await api.get("/folders", {
+      params: { teamUuid },
+    });
+
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("401")) {
+      return { success: false, error: "로그인이 필요합니다." };
+    }
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "폴더 조회 실패",
+    };
+  }
+}

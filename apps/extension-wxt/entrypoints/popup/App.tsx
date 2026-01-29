@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import type { Team } from "../../schemas/auth.type";
+import type { FolderResponseData } from "@repo/api";
 import "./App.css";
 
 // 상수 정의
@@ -29,6 +30,8 @@ function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeamUuid, setSelectedTeamUuid] = useState("");
+  const [folders, setFolders] = useState<FolderResponseData[]>([]);
+  const [selectedFolderUuid, setSelectedFolderUuid] = useState("");
 
   const aiButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -54,6 +57,7 @@ function App() {
         if (nextTeamUuid) {
           setDashboardUrl(`${BASE_URL}/team/${nextTeamUuid.toLowerCase()}`);
         }
+        await loadFolders(nextTeamUuid);
       }
 
       // 기존 탭 정보 가져오기 로직
@@ -296,6 +300,7 @@ function App() {
           .filter((v) => v !== "")
           .slice(0, MAX_TAG_COUNT),
         summary: comment.slice(0, MAX_CHARACTER_COUNT),
+        folderUuid: selectedFolderUuid || undefined,
       };
 
       setIsSaving(true);
@@ -347,6 +352,73 @@ function App() {
           : "",
       );
       alert("팀 변경 실패: " + (response?.error || "알 수 없는 오류"));
+      await loadFolders(previousTeamUuid);
+      return;
+    }
+
+    await loadFolders(nextTeamUuid);
+  };
+
+  const loadFolders = async (teamUuid: string) => {
+    if (!teamUuid) {
+      setFolders([]);
+      setSelectedFolderUuid("");
+      return;
+    }
+
+    const response = await chrome.runtime.sendMessage({
+      action: "getFolders",
+      teamUuid,
+    });
+
+    if (!response?.success) {
+      setFolders([]);
+      setSelectedFolderUuid("");
+      alert("폴더 조회 실패: " + (response?.error || "알 수 없는 오류"));
+      return;
+    }
+
+    const folderList = (response.data ?? []) as FolderResponseData[];
+    setFolders(folderList);
+
+    const storage = await chrome.storage.local.get("selected_folder_uuid");
+    const storedFolderUuid = storage?.selected_folder_uuid as
+      | string
+      | undefined;
+
+    const nextFolderUuid =
+      (storedFolderUuid &&
+        folderList.some((folder) => folder.folderUuid === storedFolderUuid) &&
+        storedFolderUuid) ||
+      folderList[0]?.folderUuid ||
+      "";
+
+    setSelectedFolderUuid(nextFolderUuid);
+
+    if (nextFolderUuid) {
+      await chrome.runtime.sendMessage({
+        action: "selectFolder",
+        folderUuid: nextFolderUuid,
+      });
+    }
+  };
+
+  const handleFolderChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    const nextFolderUuid = e.target.value;
+    const previousFolderUuid = selectedFolderUuid;
+
+    setSelectedFolderUuid(nextFolderUuid);
+
+    const response = await chrome.runtime.sendMessage({
+      action: "selectFolder",
+      folderUuid: nextFolderUuid,
+    });
+
+    if (!response?.success) {
+      setSelectedFolderUuid(previousFolderUuid);
+      alert("폴더 변경 실패: " + (response?.error || "알 수 없는 오류"));
     }
   };
 
@@ -475,6 +547,27 @@ function App() {
             teams.map((team) => (
               <option key={team.teamUuid} value={team.teamUuid}>
                 {team.teamName}
+              </option>
+            ))
+          )}
+        </select>
+      </div>
+
+      {/* Folder Selection */}
+      <div className="folder-select">
+        <label htmlFor="folderSelect">폴더 선택</label>
+        <select
+          id="folderSelect"
+          value={selectedFolderUuid}
+          onChange={handleFolderChange}
+          disabled={folders.length === 0}
+        >
+          {folders.length === 0 ? (
+            <option value="">폴더가 없습니다</option>
+          ) : (
+            folders.map((folder) => (
+              <option key={folder.folderUuid} value={folder.folderUuid}>
+                {folder.folderName}
               </option>
             ))
           )}
