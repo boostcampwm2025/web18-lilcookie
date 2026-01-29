@@ -3,7 +3,7 @@ import { CreatedBySchema, FolderBaseSchema } from "../common/common.schema.js";
 
 /** 폴더 생성 요청 */
 export const CreateFolderRequestSchema = z.object({
-  teamUuid: z.string().uuid(),
+  teamUuid: z.uuid(),
   folderName: z.string().min(1),
 });
 
