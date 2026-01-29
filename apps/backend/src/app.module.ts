@@ -8,6 +8,8 @@ import { DatabaseModule } from "./database/database.module";
 import { FoldersModule } from "./folders/folders.module";
 import { OidcModule } from "./oidc/oidc.module";
 import { TeamsModule } from "./teams/teams.module";
+import { APP_PIPE } from "@nestjs/core";
+import { ZodValidationPipe } from "nestjs-zod";
 
 @Module({
   imports: [
@@ -20,6 +22,12 @@ import { TeamsModule } from "./teams/teams.module";
     FoldersModule,
     OidcModule,
     TeamsModule,
+  ],
+  providers: [
+    {
+      provide: APP_PIPE,
+      useClass: ZodValidationPipe,
+    },
   ],
 })
 export class AppModule {}
