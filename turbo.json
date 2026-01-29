@@ -10,6 +10,14 @@
       "cache": false,
       "persistent": true
     },
+    "backend#dev": {
+      "dependsOn": ["^build", "prisma:generate"],
+      "cache": false,
+      "persistent": true
+    },
+    "prisma:generate": {
+      "cache": false
+    },
     "lint": {},
     "test": {}
   }
