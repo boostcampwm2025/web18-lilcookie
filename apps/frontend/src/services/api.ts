@@ -8,6 +8,7 @@ import {
 } from "./authentikAuth";
 import type {
   GetTeamMembersResponseData,
+  GetTeamTokenUsageResponseData,
   GetTeamWebhooksResponseData,
   JoinTeamResponseData,
 } from "@repo/api";
@@ -321,6 +322,14 @@ export const teamApi = {
     const response = await api.patch(
       `teams/${teamUuid}/webhooks/${webhookUuid}/deactivate`,
     );
+    return response.data;
+  },
+
+  // ---------- token usage ---------
+  getTokenUsage: async (
+    teamUuid: string,
+  ): Promise<ApiResponse<GetTeamTokenUsageResponseData>> => {
+    const response = await api.get(`teams/${teamUuid}/token-usage`);
     return response.data;
   },
 };
