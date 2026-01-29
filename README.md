@@ -1,6 +1,6 @@
 # Team Stash
 
-프로젝트 이미지 첨부 예정
+https://github.com/user-attachments/assets/c3df09bc-d69c-4263-80c4-af6e89b5e62d
 
 ### **📖 프로젝트 소개**
 
@@ -12,7 +12,9 @@
 
 ### **주요 기능**
 
-**기능 추가 예정**
+- 웹 브라우저 페이지를 AI 요약하여 링크와 함께 저장
+- n8n 등 외부 서비스와 연결하여 협업 워크플로우를 구성
+- OAuth2.0 Provider 생성
 
 ### 팀소개
 
