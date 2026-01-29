@@ -76,13 +76,17 @@ export class WebhookRepository {
    * 웹훅 활성화 상태 변경
    * @param webhookId 웹훅 PK
    * @param isActive 활성화 여부
-   * @returns 업데이트된 웹훅 엔티티
+   * @returns 업데이트된 웹훅 엔티티 또는 null
    */
-  async updateActive(webhookId: number, isActive: boolean): Promise<Webhook> {
-    const updated = await this.prisma.teamWebhook.update({
-      where: { id: webhookId },
-      data: { isActive },
-    });
-    return WebhookMapper.fromPrisma(updated);
+  async updateActive(webhookId: number, isActive: boolean): Promise<Webhook | null> {
+    try {
+      const updated = await this.prisma.teamWebhook.update({
+        where: { id: webhookId },
+        data: { isActive },
+      });
+      return WebhookMapper.fromPrisma(updated);
+    } catch {
+      return null;
+    }
   }
 }

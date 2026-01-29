@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from "@nestjs/common";
+import { Injectable, NotFoundException, ForbiddenException, InternalServerErrorException } from "@nestjs/common";
 import { WebhookRepository } from "./repositories/webhook.repository";
 import { TeamRepository } from "../teams/repositories/team.repository";
 import { WebhookResponseDto } from "./dto/webhook.response.dto";
@@ -85,10 +85,13 @@ export class WebhooksService {
     }
 
     if (webhook.teamId !== team.teamId) {
-      throw new ForbiddenException("해당 팀의 웹훅이 아닙니다.");
+      throw new ForbiddenException("해당 팀에 속해있는 웹훅이 아닙니다.");
     }
 
-    await this.webhookRepository.delete(webhook.webhookId);
+    const removed = await this.webhookRepository.delete(webhook.webhookId);
+    if (!removed) {
+      throw new NotFoundException("웹훅 삭제에 실패했습니다.");
+    }
   }
 
   /**
@@ -125,10 +128,14 @@ export class WebhooksService {
     }
 
     if (webhook.teamId !== team.teamId) {
-      throw new ForbiddenException("해당 팀의 웹훅이 아닙니다.");
+      throw new ForbiddenException("해당 팀에 속해있는 웹훅이 아닙니다.");
     }
 
     const updated = await this.webhookRepository.updateActive(webhook.webhookId, isActive);
+    if (!updated) {
+      throw new InternalServerErrorException("웹훅 수정 중 오류가 발생했습니다.");
+    }
+
     return WebhookResponseDto.from(updated);
   }
 }
