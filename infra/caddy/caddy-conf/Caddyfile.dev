@@ -3,10 +3,11 @@ auth.localhost {
 }
 
 api.localhost {
-	@all {
-		path_regexp all ^/(.*)$
+	@api {
+		not path /docs*
+		path_regexp api ^/(.*)$
 	}
-	rewrite @all /api/{re.all.1}
+	rewrite @api /api/{re.api.1}
 	reverse_proxy host.docker.internal:3000
 }
 
