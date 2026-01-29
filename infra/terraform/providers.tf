@@ -21,8 +21,6 @@ resource "authentik_provider_oauth2" "teamstash" {
     authentik_property_mapping_provider_scope.teamstash_profile.id,
     data.authentik_property_mapping_provider_scope.email.id,
     data.authentik_property_mapping_provider_scope.offline_access.id,
-    authentik_property_mapping_provider_scope.team_id.id,
-    authentik_property_mapping_provider_scope.roles.id,
     authentik_property_mapping_provider_scope.links_read.id,
     authentik_property_mapping_provider_scope.links_write.id,
     authentik_property_mapping_provider_scope.ai_use.id,
