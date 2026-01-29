@@ -4,6 +4,9 @@ import type { Theme } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 import './style.css'
 
+import ExtensionPreview from './components/ExtensionPreview.vue'
+import DashboardPreview from './components/DashboardPreview.vue'
+
 export default {
   extends: DefaultTheme,
   Layout: () => {
@@ -12,6 +15,7 @@ export default {
     })
   },
   enhanceApp({ app, router, siteData }) {
-    // ...
+    app.component('ExtensionPreview', ExtensionPreview)
+    app.component('DashboardPreview', DashboardPreview)
   }
 } satisfies Theme
