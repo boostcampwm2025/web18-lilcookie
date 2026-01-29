@@ -1,15 +1,14 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
 import axiosRetry from "axios-retry";
 import type { ApiResponse, Link, Folder, Team } from "../types";
-import {
-  getStoredAccessToken,
-  refreshAccessToken,
-  clearTokens,
-} from "./authentikAuth";
+import { getStoredAccessToken, refreshAccessToken, clearTokens } from "./authentikAuth";
 import type {
   GetTeamMembersResponseData,
   GetTeamWebhooksResponseData,
   JoinTeamResponseData,
+  CreateOAuthAppRequest,
+  OAuthAppResponseData,
+  OAuthAppCreatedResponseData,
 } from "@repo/api";
 
 // API 베이스 URL
@@ -84,8 +83,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest: InternalAxiosRequestConfig | undefined =
-      error.config;
+    const originalRequest: InternalAxiosRequestConfig | undefined = error.config;
 
     if (
       error.response?.status === 401 &&
@@ -185,10 +183,7 @@ export const linkApi = {
   },
 
   // 태그로 검색
-  searchByTags: async (
-    teamUuid: string,
-    tags: string[],
-  ): Promise<ApiResponse<Link[]>> => {
+  searchByTags: async (teamUuid: string, tags: string[]): Promise<ApiResponse<Link[]>> => {
     return linkApi.getLinks({ teamUuid, tags });
   },
 };
@@ -209,19 +204,13 @@ export const folderApi = {
   },
 
   // POST /folders - 새 폴더 생성
-  createFolder: async (data: {
-    teamUuid: string;
-    folderName: string;
-  }): Promise<ApiResponse<Folder>> => {
+  createFolder: async (data: { teamUuid: string; folderName: string }): Promise<ApiResponse<Folder>> => {
     const response = await api.post("/folders", data);
     return response.data;
   },
 
   // PATCH /folders/:folderUuid - 폴더 이름 수정
-  updateFolder: async (
-    folderUuid: string,
-    data: { folderName: string },
-  ): Promise<ApiResponse<Folder>> => {
+  updateFolder: async (folderUuid: string, data: { folderName: string }): Promise<ApiResponse<Folder>> => {
     const response = await api.patch(`/folders/${folderUuid}`, data);
     return response.data;
   },
@@ -248,25 +237,19 @@ export const teamApi = {
   },
 
   // GET /teams/:teamUuid/preview - 초대 링크용 팀 정보 조회
-  getTeamPreview: async (
-    teamUuid: string,
-  ): Promise<ApiResponse<{ teamName: string }>> => {
+  getTeamPreview: async (teamUuid: string): Promise<ApiResponse<{ teamName: string }>> => {
     const response = await api.get(`/teams/${teamUuid}/preview`);
     return response.data;
   },
 
   // POST /teams/:teamUuid/join - 팀 가입
-  joinTeam: async (
-    teamUuid: string,
-  ): Promise<ApiResponse<JoinTeamResponseData>> => {
+  joinTeam: async (teamUuid: string): Promise<ApiResponse<JoinTeamResponseData>> => {
     const response = await api.post(`teams/${teamUuid}/join`);
     return response.data;
   },
 
   // GET /teams/:teamUuid/members - 팀 멤버 조회
-  getTeamMember: async (
-    teamUuid: string,
-  ): Promise<ApiResponse<GetTeamMembersResponseData>> => {
+  getTeamMember: async (teamUuid: string): Promise<ApiResponse<GetTeamMembersResponseData>> => {
     const response = await api.get(`teams/${teamUuid}/members`);
     return response.data;
   },
@@ -278,27 +261,19 @@ export const teamApi = {
 
   // ---------- webhook ---------
   // GET /teams/:teamUuid/webhooks - 팀에 등록된 웹훅 조회
-  getTeamWebhooks: async (
-    teamUuid: string,
-  ): Promise<ApiResponse<GetTeamWebhooksResponseData[]>> => {
+  getTeamWebhooks: async (teamUuid: string): Promise<ApiResponse<GetTeamWebhooksResponseData[]>> => {
     const response = await api.get(`teams/${teamUuid}/webhooks`);
     return response.data;
   },
 
   // POST /teams/:teamUuid/webhooks - 웹훅 등록
-  addTeamWebhooks: async (
-    teamUuid: string,
-    url: string,
-  ): Promise<ApiResponse<GetTeamWebhooksResponseData>> => {
+  addTeamWebhooks: async (teamUuid: string, url: string): Promise<ApiResponse<GetTeamWebhooksResponseData>> => {
     const response = await api.post(`teams/${teamUuid}/webhooks`, { url });
     return response.data;
   },
 
   // DELETE /teams/:teamUuid/webhooks/:webhookdUuid - 웹훅 삭제
-  deleteTeamWebhooks: async (
-    teamUuid: string,
-    webhookUuid: string,
-  ): Promise<void> => {
+  deleteTeamWebhooks: async (teamUuid: string, webhookUuid: string): Promise<void> => {
     await api.delete(`teams/${teamUuid}/webhooks/${webhookUuid}`);
   },
 
@@ -307,9 +282,7 @@ export const teamApi = {
     teamUuid: string,
     webhookUuid: string,
   ): Promise<ApiResponse<GetTeamWebhooksResponseData>> => {
-    const response = await api.patch(
-      `teams/${teamUuid}/webhooks/${webhookUuid}/activate`,
-    );
+    const response = await api.patch(`teams/${teamUuid}/webhooks/${webhookUuid}/activate`);
     return response.data;
   },
 
@@ -318,10 +291,28 @@ export const teamApi = {
     teamUuid: string,
     webhookUuid: string,
   ): Promise<ApiResponse<GetTeamWebhooksResponseData>> => {
-    const response = await api.patch(
-      `teams/${teamUuid}/webhooks/${webhookUuid}/deactivate`,
-    );
+    const response = await api.patch(`teams/${teamUuid}/webhooks/${webhookUuid}/deactivate`);
     return response.data;
+  },
+};
+
+// OAuth Apps API 함수들
+export const oauthAppsApi = {
+  // GET /oauth-apps - 내 OAuth App 목록 조회
+  getOAuthApps: async (): Promise<ApiResponse<OAuthAppResponseData[]>> => {
+    const response = await api.get("/oauth-apps");
+    return response.data;
+  },
+
+  // POST /oauth-apps - OAuth App 생성
+  createOAuthApp: async (data: CreateOAuthAppRequest): Promise<ApiResponse<OAuthAppCreatedResponseData>> => {
+    const response = await api.post("/oauth-apps", data);
+    return response.data;
+  },
+
+  // DELETE /oauth-apps/:oauthAppUuid - OAuth App 삭제
+  deleteOAuthApp: async (oauthAppUuid: string): Promise<void> => {
+    await api.delete(`/oauth-apps/${oauthAppUuid}`);
   },
 };
 

@@ -1,9 +1,6 @@
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Team } from "../types";
-import type {
-  GetTeamMembersResponseData,
-  GetTeamWebhooksResponseData,
-} from "@repo/api";
+import type { GetTeamMembersResponseData, GetTeamWebhooksResponseData } from "@repo/api";
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useTeams } from "../contexts/TeamContext";
@@ -24,7 +21,7 @@ const SettingPage = () => {
   const [currentTeam, setCurrentTeam] = useState<Team | null>(null);
   const [members, setMembers] = useState<GetTeamMembersResponseData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,9 +45,7 @@ const SettingPage = () => {
         } else {
           const teamsResponse = await teamApi.getMyTeams();
           if (teamsResponse.success) {
-            const team = teamsResponse.data.find(
-              (t) => t.teamUuid === teamUuid,
-            );
+            const team = teamsResponse.data.find((t) => t.teamUuid === teamUuid);
             if (team) {
               setCurrentTeam(team);
             } else {
@@ -58,9 +53,7 @@ const SettingPage = () => {
               return;
             }
           } else {
-            setError(
-              teamsResponse.message || "팀 정보를 불러오는데 실패했습니다.",
-            );
+            setError(teamsResponse.message || "팀 정보를 불러오는데 실패했습니다.");
             return;
           }
         }
@@ -69,14 +62,10 @@ const SettingPage = () => {
         if (teamUuid) {
           const membersResponse = await teamApi.getTeamMember(teamUuid);
           if (membersResponse.success) {
-            const memberData = Array.isArray(membersResponse.data)
-              ? membersResponse.data
-              : [membersResponse.data];
+            const memberData = Array.isArray(membersResponse.data) ? membersResponse.data : [membersResponse.data];
             setMembers(memberData);
           } else {
-            setError(
-              membersResponse.message || "멤버 목록을 불러오는데 실패했습니다.",
-            );
+            setError(membersResponse.message || "멤버 목록을 불러오는데 실패했습니다.");
           }
         }
 
@@ -136,10 +125,7 @@ const SettingPage = () => {
 
     try {
       setIsAddingWebhook(true);
-      const response = await teamApi.addTeamWebhooks(
-        teamUuid,
-        webhookUrl.trim(),
-      );
+      const response = await teamApi.addTeamWebhooks(teamUuid, webhookUrl.trim());
       if (response.success) {
         setWebhooks((prev) => [...prev, response.data]);
         setWebhookUrl("");
@@ -174,11 +160,7 @@ const SettingPage = () => {
         : await teamApi.activateTeamWebhooks(teamUuid, webhook.webhookUuid);
 
       if (response.success) {
-        setWebhooks((prev) =>
-          prev.map((w) =>
-            w.webhookUuid === webhook.webhookUuid ? response.data : w,
-          ),
-        );
+        setWebhooks((prev) => prev.map((w) => (w.webhookUuid === webhook.webhookUuid ? response.data : w)));
       }
     } catch {
       setError("웹훅 상태 변경에 실패했습니다.");
@@ -215,9 +197,7 @@ const SettingPage = () => {
         {/* 헤더 */}
         <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-end">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-700">
-              {user?.nickname || user?.email?.split("@")[0]}
-            </span>
+            <span className="text-sm font-medium text-gray-700">{user?.nickname || user?.email?.split("@")[0]}</span>
             <button
               onClick={handleLogout}
               className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
@@ -235,22 +215,15 @@ const SettingPage = () => {
           <div className="max-w-4xl space-y-8">
             {/* 팀 정보 섹션 */}
             <div className="bg-white rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                팀 정보
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">팀 정보</h2>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">팀 이름</span>
-                  <span className="font-medium text-gray-900">
-                    {currentTeam?.teamName}
-                  </span>
+                  <span className="font-medium text-gray-900">{currentTeam?.teamName}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">생성일</span>
-                  <span className="text-gray-900">
-                    {currentTeam?.createdAt &&
-                      formatDate(currentTeam.createdAt)}
-                  </span>
+                  <span className="text-gray-900">{currentTeam?.createdAt && formatDate(currentTeam.createdAt)}</span>
                 </div>
               </div>
             </div>
@@ -258,9 +231,7 @@ const SettingPage = () => {
             {/* 멤버 목록 섹션 */}
             <div className="bg-white rounded-xl p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  팀원 ({members.length}명)
-                </h2>
+                <h2 className="text-lg font-semibold text-gray-900">팀원 ({members.length}명)</h2>
                 <button
                   onClick={handleCopyInviteLink}
                   className={`flex items-center justify-center gap-2 px-3 py-1.5 text-sm min-w-[120px] rounded-lg transition-colors cursor-pointer ${
@@ -284,19 +255,14 @@ const SettingPage = () => {
               </div>
               <div className="space-y-1">
                 {members.map((member) => (
-                  <div
-                    key={member.userUuid}
-                    className="flex items-center justify-between py-3"
-                  >
+                  <div key={member.userUuid} className="flex items-center justify-between py-3">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
                         <Users className="w-5 h-5 text-gray-500" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900">
-                            {member.userName}
-                          </span>
+                          <span className="font-medium text-gray-900">{member.userName}</span>
                           {member.role === "owner" && (
                             <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-600 rounded-full text-xs font-medium">
                               <Crown className="w-3 h-3" />
@@ -325,9 +291,7 @@ const SettingPage = () => {
               <h2 className="text-lg font-semibold text-gray-900 mb-2">
                 웹훅 관리 {isAdmin && <span className="text-sm font-normal text-gray-500">(Owner)</span>}
               </h2>
-              <p className="text-sm text-gray-500 mb-4">
-                팀 내 이벤트 발생 시 데이터를 전송할 URL을 관리합니다.
-              </p>
+              <p className="text-sm text-gray-500 mb-4">팀 내 이벤트 발생 시 데이터를 전송할 URL을 관리합니다.</p>
 
               {/* 웹훅 목록 */}
               <div className="space-y-3 mb-4">
@@ -335,10 +299,7 @@ const SettingPage = () => {
                   <p className="text-sm text-gray-400 py-2">등록된 웹훅이 없습니다.</p>
                 ) : (
                   webhooks.map((webhook) => (
-                    <div
-                      key={webhook.webhookUuid}
-                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
-                    >
+                    <div key={webhook.webhookUuid} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                       {/* 토글 스위치 - owner만 클릭 가능 */}
                       {isAdmin ? (
                         <button
@@ -368,9 +329,7 @@ const SettingPage = () => {
                       )}
 
                       {/* URL */}
-                      <span className="flex-1 text-sm text-gray-700 truncate">
-                        {webhook.url}
-                      </span>
+                      <span className="flex-1 text-sm text-gray-700 truncate">{webhook.url}</span>
 
                       {/* 삭제 버튼 - owner만 표시 */}
                       {isAdmin && (
@@ -387,8 +346,8 @@ const SettingPage = () => {
               </div>
 
               {/* 웹훅 추가 - owner만 표시 */}
-              {isAdmin && (
-                showWebhookInput ? (
+              {isAdmin &&
+                (showWebhookInput ? (
                   <div className="flex gap-2">
                     <input
                       type="url"
@@ -423,19 +382,15 @@ const SettingPage = () => {
                     <Plus className="w-4 h-4" />
                     웹훅 추가
                   </button>
-                )
-              )}
+                ))}
             </div>
 
             {/* 팀 탈퇴 섹션 */}
             <div className="bg-white rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                팀 탈퇴
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">팀 탈퇴</h2>
               {isAdmin ? (
                 <p className="text-sm text-gray-500 mb-4">
-                  관리자는 팀에서 탈퇴할 수 없습니다. 다른 멤버에게 관리자
-                  권한을 넘긴 후 탈퇴해주세요.
+                  관리자는 팀에서 탈퇴할 수 없습니다. 다른 멤버에게 관리자 권한을 넘긴 후 탈퇴해주세요.
                 </p>
               ) : (
                 <p className="text-sm text-gray-500 mb-4">

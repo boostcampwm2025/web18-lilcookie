@@ -3,6 +3,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import TeamPage from "./pages/TeamPage";
 import MyTeams from "./pages/MyTeams";
+import OAuthApps from "./pages/OAuthApps";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import InvitePage from "./pages/InvitePage";
@@ -28,6 +29,16 @@ function App() {
               element={
                 <ProtectedRoute>
                   <MyTeams />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* 보호된 라우트 - OAuth 앱 관리 */}
+            <Route
+              path="/oauth-apps"
+              element={
+                <ProtectedRoute>
+                  <OAuthApps />
                 </ProtectedRoute>
               }
             />
