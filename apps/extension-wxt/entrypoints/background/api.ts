@@ -1,7 +1,7 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
 import axiosRetry from "axios-retry";
 import { API_CONFIG } from "../../config/api";
-import { getAuthState, logout, type AuthTokens } from "./auth.background";
+import { getAuthState, logout, StoredAuthTokensSchema } from "./auth.background";
 
 const api = axios.create({
   baseURL: API_CONFIG.baseUrl,
@@ -72,11 +72,10 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const { auth_tokens } = (await chrome.storage.local.get(
-          "auth_tokens",
-        )) as { auth_tokens?: AuthTokens };
+        const storage = await chrome.storage.local.get("auth_tokens");
+        const parsed = StoredAuthTokensSchema.safeParse(storage);
 
-        if (!auth_tokens?.refresh_token) {
+        if (!parsed.success || !parsed.data.auth_tokens?.refresh_token) {
           throw new Error("No refresh token");
         }
 

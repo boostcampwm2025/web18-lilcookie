@@ -10,41 +10,27 @@ import {
   getStoredOAuthParams,
   clearStoredOAuthParams,
 } from "../../utils/pkce";
+import {
+  JwtBasicPayloadSchema,
+  TeamsApiResponseSchema,
+  StoredAuthTokensSchema,
+  StoredSelectedTeamSchema,
+} from "../../schemas/auth.schema";
+import type {
+  TokenResponse,
+  AuthTokens,
+  Team,
+  UserInfo,
+  AuthState,
+} from "../../schemas/auth.type";
 
-export interface TokenResponse {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
-  refresh_token?: string;
-  id_token?: string;
-  scope: string;
-}
-
-export interface AuthTokens {
-  access_token: string;
-  refresh_token: string;
-  expires_at: number;
-}
-
-export interface Team {
-  teamUuid: string;
-  teamName: string;
-  createdAt: string;
-  role: "admin" | "member";
-}
-
-export interface UserInfo {
-  userUuid: string;
-  nickname?: string;
-  teams: Team[];
-  selectedTeamUuid: string;
-}
-
-export interface AuthState {
-  isLoggedIn: boolean;
-  accessToken?: string;
-  userInfo?: UserInfo;
-}
+export type {
+  AuthTokens,
+  AuthState,
+  Team,
+  UserInfo,
+} from "../../schemas/auth.type";
+export { StoredAuthTokensSchema } from "../../schemas/auth.schema";
 
 const authClient = axios.create({
   headers: {
@@ -80,30 +66,29 @@ function extractBasicUserInfo(
   accessToken: string,
 ): { userUuid: string; nickname?: string } | null {
   const payload = decodeJwtPayload(accessToken);
-  if (!payload) return null;
+  const parsed = JwtBasicPayloadSchema.safeParse(payload);
 
-  const sub = payload.sub;
-  if (typeof sub !== "string") {
-    return null;
-  }
+  if (!parsed.success) return null;
 
   return {
-    userUuid: sub,
-    nickname:
-      typeof payload.nickname === "string" ? payload.nickname : undefined,
+    userUuid: parsed.data.sub,
+    nickname: parsed.data.nickname,
   };
 }
 
 async function fetchUserTeams(accessToken: string): Promise<Team[]> {
-  const response = await axios.get<{ data: Team[] }>(
-    `${API_CONFIG.baseUrl}/teams/me`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+  const response = await axios.get(`${API_CONFIG.baseUrl}/teams/me`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
     },
-  );
-  return response.data.data;
+  });
+
+  const parsed = TeamsApiResponseSchema.safeParse(response.data);
+  if (!parsed.success) {
+    console.error("Invalid teams response:", parsed.error);
+    return [];
+  }
+  return parsed.data.data;
 }
 
 async function exchangeCodeForToken(code: string): Promise<AuthTokens> {
@@ -165,14 +150,16 @@ async function buildUserInfo(accessToken: string): Promise<UserInfo | null> {
     console.error("Failed to fetch teams:", error);
   }
 
-  const { selected_team_uuid } = await chrome.storage.local.get(
-    "selected_team_uuid",
-  );
+  const storage = await chrome.storage.local.get("selected_team_uuid");
+  const parsed = StoredSelectedTeamSchema.safeParse(storage);
+  const storedTeamUuid = parsed.success
+    ? parsed.data.selected_team_uuid
+    : undefined;
+
   const selectedTeamUuid =
-    typeof selected_team_uuid === "string" &&
-    teams.some((t) => t.teamUuid === selected_team_uuid)
-      ? selected_team_uuid
-      : teams[0]?.teamUuid ?? "";
+    storedTeamUuid && teams.some((t) => t.teamUuid === storedTeamUuid)
+      ? storedTeamUuid
+      : (teams[0]?.teamUuid ?? "");
 
   return {
     userUuid: basicInfo.userUuid,
@@ -257,13 +244,14 @@ export async function selectTeam(teamUuid: string): Promise<void> {
 }
 
 export async function getAuthState(): Promise<AuthState> {
-  const { auth_tokens } = (await chrome.storage.local.get("auth_tokens")) as {
-    auth_tokens?: AuthTokens;
-  };
+  const storage = await chrome.storage.local.get("auth_tokens");
+  const parsed = StoredAuthTokensSchema.safeParse(storage);
 
-  if (!auth_tokens) {
+  if (!parsed.success || !parsed.data.auth_tokens) {
     return { isLoggedIn: false };
   }
+
+  const auth_tokens = parsed.data.auth_tokens;
 
   if (auth_tokens.expires_at < Date.now()) {
     if (auth_tokens.refresh_token) {

@@ -1,24 +1,13 @@
+import { z } from "zod";
+import { LinkResponseDataSchema } from "@repo/api";
 import api from "./api";
 import { getAuthState } from "./auth.background";
 
 const FE_BASE_URL = import.meta.env.VITE_FE_BASE_URL;
 
-interface CreatedBy {
-  userUuid: string;
-  userName: string;
-}
-
-interface LinkResponse {
-  linkUuid: string;
-  teamUuid: string;
-  folderUuid: string;
-  url: string;
-  title: string;
-  tags: string[];
-  summary: string;
-  createdAt: string;
-  createdBy: CreatedBy;
-}
+const LinksApiResponseSchema = z.object({
+  data: z.array(LinkResponseDataSchema),
+});
 
 export function setupAlarms() {
   chrome.alarms.create("pollLinks", { periodInMinutes: 0.5 });
@@ -64,14 +53,15 @@ async function checkNewLinks() {
     }
 
     // TODO: Backend needs to implement `createdAfter` query parameter for filtering links by creation time
-    const response = await api.get<{ data: LinkResponse[] }>("/links", {
+    const response = await api.get("/links", {
       params: {
         teamUuid,
         createdAfter: lastCheck,
       },
     });
 
-    const links = response.data.data || [];
+    const parsed = LinksApiResponseSchema.safeParse(response.data);
+    const links = parsed.success ? parsed.data.data : [];
     const newLinks = links.filter((link) => link.createdBy.userUuid !== userUuid);
 
     if (newLinks.length > 0) {
