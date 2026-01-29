@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CreatedBySchema } from "../common/common.schema";
+import { CreatedBySchema } from "../common/common.schema.js";
 
 /** 링크 생성 요청 */
 export const CreateLinkRequestSchema = z.object({

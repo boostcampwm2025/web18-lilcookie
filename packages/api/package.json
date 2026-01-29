@@ -1,16 +1,18 @@
 {
   "name": "@repo/api",
   "version": "1.0.0",
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
     "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
