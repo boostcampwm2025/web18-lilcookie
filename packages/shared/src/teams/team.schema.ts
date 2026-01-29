@@ -10,7 +10,7 @@ export const TeamResponseDataSchema = z.object({
   teamUuid: z.string().uuid(),
   teamName: z.string(),
   createdAt: z.string().datetime(),
-  role: z.enum(["admin", "member"]),
+  role: z.enum(["owner", "member"]),
 });
 
 /** 초대 링크용 응답 */
@@ -23,13 +23,13 @@ export const JoinTeamResponseDataSchema = z.object({
   teamUuid: z.string().uuid(),
   teamName: z.string(),
   joinedAt: z.string().datetime(),
-  role: z.enum(["admin", "member"]),
+  role: z.enum(["owner", "member"]),
 });
 
 /** 팀 멤버 조회 응답 */
 export const GetTeamMembersResponsdDataSchema = z.object({
   userUuid: z.string().uuid(),
   userName: z.string(),
-  role: z.enum(["admin", "member"]),
+  role: z.enum(["owner", "member"]),
   joinedAt: z.string().datetime(),
 });
