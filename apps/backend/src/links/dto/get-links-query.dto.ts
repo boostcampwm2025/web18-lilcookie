@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsUUID } from "class-validator";
+import { IsDate, IsOptional, IsString, IsUUID } from "class-validator";
+import { Type } from "class-transformer";
 
 /**
  * 링크 조회 쿼리 DTO
@@ -15,4 +16,9 @@ export class GetLinksQueryDto {
   @IsOptional()
   @IsString()
   tags?: string;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  createdAfter?: Date;
 }

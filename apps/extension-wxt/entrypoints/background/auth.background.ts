@@ -227,7 +227,11 @@ export async function login(): Promise<{ success: boolean; error?: string }> {
 }
 
 export async function logout(): Promise<void> {
-  await chrome.storage.local.remove(["auth_tokens", "selected_team_uuid"]);
+  await chrome.storage.local.remove([
+    "auth_tokens",
+    "selected_team_uuid",
+    "selected_folder_uuid",
+  ]);
 
   const tab = await chrome.tabs.create({
     url: AUTHENTIK_CONFIG.logoutUrl,
