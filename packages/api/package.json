@@ -12,8 +12,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "zod": "^4.3.5"

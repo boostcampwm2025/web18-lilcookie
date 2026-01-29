@@ -217,12 +217,24 @@ importers:
       '@mozilla/readability':
         specifier: ^0.6.0
         version: 0.6.0
+      '@repo/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      axios:
+        specifier: ^1.13.2
+        version: 1.13.2
+      axios-retry:
+        specifier: ^4.5.0
+        version: 4.5.0(axios@1.13.2)
       react:
         specifier: ^19.2.3
         version: 19.2.3
       react-dom:
         specifier: ^19.2.3
         version: 19.2.3(react@19.2.3)
+      zod:
+        specifier: ^4.3.5
+        version: 4.3.5
     devDependencies:
       '@types/chrome':
         specifier: ^0.1.32
@@ -236,9 +248,15 @@ importers:
       '@wxt-dev/module-react':
         specifier: ^1.1.5
         version: 1.1.5(vite@7.3.1(@types/node@24.10.8)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1))(wxt@0.20.13(@types/node@24.10.8)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.55.1)(terser@5.44.1))
+      axios-mock-adapter:
+        specifier: ^2.1.0
+        version: 2.1.0(axios@1.13.2)
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+      vitest:
+        specifier: ^4.0.18
+        version: 4.0.18(@opentelemetry/api@1.9.0)(@types/node@24.10.8)(jiti@2.6.1)(jsdom@27.4.0(@noble/hashes@1.8.0))(lightningcss@1.30.2)(msw@2.12.7(@types/node@24.10.8)(typescript@5.9.3))(terser@5.44.1)
       wxt:
         specifier: ^0.20.13
         version: 0.20.13(@types/node@24.10.8)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.55.1)(terser@5.44.1)
