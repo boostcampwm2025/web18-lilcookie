@@ -38,3 +38,10 @@ export const GetTeamWebhooksResponseDataSchema = z.object({
   url: z.string(),
   isActive: z.boolean(),
 });
+
+/** 토큰 사용량 응답 data */
+export const GetTeamTokenUsageResponseDataSchema = z.object({
+  usedTokens: z.number(),
+  maxTokens: z.number(),
+  percentage: z.number(),
+});

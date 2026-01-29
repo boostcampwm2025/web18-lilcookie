@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   CreateTeamRequestSchema,
   GetTeamMembersResponsedDataSchema,
+  GetTeamTokenUsageResponseDataSchema,
   GetTeamWebhooksResponseDataSchema,
   JoinTeamResponseDataSchema,
   PreviewTeamRespondDataSchema,
@@ -19,4 +20,7 @@ export type GetTeamMembersResponseData = z.infer<
 >;
 export type GetTeamWebhooksResponseData = z.infer<
   typeof GetTeamWebhooksResponseDataSchema
+>;
+export type GetTeamTokenUsageResponseData = z.infer<
+  typeof GetTeamTokenUsageResponseDataSchema
 >;
