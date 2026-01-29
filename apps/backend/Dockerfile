@@ -37,6 +37,7 @@ COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/apps/backend/prisma/schema.prisma ./apps/backend/prisma/schema.prisma
 COPY --from=builder /app/apps/backend/prisma/migrations ./apps/backend/prisma/migrations
+COPY --from=builder /app/apps/backend/prisma.config.ts ./apps/backend/prisma.config.ts
 
 WORKDIR /app/apps/backend
 CMD ["node", "dist/src/main"]
