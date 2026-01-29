@@ -12,6 +12,30 @@ import LinkGrid from "../components/dashboard/LinkGrid";
 // TODO: 백엔드 연동 시 제거
 const USE_MOCK_DATA = true;
 
+// Mock 폴더 데이터 (팀별)
+const mockFoldersMap: Record<string, FolderType[]> = {
+  "team-uuid-1": [
+    {
+      folderUuid: "folder-uuid-1",
+      folderName: "기본 폴더",
+      createdAt: "2024-06-15T10:20:30Z",
+      createdBy: { userUuid: "user-1", userName: "admin" },
+    },
+    {
+      folderUuid: "folder-uuid-2",
+      folderName: "프론트엔드 자료",
+      createdAt: "2024-06-16T11:21:31Z",
+      createdBy: { userUuid: "user-1", userName: "admin" },
+    },
+    {
+      folderUuid: "folder-uuid-3",
+      folderName: "백엔드 자료",
+      createdAt: "2024-06-17T12:22:32Z",
+      createdBy: { userUuid: "user-2", userName: "junho" },
+    },
+  ],
+};
+
 // Mock 링크 데이터 (폴더별)
 const mockLinksMap: Record<string, Link[]> = {
   "folder-uuid-1": [
@@ -220,16 +244,28 @@ const TeamPage = () => {
 
         // 폴더 조회 및 선택된 폴더 설정
         if (teamUuid) {
-          const foldersResponse = await folderApi.getFolders(teamUuid);
-          if (foldersResponse.success && foldersResponse.data.length > 0) {
+          let folders: FolderType[] = [];
+
+          if (USE_MOCK_DATA) {
+            // Mock 데이터 사용 (어떤 팀이든 team-uuid-1의 mock 폴더 사용)
+            folders = mockFoldersMap["team-uuid-1"] || [];
+          } else {
+            // 실제 API 호출
+            const foldersResponse = await folderApi.getFolders(teamUuid);
+            if (foldersResponse.success) {
+              folders = foldersResponse.data;
+            }
+          }
+
+          if (folders.length > 0) {
             // state로 전달받은 폴더가 있으면 해당 폴더 선택, 없으면 첫번째 폴더
             if (selectedFolderUuidFromState) {
-              const folder = foldersResponse.data.find(
+              const folder = folders.find(
                 (f) => f.folderUuid === selectedFolderUuidFromState,
               );
-              setSelectedFolder(folder || foldersResponse.data[0]);
+              setSelectedFolder(folder || folders[0]);
             } else {
-              setSelectedFolder(foldersResponse.data[0]);
+              setSelectedFolder(folders[0]);
             }
           }
         }
