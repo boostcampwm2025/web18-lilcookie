@@ -8,8 +8,7 @@ import {
 import { CreateLinkRequestDto } from "./dto/create-link.request.dto";
 import { UpdateLinkRequestDto } from "./dto/update-link.request.dto";
 import { LinkResponseDto } from "./dto/link.response.dto";
-import { NotificationService } from "../notification/notification.service";
-import { LinkNotificationDto } from "../notification/dto/link-notification.dto";
+import { WebhookNotificationService } from "../webhooks/notification/webhook-notification.service";
 import { LinkRepository } from "./repositories/link.repository";
 import { TeamRepository } from "../teams/repositories/team.repository";
 import { FolderRepository } from "../folders/repositories/folder.repository";
@@ -17,16 +16,11 @@ import { GetLinksQueryDto } from "./dto/get-links-query.dto";
 import { Folder } from "../folders/entities/folder.entity";
 import { Team } from "../teams/entities/team.entity";
 
-/**
- * 디폴트로 설정된 슬랙 채널 ID (임시 하드코딩)
- */
-const DEFAULT_SLACK_CHANNEL_ID = "C0A6S6AM1K7";
-
 @Injectable()
 export class LinksService {
   constructor(
     private readonly linkRepository: LinkRepository,
-    private readonly notificationService: NotificationService,
+    private readonly webhookNotificationService: WebhookNotificationService,
     private readonly teamRepository: TeamRepository,
     private readonly folderRepository: FolderRepository,
   ) {}
@@ -48,12 +42,12 @@ export class LinksService {
       throw new ForbiddenException("해당 팀에 접근 권한이 없습니다.");
     }
 
-    // 폴더 ID 결정: 지정된 폴더 또는 기본 폴더
-    const folderId = await this.resolveFolderId(requestDto.folderUuid, team.teamId);
+    // 폴더 결정: 지정된 폴더 또는 기본 폴더
+    const folder = await this.resolveFolder(requestDto.folderUuid, team.teamId);
 
     const { link, creator } = await this.linkRepository.create({
       teamId: team.teamId,
-      folderId,
+      folderId: folder.folderId,
       url: requestDto.url,
       title: requestDto.title,
       tags: JSON.stringify(requestDto.tags),
@@ -62,9 +56,7 @@ export class LinksService {
     });
 
     // 비동기 알림 전송 (실패해도 무시)
-    this.notificationService
-      .notifyLinkCreated(LinkNotificationDto.fromLink(link, DEFAULT_SLACK_CHANNEL_ID))
-      .catch(() => {});
+    this.webhookNotificationService.notifyLinkCreated(link, creator, team, folder).catch(() => {});
 
     return LinkResponseDto.from(link, creator);
   }
@@ -242,8 +234,7 @@ export class LinksService {
 
     if (updateTeam && !updateFolder) {
       // 팀만 변경되고, 폴더가 지정되지 않는 경우, 해당 팀의 기본 폴더로 설정
-      const defaultFolderId = await this.getDefaultFolder(updateTeam.teamId);
-      updateFolder = new Folder({ folderId: defaultFolderId });
+      updateFolder = await this.getDefaultFolder(updateTeam.teamId);
     } else if (!updateTeam && updateFolder) {
       // 폴더만 지정되고, 팀이 변경되지 않는 경우, 폴더의 팀과 링크의 팀이 일치하는지 확인
       if (updateFolder.teamId !== link.link.teamId) {
@@ -300,20 +291,20 @@ export class LinksService {
    * 폴더 UUID가 없으면 기본 폴더 ID 반환
    * @param folderUuid 폴더 UUID
    * @param teamId 팀 ID
-   * @returns 폴더 ID
+   * @returns 폴더 엔티티
    */
-  private async resolveFolderId(folderUuid: string | undefined, teamId: number): Promise<number> {
+  private async resolveFolder(folderUuid: string | undefined, teamId: number): Promise<Folder> {
     if (folderUuid) {
-      const folder = await this.folderRepository.findByUuid(folderUuid);
-      if (!folder) {
+      const result = await this.folderRepository.findByUuid(folderUuid);
+      if (!result) {
         throw new NotFoundException("해당 폴더를 찾을 수 없습니다.");
       }
 
-      if (folder.folder.teamId !== teamId) {
+      if (result.folder.teamId !== teamId) {
         throw new BadRequestException("해당 팀에 속해있는 폴더가 아닙니다.");
       }
 
-      return folder.folder.folderId;
+      return result.folder;
     }
 
     // 기본 폴더 조회
@@ -321,17 +312,17 @@ export class LinksService {
   }
 
   /**
-   * 팀의 기본 폴더 ID 조회
+   * 팀의 기본 폴더 조회
    * @param teamId 팀 ID
-   * @returns 기본 폴더 ID
+   * @returns 기본 폴더 엔티티
    */
-  private async getDefaultFolder(teamId: number): Promise<number> {
+  private async getDefaultFolder(teamId: number): Promise<Folder> {
     const defaultFolder = await this.folderRepository.findDefaultFolderByTeamId(teamId);
     if (!defaultFolder) {
       // 기본 폴더가 없으면 안되는데, 진짜 잘못된 상태
       throw new InternalServerErrorException("팀의 기본 폴더를 찾을 수 없습니다.");
     }
 
-    return defaultFolder.folderId;
+    return defaultFolder;
   }
 }
