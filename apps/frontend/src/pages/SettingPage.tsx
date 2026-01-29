@@ -35,6 +35,13 @@ const SettingPage = () => {
   const [isAddingWebhook, setIsAddingWebhook] = useState(false);
   const [showWebhookInput, setShowWebhookInput] = useState(false);
 
+  // 토큰 관련 state
+  const [tokenUsage, setTokenUsage] = useState<{
+    usedTokens: number;
+    maxTokens: number;
+    percentage: number;
+  } | null>(null);
+
   // 팀 정보 및 멤버 조회
   useEffect(() => {
     const fetchData = async () => {
@@ -85,6 +92,18 @@ const SettingPage = () => {
           const webhooksResponse = await teamApi.getTeamWebhooks(teamUuid);
           if (webhooksResponse.success) {
             setWebhooks(webhooksResponse.data);
+          }
+        }
+
+        // 토큰 사용량 가져오기
+        if (teamUuid) {
+          try {
+            const response = await teamApi.getTokenUsage(teamUuid);
+            if (response.success) {
+              setTokenUsage(response.data);
+            }
+          } catch (error) {
+            console.error("토큰 사용량 조회 실패:", error);
           }
         }
       } catch {
@@ -319,6 +338,35 @@ const SettingPage = () => {
                 ))}
               </div>
             </div>
+
+            {/* 토큰 사용량 섹션 */}
+            {tokenUsage && (
+              <div className="bg-white rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  AI 사용량
+                </h2>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">오늘 사용량</span>
+                  </div>
+                  {/* 프로그레스 바 */}
+                  <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-600 rounded-full transition-all"
+                      style={{ width: `${tokenUsage.percentage}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">
+                      매일 자정(KST)에 초기화됩니다
+                    </span>
+                    <span className="text-sm font-medium text-blue-600">
+                      {tokenUsage.percentage}% 사용
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* 웹훅 관리 섹션 */}
             <div className="bg-white rounded-xl p-6">
