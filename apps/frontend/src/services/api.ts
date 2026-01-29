@@ -6,6 +6,10 @@ import {
   refreshAccessToken,
   clearTokens,
 } from "./authentikAuth";
+import type {
+  GetTeamMembersResponseData,
+  JoinTeamResponseData,
+} from "@repo/api";
 
 // API 베이스 URL
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
@@ -240,6 +244,35 @@ export const teamApi = {
   createTeam: async (teamName: string): Promise<ApiResponse<Team>> => {
     const response = await api.post("/teams", { teamName });
     return response.data;
+  },
+
+  // GET /teams/:teamUuid/preview - 초대 링크용 팀 정보 조회
+  getTeamPreview: async (
+    teamUuid: string,
+  ): Promise<ApiResponse<{ teamName: string }>> => {
+    const response = await api.get(`/teams/${teamUuid}/preview`);
+    return response.data;
+  },
+
+  // POST /teams/:teamUuid/join - 팀 가입
+  joinTeam: async (
+    teamUuid: string,
+  ): Promise<ApiResponse<JoinTeamResponseData>> => {
+    const response = await api.post(`teams/${teamUuid}/join`);
+    return response.data;
+  },
+
+  // GET /teams/:teamUuid/members - 팀 멤버 조회
+  getTeamMember: async (
+    teamUuid: string,
+  ): Promise<ApiResponse<GetTeamMembersResponseData>> => {
+    const response = await api.get(`teams/${teamUuid}/members`);
+    return response.data;
+  },
+
+  // DELETE /teams/:teamUuid - 팀 탈퇴
+  leaveTeam: async (teamUuid: string): Promise<void> => {
+    await api.delete(`teams/${teamUuid}`);
   },
 };
 

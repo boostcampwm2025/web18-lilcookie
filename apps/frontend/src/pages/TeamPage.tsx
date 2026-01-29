@@ -1,25 +1,19 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import {
-  LogOut,
-  Users,
-  ChevronDown,
-  ChevronRight,
-  Folder,
-  Link2,
-  X,
-  Search,
-} from "lucide-react";
+import { LogOut, Link2, X, Search } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { useTeams } from "../contexts/TeamContext";
 import { teamApi, folderApi, linkApi } from "../services/api";
 import type { Team, Folder as FolderType, Link } from "../types";
+import Sidebar from "../components/layout/Sidebar";
+import CreateTeamModal from "../components/teams/CreateTeamModal";
 import LinkGrid from "../components/dashboard/LinkGrid";
 
 // TODO: 백엔드 연동 시 제거
 const USE_MOCK_DATA = true;
 
 // Mock 폴더 데이터 (팀별)
-const mockFoldersMap: Record<string, import("../types").Folder[]> = {
+const mockFoldersMap: Record<string, FolderType[]> = {
   "team-uuid-1": [
     {
       folderUuid: "folder-uuid-1",
@@ -38,20 +32,6 @@ const mockFoldersMap: Record<string, import("../types").Folder[]> = {
       folderName: "백엔드 자료",
       createdAt: "2024-06-17T12:22:32Z",
       createdBy: { userUuid: "user-2", userName: "junho" },
-    },
-  ],
-  "team-uuid-2": [
-    {
-      folderUuid: "folder-uuid-4",
-      folderName: "기본 폴더",
-      createdAt: "2024-06-16T11:21:31Z",
-      createdBy: { userUuid: "user-1", userName: "admin" },
-    },
-    {
-      folderUuid: "folder-uuid-5",
-      folderName: "UI/UX 레퍼런스",
-      createdAt: "2024-06-17T12:22:32Z",
-      createdBy: { userUuid: "user-3", userName: "minsu" },
     },
   ],
 };
@@ -215,18 +195,21 @@ const TeamPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { addTeam } = useTeams();
 
-  // navigate state로 전달받은 팀 정보
+  // navigate state로 전달받은 정보
   const teamFromState = location.state?.team as Team | undefined;
+  const selectedFolderUuidFromState = location.state?.selectedFolderUuid as
+    | string
+    | undefined;
 
   const [currentTeam, setCurrentTeam] = useState<Team | null>(null);
-  const [folders, setFolders] = useState<FolderType[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<FolderType | null>(null);
   const [links, setLinks] = useState<Link[]>([]);
   const [loading, setLoading] = useState(true);
   const [linksLoading, setLinksLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isTeamExpanded, setIsTeamExpanded] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -236,72 +219,53 @@ const TeamPage = () => {
       try {
         setLoading(true);
 
-        if (USE_MOCK_DATA) {
-          // state로 전달받은 팀 정보 사용, 없으면 URL 기반으로 생성
-          const team: Team = teamFromState || {
-            teamUuid: teamUuid || "",
-            teamName: "새 팀",
-            createdAt: new Date().toISOString(),
-            role: "owner",
-          };
-          setCurrentTeam(team);
-
-          // 팀별 mock 폴더 데이터 사용, 없으면 기본 폴더 생성
-          const mockFolders = mockFoldersMap[teamUuid || ""];
-          if (mockFolders && mockFolders.length > 0) {
-            setFolders(mockFolders);
-            setSelectedFolder(mockFolders[0]);
-          } else {
-            // 새로 생성한 팀은 기본 폴더만
-            const defaultFolder: FolderType = {
-              folderUuid: "default-folder",
-              folderName: "기본 폴더",
-              createdAt: new Date().toISOString(),
-              createdBy: {
-                userUuid: "user-1",
-                userName: user?.nickname || "사용자",
-              },
-            };
-            setFolders([defaultFolder]);
-            setSelectedFolder(defaultFolder);
-          }
+        // 팀 정보 설정
+        if (teamFromState) {
+          setCurrentTeam(teamFromState);
         } else {
-          // 실제 API 호출
-          if (teamFromState) {
-            setCurrentTeam(teamFromState);
-          } else {
-            const teamsResponse = await teamApi.getMyTeams();
-            if (teamsResponse.success) {
-              const team = teamsResponse.data.find(
-                (t) => t.teamUuid === teamUuid,
-              );
-              if (team) {
-                setCurrentTeam(team);
-              } else {
-                setError("팀을 찾을 수 없습니다.");
-                return;
-              }
+          const teamsResponse = await teamApi.getMyTeams();
+          if (teamsResponse.success) {
+            const team = teamsResponse.data.find(
+              (t) => t.teamUuid === teamUuid,
+            );
+            if (team) {
+              setCurrentTeam(team);
             } else {
-              setError(
-                teamsResponse.message || "팀 정보를 불러오는데 실패했습니다.",
-              );
+              setError("팀을 찾을 수 없습니다.");
               return;
+            }
+          } else {
+            setError(
+              teamsResponse.message || "팀 정보를 불러오는데 실패했습니다.",
+            );
+            return;
+          }
+        }
+
+        // 폴더 조회 및 선택된 폴더 설정
+        if (teamUuid) {
+          let folders: FolderType[] = [];
+
+          if (USE_MOCK_DATA) {
+            // Mock 데이터 사용 (어떤 팀이든 team-uuid-1의 mock 폴더 사용)
+            folders = mockFoldersMap["team-uuid-1"] || [];
+          } else {
+            // 실제 API 호출
+            const foldersResponse = await folderApi.getFolders(teamUuid);
+            if (foldersResponse.success) {
+              folders = foldersResponse.data;
             }
           }
 
-          // 폴더 조회
-          if (teamUuid) {
-            const foldersResponse = await folderApi.getFolders(teamUuid);
-            if (foldersResponse.success) {
-              setFolders(foldersResponse.data);
-              if (foldersResponse.data.length > 0) {
-                setSelectedFolder(foldersResponse.data[0]);
-              }
-            } else {
-              setError(
-                foldersResponse.message ||
-                  "폴더 목록을 불러오는데 실패했습니다.",
+          if (folders.length > 0) {
+            // state로 전달받은 폴더가 있으면 해당 폴더 선택, 없으면 첫번째 폴더
+            if (selectedFolderUuidFromState) {
+              const folder = folders.find(
+                (f) => f.folderUuid === selectedFolderUuidFromState,
               );
+              setSelectedFolder(folder || folders[0]);
+            } else {
+              setSelectedFolder(folders[0]);
             }
           }
         }
@@ -314,17 +278,7 @@ const TeamPage = () => {
     };
 
     fetchData();
-  }, [teamUuid, teamFromState, user?.nickname]);
-
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
-
-  const handleFolderClick = (folder: FolderType) => {
-    setSelectedFolder(folder);
-    setSelectedTags([]); // 폴더 변경 시 태그 필터 초기화
-  };
+  }, [teamUuid, teamFromState, selectedFolderUuidFromState]);
 
   // 폴더 선택 또는 태그 필터 변경 시 링크 로드
   useEffect(() => {
@@ -370,6 +324,11 @@ const TeamPage = () => {
 
     fetchLinks();
   }, [selectedFolder, teamUuid, selectedTags]);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   const handleDeleteLink = async (linkUuid: string) => {
     try {
@@ -434,76 +393,7 @@ const TeamPage = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* 사이드바 */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
-        {/* 로고 */}
-        <div className="h-14 px-4 border-b border-gray-200 flex items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">TS</span>
-            </div>
-            <span className="font-bold text-lg text-gray-900">TeamStash</span>
-          </div>
-        </div>
-
-        {/* 네비게이션 */}
-        <nav className="flex-1 p-3 overflow-y-auto">
-          {/* 내 팀 섹션 */}
-          <div className="mb-2">
-            <button
-              onClick={() => navigate("/my-teams")}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
-            >
-              <Users className="w-4 h-4" />
-              <span className="text-sm font-medium">내 팀</span>
-            </button>
-          </div>
-
-          {/* 현재 팀 */}
-          {currentTeam && (
-            <div className="ml-2">
-              {/* 팀 헤더 */}
-              <div className="flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-50 text-blue-600">
-                <button
-                  onClick={() => setIsTeamExpanded(!isTeamExpanded)}
-                  className="p-0.5 hover:bg-blue-100 rounded cursor-pointer"
-                >
-                  {isTeamExpanded ? (
-                    <ChevronDown className="w-4 h-4" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4" />
-                  )}
-                </button>
-                <Users className="w-4 h-4" />
-                <span className="text-sm font-medium flex-1 wrap-break-word min-w-0">
-                  {currentTeam.teamName}
-                </span>
-              </div>
-
-              {/* 폴더 목록 */}
-              {isTeamExpanded && (
-                <div className="ml-6 mt-1 space-y-1">
-                  {folders.map((folder) => (
-                    <button
-                      key={folder.folderUuid}
-                      onClick={() => handleFolderClick(folder)}
-                      className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left text-sm transition-colors cursor-pointer ${
-                        selectedFolder?.folderUuid === folder.folderUuid
-                          ? "bg-blue-100 text-blue-700 font-medium"
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`}
-                    >
-                      <Folder className="w-4 h-4 shrink-0" />
-                      <span className="wrap-break-word min-w-0">
-                        {folder.folderName}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </nav>
-      </aside>
+      <Sidebar onCreateTeam={() => setIsModalOpen(true)} />
 
       {/* 메인 영역 */}
       <div className="flex-1 flex flex-col">
@@ -615,6 +505,16 @@ const TeamPage = () => {
           )}
         </main>
       </div>
+
+      {/* 팀 만들기 모달 */}
+      <CreateTeamModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onTeamCreated={(newTeam) => {
+          addTeam(newTeam);
+          setIsModalOpen(false);
+        }}
+      />
     </div>
   );
 };

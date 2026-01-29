@@ -1,68 +1,17 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { LogOut, Users, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import Sidebar from "../components/layout/Sidebar";
 import CreateTeamModal from "../components/teams/CreateTeamModal";
-import { teamApi } from "../services/api";
 import type { Team } from "../types";
-
-// TODO: 백엔드 연동 시 제거
-const USE_MOCK_DATA = true;
-
-// Mock 데이터
-const mockTeams: Team[] = [
-  {
-    teamUuid: "team-uuid-1",
-    teamName: "개발팀",
-    createdAt: "2024-06-15T10:20:30Z",
-    role: "owner",
-  },
-  {
-    teamUuid: "team-uuid-2",
-    teamName: "디자인팀",
-    createdAt: "2024-06-16T11:21:31Z",
-    role: "member",
-  },
-];
+import { useTeams } from "../contexts/TeamContext";
 
 const MyTeams = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { teams, loading, addTeam } = useTeams();
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // 팀 목록 조회
-  useEffect(() => {
-    const fetchTeams = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        if (USE_MOCK_DATA) {
-          // Mock 데이터 사용
-          setTeams(mockTeams);
-        } else {
-          // 실제 API 호출
-          const response = await teamApi.getMyTeams();
-          if (response.success) {
-            setTeams(response.data);
-          } else {
-            setError(response.message || "팀 목록을 불러오는데 실패했습니다.");
-          }
-        }
-      } catch {
-        setError("팀 목록을 불러오는데 실패했습니다.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTeams();
-  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -71,7 +20,7 @@ const MyTeams = () => {
 
   const handleTeamCreated = (newTeam: Team) => {
     // 팀 목록에 새 팀 추가
-    setTeams([...teams, newTeam]);
+    addTeam(newTeam);
   };
 
   const handleTeamClick = (team: Team) => {
@@ -82,7 +31,7 @@ const MyTeams = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* 사이드바 */}
-      <Sidebar teams={teams} onCreateTeam={() => setIsModalOpen(true)} />
+      <Sidebar onCreateTeam={() => setIsModalOpen(true)} />
 
       {/* 메인 영역 */}
       <div className="flex-1 flex flex-col">
@@ -112,16 +61,6 @@ const MyTeams = () => {
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-            </div>
-          ) : error ? (
-            <div className="text-center py-12">
-              <p className="text-red-500">{error}</p>
-              <button
-                onClick={() => window.location.reload()}
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                다시 시도
-              </button>
             </div>
           ) : teams.length === 0 ? (
             // 팀이 없을 때
