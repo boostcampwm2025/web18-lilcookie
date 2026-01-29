@@ -9,10 +9,10 @@ hero:
   actions:
     - theme: brand
       text: Chrome Extension 설치
-      link: https://chrome.google.com/webstore
+      link: https://github.com/boostcampwm2025/web18-lilcookie/releases/tag/v1.1.0
     - theme: alt
       text: 대시보드 시작하기
-      link: https://app.localhost
+      link: https://app.teamstash.eupthere.uk
 
 features:
   - icon: ✨
@@ -45,7 +45,7 @@ features:
   <h2 class="cta-title">지금 바로 시작하세요</h2>
   <p class="cta-subtitle">팀의 지식을 한 곳에 모아 생산성을 높이세요</p>
   <div class="cta-buttons">
-    <a href="https://chrome.google.com/webstore" class="cta-btn primary">Chrome Extension 설치</a>
-    <a href="https://app.localhost" class="cta-btn secondary">대시보드 열기</a>
+    <a href="https://github.com/boostcampwm2025/web18-lilcookie/releases/tag/v1.1.0" class="cta-btn primary">Chrome Extension 설치</a>
+    <a href="https://app.teamstash.eupthere.uk" class="cta-btn secondary">대시보드 열기</a>
   </div>
 </div>

@@ -2,7 +2,7 @@ import { defineConfig } from "vitepress";
 
 export default defineConfig({
   title: "TeamStash",
-  description: "팀의 링크를 한 곳에 모으고 AI로 요약하는 브라우저 확장 프로그램",
+  description: "팀의 지식을 한 곳에 모으고 활용하세요.",
   themeConfig: {
     nav: [
       { text: "Home", link: "/" },
@@ -11,7 +11,7 @@ export default defineConfig({
     sidebar: [],
 
     socialLinks: [
-      { icon: "github", link: "https://github.com/boostcampwm-2024/web18-lilcookie" },
+      { icon: "github", link: "https://github.com/boostcampwm2025/web18-lilcookie" },
     ],
   },
   vite: {
