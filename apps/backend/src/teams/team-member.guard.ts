@@ -22,7 +22,7 @@ export class TeamMemberGuard implements CanActivate {
       throw new NotFoundException("팀을 찾을 수 없습니다");
     }
 
-    const member = await this.teamRepository.findMember(team.id, user.userId);
+    const member = await this.teamRepository.findMember(team.teamId, user.userId);
     if (!member) {
       throw new ForbiddenException("해당 팀의 멤버만 접근할 수 있습니다");
     }
