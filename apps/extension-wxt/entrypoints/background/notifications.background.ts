@@ -52,7 +52,6 @@ async function checkNewLinks() {
       return;
     }
 
-    // TODO: Backend needs to implement `createdAfter` query parameter for filtering links by creation time
     const response = await api.get("/links", {
       params: {
         teamUuid,
