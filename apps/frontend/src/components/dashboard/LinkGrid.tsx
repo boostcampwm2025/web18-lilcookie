@@ -18,13 +18,13 @@ const LinkGrid = ({
   // 로딩 중
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <div
             key={i}
-            className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse"
+            className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse max-w-sm"
           >
-            <div className="h-48 bg-gray-200" />
+            <div className="h-40 bg-gray-200" />
             <div className="p-5 space-y-3">
               <div className="h-5 bg-gray-200 rounded w-3/4" />
               <div className="h-4 bg-gray-200 rounded w-full" />
@@ -53,7 +53,7 @@ const LinkGrid = ({
 
   // 링크 목록
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
       {links
         .sort(
           (a, b) =>
@@ -61,7 +61,7 @@ const LinkGrid = ({
         )
         .map((link) => (
           <LinkCard
-            key={link.uuid}
+            key={link.linkUuid}
             link={link}
             onDelete={onDeleteLink}
             onTagClick={onTagClick}
