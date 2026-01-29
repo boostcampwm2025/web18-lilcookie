@@ -4,11 +4,13 @@ import { AiController } from "./ai.controller";
 import { AiService } from "./ai.service";
 import { OidcModule } from "../oidc/oidc.module";
 import { UserModule } from "../user/user.module";
+import { TeamsModule } from "src/teams/teams.module";
 
 @Module({
   imports: [
     OidcModule,
     UserModule,
+    TeamsModule,
     HttpModule.register({
       timeout: 30000, // AI API calls may take longer
       maxRedirects: 5,

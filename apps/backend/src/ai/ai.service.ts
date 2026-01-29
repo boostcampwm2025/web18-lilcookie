@@ -24,17 +24,15 @@ interface ClovaStudioResponse {
     finishReason: string;
     created: number;
     seed: number;
-    usage: {
-      completionTokens: number;
-      promptTokens: number;
-      totalTokens: number;
-    };
+    inputLength: number;
+    outputLength: number;
   };
 }
 
 interface SummaryResult {
   summary: string;
   tags: string[];
+  totalTokens: number;
 }
 
 @Injectable()
@@ -58,7 +56,13 @@ export class AiService {
     const response = await this.callClovaStudio(prompt);
 
     // 응답 파싱
-    return this.parseResponse(response);
+    // parseResponse에 content만 전달
+    const parsed = this.parseResponse(response.content);
+
+    return {
+      ...parsed,
+      totalTokens: response.totalTokens,
+    };
   }
 
   private createPrompt(content: string): string {
@@ -79,7 +83,7 @@ ${content}
 - 반드시 위의 JSON 형식만 응답하세요`;
   }
 
-  private async callClovaStudio(prompt: string): Promise<string> {
+  private async callClovaStudio(prompt: string): Promise<{ content: string; totalTokens: number }> {
     const requestId = this.generateRequestId();
 
     const messages: ClovaStudioMessage[] = [
@@ -120,7 +124,10 @@ ${content}
         throw new InternalServerErrorException(`Clova Studio API 오류: ${data.status.message}`);
       }
 
-      return data.result.message.content;
+      return {
+        content: data.result.message.content,
+        totalTokens: data.result.inputLength + data.result.outputLength,
+      };
     } catch (error: unknown) {
       if (error instanceof InternalServerErrorException) {
         throw error;
@@ -131,7 +138,7 @@ ${content}
     }
   }
 
-  private parseResponse(response: string): SummaryResult {
+  private parseResponse(response: string): { summary: string; tags: string[] } {
     try {
       // JSON 코드 블록 제거 (```json ... ``` 형식 대응)
       let cleanedResponse = response.trim();
