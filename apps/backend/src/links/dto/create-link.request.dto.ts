@@ -1,12 +1,15 @@
-import { IsString, IsArray, IsNotEmpty, IsUrl, IsOptional } from "class-validator";
+import { IsString, IsArray, IsNotEmpty, IsUrl, IsOptional, IsUUID } from "class-validator";
 
+/**
+ * 링크 생성 요청 DTO
+ */
 export class CreateLinkRequestDto {
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   teamUuid: string;
 
   @IsOptional()
-  @IsString()
+  @IsUUID()
   folderUuid?: string;
 
   @IsUrl()

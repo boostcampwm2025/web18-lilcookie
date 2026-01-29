@@ -24,7 +24,7 @@ export class ScopesGuard implements CanActivate {
     const hasAllScopes = requiredScopes.every((requiredScope) => tokenScopes.includes(requiredScope));
 
     if (!hasAllScopes) {
-      throw new ForbiddenException("Insufficient permissions");
+      throw new ForbiddenException("권한이 부족합니다.");
     }
 
     return true;

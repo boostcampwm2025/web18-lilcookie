@@ -17,7 +17,7 @@ export const OidcAccessTokenPayloadSchema = z.object({
   name: z.string().optional(),
   given_name: z.string().optional(),
   preferred_username: z.string().optional(),
-  nickname: z.string(),
+  nickname: z.string().optional(),
   groups: z.array(z.string()).optional(),
   roles: z.array(z.string()),
   team_id: z.string().nullable(),
@@ -30,6 +30,8 @@ export type OidcAccessTokenPayload = z.infer<typeof OidcAccessTokenPayloadSchema
 
 export type AuthenticatedUser = OidcAccessTokenPayload & {
   userId: number;
+  userUuid: string;
+  userNickname: string;
 };
 
 export interface AuthenticatedRequest extends Request {

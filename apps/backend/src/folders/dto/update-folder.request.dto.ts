@@ -1,7 +1,10 @@
 import { IsString, IsNotEmpty } from "class-validator";
 
+/**
+ * 폴더 수정 요청 DTO
+ */
 export class UpdateFolderRequestDto {
   @IsString()
   @IsNotEmpty()
-  folderName: string; // 수정할 폴더 이름
+  folderName: string;
 }
