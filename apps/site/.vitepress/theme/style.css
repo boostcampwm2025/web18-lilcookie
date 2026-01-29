@@ -1,0 +1,266 @@
+/**
+ * TeamStash Theme Customization
+ * Based on VitePress default theme
+ */
+
+/**
+ * Colors - TeamStash Brand
+ */
+:root {
+  --vp-c-default-1: var(--vp-c-gray-1);
+  --vp-c-default-2: var(--vp-c-gray-2);
+  --vp-c-default-3: var(--vp-c-gray-3);
+  --vp-c-default-soft: var(--vp-c-gray-soft);
+
+  /* Brand: Indigo */
+  --vp-c-brand-1: #4f46e5;
+  --vp-c-brand-2: #4338ca;
+  --vp-c-brand-3: #3730a3;
+  --vp-c-brand-soft: rgba(79, 70, 229, 0.14);
+
+  --vp-c-tip-1: var(--vp-c-brand-1);
+  --vp-c-tip-2: var(--vp-c-brand-2);
+  --vp-c-tip-3: var(--vp-c-brand-3);
+  --vp-c-tip-soft: var(--vp-c-brand-soft);
+
+  --vp-c-warning-1: var(--vp-c-yellow-1);
+  --vp-c-warning-2: var(--vp-c-yellow-2);
+  --vp-c-warning-3: var(--vp-c-yellow-3);
+  --vp-c-warning-soft: var(--vp-c-yellow-soft);
+
+  --vp-c-danger-1: var(--vp-c-red-1);
+  --vp-c-danger-2: var(--vp-c-red-2);
+  --vp-c-danger-3: var(--vp-c-red-3);
+  --vp-c-danger-soft: var(--vp-c-red-soft);
+}
+
+/**
+ * Component: Button
+ */
+:root {
+  --vp-button-brand-border: transparent;
+  --vp-button-brand-text: var(--vp-c-white);
+  --vp-button-brand-bg: var(--vp-c-brand-1);
+  --vp-button-brand-hover-border: transparent;
+  --vp-button-brand-hover-text: var(--vp-c-white);
+  --vp-button-brand-hover-bg: var(--vp-c-brand-2);
+  --vp-button-brand-active-border: transparent;
+  --vp-button-brand-active-text: var(--vp-c-white);
+  --vp-button-brand-active-bg: var(--vp-c-brand-3);
+}
+
+/**
+ * Component: Home Hero
+ */
+:root {
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: -webkit-linear-gradient(
+    120deg,
+    #4f46e5 30%,
+    #7c3aed
+  );
+
+  --vp-home-hero-image-background-image: linear-gradient(
+    -45deg,
+    #4f46e5 50%,
+    #7c3aed 50%
+  );
+  --vp-home-hero-image-filter: blur(44px);
+}
+
+@media (min-width: 640px) {
+  :root {
+    --vp-home-hero-image-filter: blur(56px);
+  }
+}
+
+@media (min-width: 960px) {
+  :root {
+    --vp-home-hero-image-filter: blur(68px);
+  }
+}
+
+/**
+ * Component: Custom Block
+ */
+:root {
+  --vp-custom-block-tip-border: transparent;
+  --vp-custom-block-tip-text: var(--vp-c-text-1);
+  --vp-custom-block-tip-bg: var(--vp-c-brand-soft);
+  --vp-custom-block-tip-code-bg: var(--vp-c-brand-soft);
+}
+
+/**
+ * Component: Algolia
+ */
+.DocSearch {
+  --docsearch-primary-color: var(--vp-c-brand-1) !important;
+}
+
+/**
+ * Custom Sections for Landing Page
+ */
+
+/* Showcase Section */
+.showcase-section {
+  padding: 80px 24px;
+  text-align: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.showcase-section.alt-bg {
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  width: 100vw;
+  max-width: none;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  padding-left: 24px;
+  padding-right: 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.showcase-section.alt-bg > * {
+  max-width: 1200px;
+  width: 100%;
+}
+
+.showcase-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--vp-c-text-1);
+  margin-bottom: 12px;
+  background: linear-gradient(120deg, #4f46e5, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.showcase-subtitle {
+  font-size: 1.1rem;
+  color: var(--vp-c-text-2);
+  margin: 0 auto 40px auto;
+  max-width: 600px;
+  text-align: center;
+}
+
+/* CTA Section */
+.cta-section {
+  padding: 100px 24px;
+  text-align: center;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  margin-bottom: -24px;
+}
+
+.cta-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 12px;
+}
+
+.cta-subtitle {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 32px;
+}
+
+.cta-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 32px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.cta-btn.primary {
+  background: white;
+  color: #4f46e5;
+}
+
+.cta-btn.primary:hover {
+  background: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+}
+
+.cta-btn.secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.cta-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Feature Icons */
+.VPFeature .icon {
+  font-size: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .showcase-section {
+    padding: 60px 16px;
+  }
+  
+  .showcase-title {
+    font-size: 1.75rem;
+  }
+  
+  .showcase-subtitle {
+    font-size: 1rem;
+  }
+  
+  .cta-section {
+    padding: 60px 16px;
+  }
+  
+  .cta-title {
+    font-size: 1.75rem;
+  }
+  
+  .cta-subtitle {
+    font-size: 1rem;
+  }
+  
+  .cta-btn {
+    padding: 12px 24px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Dark mode adjustments */
+.dark .showcase-section.alt-bg {
+  background: linear-gradient(180deg, #1a1a1a 0%, var(--vp-c-bg) 100%);
+}
+
+.dark .showcase-title {
+  background: linear-gradient(120deg, #818cf8, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

@@ -38,6 +38,7 @@ model Team {
   folders  Folder[]      // 팀에 속한 폴더들
   links    Link[]        // 팀에 속한 전체 링크들
   webhooks TeamWebhook[] // 팀에 등록된 웹훅들
+  tokenUsage TeamTokenUsage[]  // 추가: 팀별 토큰 사용량
 
   @@map("teams")
 }
@@ -166,4 +167,21 @@ model OAuthApp {
   @@index([ownerId])
   @@index([issuer])
   @@map("oauth_apps")
+}
+
+// --------------------------------------------------------
+// 8. TeamTokenUsage (팀별 ai 토큰 사용량 관리)
+// --------------------------------------------------------
+model TeamTokenUsage {
+  id         Int      @id @default(autoincrement())
+  date       String   // "2024-01-29" 형식 (일별 집계용)
+  usedTokens Int      @default(0) @map("used_tokens")
+  maxTokens  Int      @default(50000) @map("max_tokens") // 일일 한도
+  
+  teamId Int @map("team_id")
+  team   Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  
+  @@unique([teamId, date]) // 팀+날짜 조합 유니크
+  @@index([teamId])
+  @@map("team_token_usage")
 }

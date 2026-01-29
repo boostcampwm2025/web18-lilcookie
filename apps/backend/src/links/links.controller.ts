@@ -55,13 +55,13 @@ export class LinksController {
 
   /**
    * 링크 목록 조회 (전체 또는 조건)
-   * GET /links?teamUuid={teamUuid}&folderUuid={folderUuid}&tags={tags}
+   * GET /links?teamUuid={teamUuid}&folderUuid={folderUuid}&tags={tags}&createdAfter={createdAfter}
    */
   @Get()
   @RequireScopes("links:read")
   async findAll(@Query() query: GetLinksQueryDto, @CurrentUser() user: AuthenticatedUser) {
     this.logger.log(
-      `GET /links - 링크 목록 조회 요청: teamUuid=${query.teamUuid}, folderUuid=${query.folderUuid}, tags=${query.tags}`,
+      `GET /links - 링크 목록 조회 요청: teamUuid=${query.teamUuid}, folderUuid=${query.folderUuid}, tags=${query.tags}, createdAfter=${query.createdAfter?.toISOString()}`,
     );
 
     const responseDtos = await this.linksService.findAll(query, user.userId);

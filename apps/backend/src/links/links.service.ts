@@ -81,6 +81,7 @@ export class LinksService {
       teamIds,
       folderId,
       tags,
+      createdAfter: query.createdAfter,
     });
 
     return results.map(({ link, creator }) => LinkResponseDto.from(link, creator));

@@ -43,4 +43,5 @@ export interface LinkSearchCriteria {
   teamIds?: number[]; // 여러 팀 동시 조회
   folderId?: number;
   tags?: string[];
+  createdAfter?: Date;
 }

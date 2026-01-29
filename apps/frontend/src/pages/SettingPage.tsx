@@ -21,7 +21,7 @@ const SettingPage = () => {
   const [currentTeam, setCurrentTeam] = useState<Team | null>(null);
   const [members, setMembers] = useState<GetTeamMembersResponseData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [_error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,6 +31,13 @@ const SettingPage = () => {
   const [webhookUrl, setWebhookUrl] = useState("");
   const [isAddingWebhook, setIsAddingWebhook] = useState(false);
   const [showWebhookInput, setShowWebhookInput] = useState(false);
+
+  // 토큰 관련 state
+  const [tokenUsage, setTokenUsage] = useState<{
+    usedTokens: number;
+    maxTokens: number;
+    percentage: number;
+  } | null>(null);
 
   // 팀 정보 및 멤버 조회
   useEffect(() => {
@@ -74,6 +81,18 @@ const SettingPage = () => {
           const webhooksResponse = await teamApi.getTeamWebhooks(teamUuid);
           if (webhooksResponse.success) {
             setWebhooks(webhooksResponse.data);
+          }
+        }
+
+        // 토큰 사용량 가져오기
+        if (teamUuid) {
+          try {
+            const response = await teamApi.getTokenUsage(teamUuid);
+            if (response.success) {
+              setTokenUsage(response.data);
+            }
+          } catch (error) {
+            console.error("토큰 사용량 조회 실패:", error);
           }
         }
       } catch {
@@ -286,17 +305,53 @@ const SettingPage = () => {
               </div>
             </div>
 
+            {/* 토큰 사용량 섹션 */}
+            {tokenUsage && (
+              <div className="bg-white rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  AI 사용량
+                </h2>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">오늘 사용량</span>
+                  </div>
+                  {/* 프로그레스 바 */}
+                  <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-600 rounded-full transition-all"
+                      style={{ width: `${tokenUsage.percentage}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">
+                      매일 자정(KST)에 초기화됩니다
+                    </span>
+                    <span className="text-sm font-medium text-blue-600">
+                      {tokenUsage.percentage}% 사용
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 웹훅 관리 섹션 */}
             <div className="bg-white rounded-xl p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                웹훅 관리 {isAdmin && <span className="text-sm font-normal text-gray-500">(Owner)</span>}
+                웹훅 관리{" "}
+                {isAdmin && (
+                  <span className="text-sm font-normal text-gray-500">
+                    (Owner)
+                  </span>
+                )}
               </h2>
               <p className="text-sm text-gray-500 mb-4">팀 내 이벤트 발생 시 데이터를 전송할 URL을 관리합니다.</p>
 
               {/* 웹훅 목록 */}
               <div className="space-y-3 mb-4">
                 {webhooks.length === 0 ? (
-                  <p className="text-sm text-gray-400 py-2">등록된 웹훅이 없습니다.</p>
+                  <p className="text-sm text-gray-400 py-2">
+                    등록된 웹훅이 없습니다.
+                  </p>
                 ) : (
                   webhooks.map((webhook) => (
                     <div key={webhook.webhookUuid} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
@@ -310,7 +365,9 @@ const SettingPage = () => {
                         >
                           <span
                             className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                              webhook.isActive ? "translate-x-5" : "translate-x-0"
+                              webhook.isActive
+                                ? "translate-x-5"
+                                : "translate-x-0"
                             }`}
                           />
                         </button>
@@ -322,7 +379,9 @@ const SettingPage = () => {
                         >
                           <span
                             className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full ${
-                              webhook.isActive ? "translate-x-5" : "translate-x-0"
+                              webhook.isActive
+                                ? "translate-x-5"
+                                : "translate-x-0"
                             }`}
                           />
                         </div>
@@ -334,7 +393,9 @@ const SettingPage = () => {
                       {/* 삭제 버튼 - owner만 표시 */}
                       {isAdmin && (
                         <button
-                          onClick={() => handleDeleteWebhook(webhook.webhookUuid)}
+                          onClick={() =>
+                            handleDeleteWebhook(webhook.webhookUuid)
+                          }
                           className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />

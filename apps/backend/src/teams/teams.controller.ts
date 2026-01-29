@@ -21,11 +21,13 @@ import { CurrentUser } from "../oidc/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "../oidc/types/oidc.types";
 import { ResponseBuilder } from "../common/builders/response.builder";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import { TokenUsageService } from "./token-usage.service";
 
 @Controller("teams")
 export class TeamsController {
   constructor(
     private readonly teamsService: TeamsService,
+    private readonly tokenUsageService: TokenUsageService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService,
   ) {}
 
@@ -135,5 +137,16 @@ export class TeamsController {
       .message("팀 멤버 정보를 성공적으로 조회했습니다.")
       .data(responseDtos)
       .build();
+  }
+
+  /**
+   * 팀 토큰 사용량 조회
+   * GET /teams/:teamUuid/token-usage
+   */
+  @Get(":teamUuid/token-usage")
+  async getTokenUsage(@Param("teamUuid", ParseUUIDPipe) teamUuid: string) {
+    const usage = await this.tokenUsageService.getUsage(teamUuid);
+
+    return ResponseBuilder.success().status(HttpStatus.OK).message("토큰 사용량을 조회했습니다").data(usage).build();
   }
 }
