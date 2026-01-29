@@ -3,8 +3,8 @@ services:
     build:
       context: ../..
       dockerfile: ./apps/backend/Dockerfile
-    image: lilcookie-backend:latest
-    container_name: lilcookie-backend
+    image: teamstash-backend:latest
+    container_name: teamstash-backend
     restart: unless-stopped
     env_file:
       - .env
@@ -28,8 +28,8 @@ services:
       dockerfile: ./apps/frontend/Dockerfile
       args:
         - VITE_API_BASE_URL=${VITE_API_BASE_URL}
-    image: lilcookie-frontend:latest
-    container_name: lilcookie-frontend
+    image: teamstash-frontend:latest
+    container_name: teamstash-frontend
     restart: unless-stopped
     depends_on:
       backend:
@@ -45,7 +45,7 @@ services:
 
   postgresql:
     image: docker.io/library/postgres:16-alpine
-    container_name: lilcookie-authentik-db
+    container_name: teamstash-authentik-db
     restart: unless-stopped
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}']
@@ -64,7 +64,7 @@ services:
 
   authentik-server:
     image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2025.12.1}
-    container_name: lilcookie-authentik-server
+    container_name: teamstash-authentik-server
     restart: unless-stopped
     command: server
     environment:
@@ -84,7 +84,7 @@ services:
 
   authentik-worker:
     image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2025.12.1}
-    container_name: lilcookie-authentik-worker
+    container_name: teamstash-authentik-worker
     restart: unless-stopped
     command: worker
     environment:
