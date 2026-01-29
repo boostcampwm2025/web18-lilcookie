@@ -146,39 +146,49 @@ api.interceptors.response.use(
   },
 );
 
-// 대시보드용 API 함수들
+// 링크 API 함수들
 export const linkApi = {
-  // GET /api/links?teamId=1 - 팀별 링크 목록 조회
-  getLinks: async (
-    teamId?: number,
-    tags?: string[],
-  ): Promise<ApiResponse<Link[]>> => {
-    const params: Record<string, string | number> = {};
+  // GET /links?teamUuid={teamUuid}&folderUuid={folderUuid}&tags={tag1,tag2,...}
+  getLinks: async (options?: {
+    teamUuid?: string;
+    folderUuid?: string;
+    tags?: string[];
+  }): Promise<ApiResponse<Link[]>> => {
+    const params: Record<string, string> = {};
 
-    if (teamId !== undefined) {
-      params.teamId = teamId;
+    if (options?.teamUuid) {
+      params.teamUuid = options.teamUuid;
     }
 
-    if (tags && tags.length > 0) {
-      params.tags = tags.join(",");
+    if (options?.folderUuid) {
+      params.folderUuid = options.folderUuid;
+    }
+
+    if (options?.tags && options.tags.length > 0) {
+      params.tags = options.tags.join(",");
     }
 
     const response = await api.get("/links", { params });
     return response.data;
   },
 
-  // DELETE /api/links/:linkId - 링크 삭제 (204 No Content)
-  // linkId는 uuid string으로 유지 (외부 노출용)
-  deleteLink: async (linkId: string): Promise<void> => {
-    await api.delete(`/links/${linkId}`);
+  // GET /links/:linkUuid - 단건 조회
+  getLink: async (linkUuid: string): Promise<ApiResponse<Link>> => {
+    const response = await api.get(`/links/${linkUuid}`);
+    return response.data;
   },
 
-  // GET /api/links?teamId=1&tags=리엑트,분석 - 태그로 검색
+  // DELETE /links/:linkUuid - 링크 삭제 (204 No Content)
+  deleteLink: async (linkUuid: string): Promise<void> => {
+    await api.delete(`/links/${linkUuid}`);
+  },
+
+  // 태그로 검색
   searchByTags: async (
-    teamId: number,
+    teamUuid: string,
     tags: string[],
   ): Promise<ApiResponse<Link[]>> => {
-    return linkApi.getLinks(teamId, tags);
+    return linkApi.getLinks({ teamUuid, tags });
   },
 };
 

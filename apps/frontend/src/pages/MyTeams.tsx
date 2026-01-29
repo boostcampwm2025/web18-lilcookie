@@ -11,7 +11,6 @@ const MyTeams = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { teams, loading, addTeam } = useTeams();
-  const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -62,16 +61,6 @@ const MyTeams = () => {
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-            </div>
-          ) : error ? (
-            <div className="text-center py-12">
-              <p className="text-red-500">{error}</p>
-              <button
-                onClick={() => window.location.reload()}
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                다시 시도
-              </button>
             </div>
           ) : teams.length === 0 ? (
             // 팀이 없을 때
