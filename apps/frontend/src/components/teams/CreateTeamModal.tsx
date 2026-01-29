@@ -47,7 +47,7 @@ const CreateTeamModal = ({
           teamUuid: `team-uuid-${Date.now()}`,
           teamName: teamName.trim(),
           createdAt: new Date().toISOString(),
-          role: "admin",
+          role: "owner",
         };
         onTeamCreated(newTeam);
         setTeamName("");
