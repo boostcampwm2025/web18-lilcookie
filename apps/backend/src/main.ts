@@ -5,6 +5,8 @@ import { ConfigService } from "@nestjs/config";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 import { ValidationPipe, type LoggerService } from "@nestjs/common";
 import cookieParser from "cookie-parser";
+import { SwaggerModule } from "@nestjs/swagger";
+import { createSwaggerConfig } from "./config/swagger.config";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -40,6 +42,11 @@ async function bootstrap() {
 
   // api 접두어 추가 설정
   app.setGlobalPrefix("api");
+
+  // Swagger 문서 설정
+  const config = createSwaggerConfig();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup("docs", app, document);
 
   // ConfigService를 통한 환경변수 접근
   const configService = app.get(ConfigService);

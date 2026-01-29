@@ -34,8 +34,10 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/schedule": "^6.1.0",
+    "@nestjs/swagger": "^11.2.5",
     "@prisma/adapter-better-sqlite3": "^7.2.0",
     "@prisma/client": "^7.2.0",
+    "@repo/api": "workspace:*",
     "axios": "^1.13.2",
     "axios-retry": "^4.5.0",
     "bcryptjs": "^3.0.3",
@@ -52,8 +54,7 @@
     "rxjs": "^7.8.1",
     "uuid": "^13.0.0",
     "winston": "^3.19.0",
-    "zod": "^4.3.5",
-    "@repo/api": "workspace:*"
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
