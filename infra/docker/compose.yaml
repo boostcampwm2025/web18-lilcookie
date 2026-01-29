@@ -43,6 +43,22 @@ services:
       retries: 3
       start_period: 10s
 
+  site:
+    build:
+      context: ../..
+      dockerfile: ./apps/site/Dockerfile
+    image: teamstash-site:latest
+    container_name: teamstash-site
+    restart: unless-stopped
+    networks:
+      - caddy-network
+    healthcheck:
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost/']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
   postgresql:
     image: docker.io/library/postgres:16-alpine
     container_name: teamstash-authentik-db
