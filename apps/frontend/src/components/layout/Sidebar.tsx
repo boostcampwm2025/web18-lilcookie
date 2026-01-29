@@ -210,7 +210,7 @@ const Sidebar = ({
       </div>
 
       {/* 네비게이션 */}
-      <nav className="flex-1 p-3 overflow-y-auto">
+      <nav className="flex-1 p-3 overflow-y-auto custom-scrollbar">
         {/* 내 팀 헤더 */}
         <button
           onClick={() => navigate("/my-teams")}
@@ -307,10 +307,10 @@ const Sidebar = ({
 
                     return (
                       <div
-                        className={`ml-6 space-y-0.5 overflow-hidden transition-all duration-200 ease-in-out ${
+                        className={`ml-6 space-y-0.5 transition-all duration-200 ease-in-out custom-scrollbar ${
                           isExpanded && folders.length > 0
-                            ? "max-h-96 opacity-100 mt-1"
-                            : "max-h-0 opacity-0"
+                            ? "max-h-64 opacity-100 mt-1 overflow-y-auto"
+                            : "max-h-0 opacity-0 overflow-hidden"
                         }`}
                       >
                         {folders.map((folder, index) => {
