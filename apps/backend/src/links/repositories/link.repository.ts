@@ -52,7 +52,11 @@ export class LinkRepository {
    * @returns 조건에 맞는 링크와 생성한 사용자 정보 배열
    */
   async findAll(criteria: LinkSearchCriteria): Promise<LinkWithCreator[]> {
-    const where: { teamId?: number | { in: number[] }; folderId?: number } = {};
+    const where: {
+      teamId?: number | { in: number[] };
+      folderId?: number;
+      createdAt?: { gt: Date };
+    } = {};
 
     // teamIds가 있으면 우선, 없으면 teamId 사용
     // 왜 teamIds? 사용자가 속한 여러 팀에서 링크를 조회할 때 필요
@@ -64,6 +68,10 @@ export class LinkRepository {
 
     if (criteria.folderId) {
       where.folderId = criteria.folderId;
+    }
+
+    if (criteria.createdAfter) {
+      where.createdAt = { gt: criteria.createdAfter };
     }
 
     const links = await this.prisma.link.findMany({

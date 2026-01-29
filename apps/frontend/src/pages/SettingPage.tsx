@@ -24,7 +24,7 @@ const SettingPage = () => {
   const [currentTeam, setCurrentTeam] = useState<Team | null>(null);
   const [members, setMembers] = useState<GetTeamMembersResponseData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -323,7 +323,12 @@ const SettingPage = () => {
             {/* 웹훅 관리 섹션 */}
             <div className="bg-white rounded-xl p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                웹훅 관리 {isAdmin && <span className="text-sm font-normal text-gray-500">(Owner)</span>}
+                웹훅 관리{" "}
+                {isAdmin && (
+                  <span className="text-sm font-normal text-gray-500">
+                    (Owner)
+                  </span>
+                )}
               </h2>
               <p className="text-sm text-gray-500 mb-4">
                 팀 내 이벤트 발생 시 데이터를 전송할 URL을 관리합니다.
@@ -332,7 +337,9 @@ const SettingPage = () => {
               {/* 웹훅 목록 */}
               <div className="space-y-3 mb-4">
                 {webhooks.length === 0 ? (
-                  <p className="text-sm text-gray-400 py-2">등록된 웹훅이 없습니다.</p>
+                  <p className="text-sm text-gray-400 py-2">
+                    등록된 웹훅이 없습니다.
+                  </p>
                 ) : (
                   webhooks.map((webhook) => (
                     <div
@@ -349,7 +356,9 @@ const SettingPage = () => {
                         >
                           <span
                             className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                              webhook.isActive ? "translate-x-5" : "translate-x-0"
+                              webhook.isActive
+                                ? "translate-x-5"
+                                : "translate-x-0"
                             }`}
                           />
                         </button>
@@ -361,7 +370,9 @@ const SettingPage = () => {
                         >
                           <span
                             className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full ${
-                              webhook.isActive ? "translate-x-5" : "translate-x-0"
+                              webhook.isActive
+                                ? "translate-x-5"
+                                : "translate-x-0"
                             }`}
                           />
                         </div>
@@ -375,7 +386,9 @@ const SettingPage = () => {
                       {/* 삭제 버튼 - owner만 표시 */}
                       {isAdmin && (
                         <button
-                          onClick={() => handleDeleteWebhook(webhook.webhookUuid)}
+                          onClick={() =>
+                            handleDeleteWebhook(webhook.webhookUuid)
+                          }
                           className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -387,8 +400,8 @@ const SettingPage = () => {
               </div>
 
               {/* 웹훅 추가 - owner만 표시 */}
-              {isAdmin && (
-                showWebhookInput ? (
+              {isAdmin &&
+                (showWebhookInput ? (
                   <div className="flex gap-2">
                     <input
                       type="url"
@@ -423,8 +436,7 @@ const SettingPage = () => {
                     <Plus className="w-4 h-4" />
                     웹훅 추가
                   </button>
-                )
-              )}
+                ))}
             </div>
 
             {/* 팀 탈퇴 섹션 */}

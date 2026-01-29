@@ -1,5 +1,5 @@
-import { login, logout, getAuthState } from "./auth.background";
-import { summarizeContent, saveLink } from "./messaging.background";
+import { login, logout, getAuthState, selectTeam } from "./auth.background";
+import { summarizeContent, saveLink, getFolders } from "./messaging.background";
 import {
   setupAlarms,
   setupNotificationHandlers,
@@ -31,6 +31,37 @@ export default defineBackground(() => {
         return true;
       case "getAuthState":
         getAuthState().then(sendResponse);
+        return true;
+      case "selectTeam":
+        selectTeam(request.teamUuid)
+          .then(() => sendResponse({ success: true }))
+          .catch((error) =>
+            sendResponse({
+              success: false,
+              error: error instanceof Error ? error.message : "팀 변경 실패",
+            }),
+          );
+        return true;
+      case "getFolders":
+        getFolders(request.teamUuid)
+          .then(sendResponse)
+          .catch((error) =>
+            sendResponse({
+              success: false,
+              error: error instanceof Error ? error.message : "폴더 조회 실패",
+            }),
+          );
+        return true;
+      case "selectFolder":
+        chrome.storage.local
+          .set({ selected_folder_uuid: request.folderUuid })
+          .then(() => sendResponse({ success: true }))
+          .catch((error) =>
+            sendResponse({
+              success: false,
+              error: error instanceof Error ? error.message : "폴더 변경 실패",
+            }),
+          );
         return true;
     }
   });
