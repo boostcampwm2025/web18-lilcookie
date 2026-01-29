@@ -80,7 +80,8 @@ function App() {
         // 페이지 내용이 있는지 확인하여 AI 버튼 활성화 여부 결정
         const { pageContent } = await chrome.storage.session.get("pageContent");
         const isReaderable = (pageContent as any)?.textContent;
-        setIsAiDisabled(!isReaderable);
+        const hasNoTeams = (authState.userInfo?.teams ?? []).length === 0;
+        setIsAiDisabled(!isReaderable || hasNoTeams);
       }
     })();
   }, []);
