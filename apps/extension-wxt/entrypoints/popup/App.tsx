@@ -14,6 +14,12 @@ interface TabInfo {
   favIconUrl?: string;
 }
 
+const buildDashboardUrl = (teamUuid: string, folderUuid?: string) => {
+  if (!teamUuid) return "";
+  const baseUrl = `${BASE_URL}/team/${teamUuid.toLowerCase()}`;
+  return folderUuid ? `${baseUrl}?folderUuid=${folderUuid}` : baseUrl;
+};
+
 function App() {
   // State 관리
   const [tab, setTab] = useState<TabInfo | null>(null);
@@ -54,9 +60,7 @@ function App() {
         setTeams(userTeams ?? []);
         const nextTeamUuid = storedTeamUuid || userTeams?.[0]?.teamUuid || "";
         setSelectedTeamUuid(nextTeamUuid);
-        if (nextTeamUuid) {
-          setDashboardUrl(`${BASE_URL}/team/${nextTeamUuid.toLowerCase()}`);
-        }
+        setDashboardUrl(buildDashboardUrl(nextTeamUuid));
         await loadFolders(nextTeamUuid);
       }
 
@@ -333,11 +337,10 @@ function App() {
   const handleTeamChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const nextTeamUuid = e.target.value;
     const previousTeamUuid = selectedTeamUuid;
+    const previousFolderUuid = selectedFolderUuid;
 
     setSelectedTeamUuid(nextTeamUuid);
-    setDashboardUrl(
-      nextTeamUuid ? `${BASE_URL}/team/${nextTeamUuid.toLowerCase()}` : "",
-    );
+    setDashboardUrl(buildDashboardUrl(nextTeamUuid));
 
     const response = await chrome.runtime.sendMessage({
       action: "selectTeam",
@@ -346,11 +349,8 @@ function App() {
 
     if (!response?.success) {
       setSelectedTeamUuid(previousTeamUuid);
-      setDashboardUrl(
-        previousTeamUuid
-          ? `${BASE_URL}/team/${previousTeamUuid.toLowerCase()}`
-          : "",
-      );
+      setSelectedFolderUuid(previousFolderUuid);
+      setDashboardUrl(buildDashboardUrl(previousTeamUuid, previousFolderUuid));
       alert("팀 변경 실패: " + (response?.error || "알 수 없는 오류"));
       await loadFolders(previousTeamUuid);
       return;
@@ -363,6 +363,7 @@ function App() {
     if (!teamUuid) {
       setFolders([]);
       setSelectedFolderUuid("");
+      setDashboardUrl("");
       return;
     }
 
@@ -394,6 +395,7 @@ function App() {
       "";
 
     setSelectedFolderUuid(nextFolderUuid);
+    setDashboardUrl(buildDashboardUrl(teamUuid, nextFolderUuid));
 
     if (nextFolderUuid) {
       await chrome.runtime.sendMessage({
@@ -410,6 +412,7 @@ function App() {
     const previousFolderUuid = selectedFolderUuid;
 
     setSelectedFolderUuid(nextFolderUuid);
+    setDashboardUrl(buildDashboardUrl(selectedTeamUuid, nextFolderUuid));
 
     const response = await chrome.runtime.sendMessage({
       action: "selectFolder",
@@ -418,6 +421,7 @@ function App() {
 
     if (!response?.success) {
       setSelectedFolderUuid(previousFolderUuid);
+      setDashboardUrl(buildDashboardUrl(selectedTeamUuid, previousFolderUuid));
       alert("폴더 변경 실패: " + (response?.error || "알 수 없는 오류"));
     }
   };

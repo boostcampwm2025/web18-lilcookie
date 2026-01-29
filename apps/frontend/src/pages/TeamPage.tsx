@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { LogOut, Link2, X, Search } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useTeams } from "../contexts/TeamContext";
@@ -14,6 +14,7 @@ const TeamPage = () => {
   const { teamUuid } = useParams<{ teamUuid: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { user, logout } = useAuth();
   const { addTeam } = useTeams();
 
@@ -22,6 +23,10 @@ const TeamPage = () => {
   const selectedFolderUuidFromState = location.state?.selectedFolderUuid as
     | string
     | undefined;
+  const selectedFolderUuidFromQuery =
+    searchParams.get("folderUuid") || undefined;
+  const selectedFolderUuidFromRequest =
+    selectedFolderUuidFromState ?? selectedFolderUuidFromQuery;
 
   const [currentTeam, setCurrentTeam] = useState<Team | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<FolderType | null>(null);
@@ -78,9 +83,9 @@ const TeamPage = () => {
 
           if (fetchedFolders.length > 0) {
             // state로 전달받은 폴더가 있으면 해당 폴더 선택, 없으면 첫번째 폴더
-            const targetFolder = selectedFolderUuidFromState
+            const targetFolder = selectedFolderUuidFromRequest
               ? fetchedFolders.find(
-                  (f) => f.folderUuid === selectedFolderUuidFromState,
+                  (f) => f.folderUuid === selectedFolderUuidFromRequest,
                 )
               : null;
             setSelectedFolder(targetFolder || fetchedFolders[0]);
@@ -95,7 +100,7 @@ const TeamPage = () => {
     };
 
     fetchData();
-  }, [teamUuid, teamFromState, selectedFolderUuidFromState]);
+  }, [teamUuid, teamFromState, selectedFolderUuidFromRequest]);
 
   // 폴더 선택 핸들러 (Sidebar에서 호출)
   const handleFolderSelect = (folder: FolderType) => {
