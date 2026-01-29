@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { RoleSchema, TeamBaseSchema } from "../common/common.schema";
+import { RoleSchema, TeamBaseSchema } from "../common/common.schema.js";
 
 /** 팀 생성 요청 */
 export const CreateTeamRequestSchema = z.object({
