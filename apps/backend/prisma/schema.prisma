@@ -33,9 +33,10 @@ model Team {
   createdAt DateTime @default(now()) @map("created_at")
 
   // 관계 설정
-  members Member[] // 팀에 소속된 멤버 목록
-  folders Folder[] // 팀에 속한 폴더들
-  links   Link[]   // 팀에 속한 전체 링크들
+  members  Member[]      // 팀에 소속된 멤버 목록
+  folders  Folder[]      // 팀에 속한 폴더들
+  links    Link[]        // 팀에 속한 전체 링크들
+  webhooks TeamWebhook[] // 팀에 등록된 웹훅들
 
   @@map("teams")
 }
@@ -117,4 +118,23 @@ model Link {
   @@index([folderId])
   @@index([createdBy])
   @@map("links")
+}
+
+// --------------------------------------------------------
+// 6. TeamWebhook (팀별 웹훅 URL 관리)
+// --------------------------------------------------------
+model TeamWebhook {
+  id       Int     @id @default(autoincrement())
+  uuid     String  @unique @default(uuid()) // 외부 노출용 식별자
+  url      String
+  isActive Boolean @default(true) @map("is_active")
+
+  // 외래 키
+  teamId Int @map("team_id")
+
+  // 관계 설정
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([teamId])
+  @@map("team_webhooks")
 }
