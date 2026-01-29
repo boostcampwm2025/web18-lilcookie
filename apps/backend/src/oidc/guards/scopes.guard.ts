@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { SCOPES_KEY } from "./scopes.decorator";
-import type { AuthenticatedRequest } from "../interfaces/oidc.interface";
+import type { AuthenticatedRequest } from "../types/oidc.types";
 
 @Injectable()
 export class ScopesGuard implements CanActivate {

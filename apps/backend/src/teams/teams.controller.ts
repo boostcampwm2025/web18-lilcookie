@@ -18,7 +18,7 @@ import { TeamResponseDto, TeamPreviewResponseDto, TeamJoinResponseDto } from "./
 import { TeamMemberResponseDto } from "./dto/team-member.response.dto";
 import { OidcGuard } from "../oidc/guards/oidc.guard";
 import { CurrentUser } from "../oidc/decorators/current-user.decorator";
-import type { AuthenticatedUser } from "../oidc/interfaces/oidc.interface";
+import type { AuthenticatedUser } from "../oidc/types/oidc.types";
 import { ResponseBuilder } from "../common/builders/response.builder";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 

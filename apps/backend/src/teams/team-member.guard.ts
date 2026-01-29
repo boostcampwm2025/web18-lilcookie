@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { TeamRepository } from "./repositories/team.repository";
-import { AuthenticatedRequest } from "src/oidc/interfaces/oidc.interface";
+import { AuthenticatedRequest } from "../oidc/types/oidc.types";
 
 @Injectable()
 export class TeamMemberGuard implements CanActivate {
