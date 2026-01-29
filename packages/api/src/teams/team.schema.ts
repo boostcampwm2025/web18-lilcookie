@@ -31,3 +31,10 @@ export const GetTeamMembersResponsedDataSchema = z.object({
   role: RoleSchema,
   joinedAt: z.string().datetime(),
 });
+
+/** 웹훅 공통 응답 data */
+export const GetTeamWebhooksResponseDataSchema = z.object({
+  webhookUuid: z.string().uuid(),
+  url: z.string(),
+  isActive: z.boolean(),
+});
