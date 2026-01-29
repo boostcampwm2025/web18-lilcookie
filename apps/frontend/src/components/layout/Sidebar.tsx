@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import {
   Users,
@@ -8,7 +8,8 @@ import {
   Settings,
 } from "lucide-react";
 import type { Team, Folder as FolderType } from "../../types";
-import { teamApi, folderApi } from "../../services/api";
+import { folderApi } from "../../services/api";
+import { useTeams } from "../../contexts/TeamContext";
 
 interface SidebarProps {
   onCreateTeam?: () => void;
@@ -18,6 +19,7 @@ interface SidebarProps {
 const Sidebar = ({ onCreateTeam, onCreateFolder }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { teams, loading } = useTeams();
   const { teamUuid: selectedTeamUuid } = useParams<{ teamUuid: string }>();
 
   // URL에서 선택된 폴더 UUID 가져오기
@@ -28,80 +30,92 @@ const Sidebar = ({ onCreateTeam, onCreateFolder }: SidebarProps) => {
   const isMyTeamsActive = location.pathname === "/my-teams";
   const isSettingPage = location.pathname.endsWith("/setting");
 
-  // 데이터 상태
-  const [teams, setTeams] = useState<Team[]>([]);
+  // 폴더 데이터 캐시
   const [teamFolders, setTeamFolders] = useState<Record<string, FolderType[]>>(
     {},
   );
-  const [loading, setLoading] = useState(true);
-
-  // 각 팀의 펼침/접힘 상태 관리
-  const [expandedTeams, setExpandedTeams] = useState<Record<string, boolean>>(
-    {},
-  );
-
+  // 수동으로 펼침/접힘 토글한 팀 상태
+  const [manualExpandedTeams, setManualExpandedTeams] = useState<
+    Record<string, boolean>
+  >({});
   // 호버 중인 팀
   const [hoveredTeamUuid, setHoveredTeamUuid] = useState<string | null>(null);
 
-  // 팀 목록 조회
-  useEffect(() => {
-    const fetchTeams = async () => {
-      try {
-        setLoading(true);
-        const teamsResponse = await teamApi.getMyTeams();
-        if (teamsResponse.success) {
-          setTeams(teamsResponse.data);
-        }
-      } catch (error) {
-        console.error("팀 목록 조회 실패:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // 이미 폴더를 조회한 팀 추적 (중복 API 호출 방지)
+  const fetchedFoldersRef = useRef<Set<string>>(new Set());
 
-    fetchTeams();
+  // 폴더 조회 함수 (이벤트 핸들러에서 호출)
+  const fetchFoldersIfNeeded = useCallback(async (teamUuid: string) => {
+    if (fetchedFoldersRef.current.has(teamUuid)) return;
+
+    fetchedFoldersRef.current.add(teamUuid);
+    try {
+      const response = await folderApi.getFolders(teamUuid);
+      if (response.success) {
+        setTeamFolders((prev) => ({
+          ...prev,
+          [teamUuid]: response.data,
+        }));
+      }
+    } catch (error) {
+      console.error("폴더 조회 실패:", error);
+      fetchedFoldersRef.current.delete(teamUuid);
+    }
   }, []);
 
-  // 선택된 팀이 바뀌면 펼침 + 폴더 조회
+  // 선택된 팀의 폴더 조회 (URL 변경 시)
   useEffect(() => {
-    if (selectedTeamUuid) {
-      setExpandedTeams((prev) => ({ ...prev, [selectedTeamUuid]: true }));
+    if (!selectedTeamUuid) return;
+    if (fetchedFoldersRef.current.has(selectedTeamUuid)) return;
 
-      // 폴더가 없으면 조회
-      if (!teamFolders[selectedTeamUuid]) {
-        folderApi.getFolders(selectedTeamUuid).then((response) => {
-          if (response.success) {
-            setTeamFolders((prev) => ({
-              ...prev,
-              [selectedTeamUuid]: response.data,
-            }));
-          }
-        });
-      }
-    }
-  }, [selectedTeamUuid, teamFolders]);
+    let cancelled = false;
 
-  const toggleTeamExpand = async (teamUuid: string) => {
-    const willExpand = !expandedTeams[teamUuid];
-
-    setExpandedTeams((prev) => ({
-      ...prev,
-      [teamUuid]: willExpand,
-    }));
-
-    // 펼칠 때 폴더가 없으면 조회
-    if (willExpand && !teamFolders[teamUuid]) {
+    const fetchFolders = async () => {
+      fetchedFoldersRef.current.add(selectedTeamUuid);
       try {
-        const foldersResponse = await folderApi.getFolders(teamUuid);
-        if (foldersResponse.success) {
+        const response = await folderApi.getFolders(selectedTeamUuid);
+        if (!cancelled && response.success) {
           setTeamFolders((prev) => ({
             ...prev,
-            [teamUuid]: foldersResponse.data,
+            [selectedTeamUuid]: response.data,
           }));
         }
       } catch (error) {
         console.error("폴더 조회 실패:", error);
+        if (!cancelled) {
+          fetchedFoldersRef.current.delete(selectedTeamUuid);
+        }
       }
+    };
+
+    fetchFolders();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedTeamUuid]);
+
+  // 팀이 펼쳐져 있는지 계산 (선택된 팀 또는 수동 펼침)
+  const isTeamExpanded = (teamUuid: string): boolean => {
+    // 수동으로 토글한 상태가 있으면 그 값 사용
+    if (manualExpandedTeams[teamUuid] !== undefined) {
+      return manualExpandedTeams[teamUuid];
+    }
+    // 기본: 선택된 팀은 펼침
+    return selectedTeamUuid === teamUuid;
+  };
+
+  const toggleTeamExpand = async (teamUuid: string) => {
+    const currentlyExpanded = isTeamExpanded(teamUuid);
+    const willExpand = !currentlyExpanded;
+
+    setManualExpandedTeams((prev) => ({
+      ...prev,
+      [teamUuid]: willExpand,
+    }));
+
+    if (willExpand) {
+      await fetchFoldersIfNeeded(teamUuid);
     }
   };
 
@@ -160,7 +174,7 @@ const Sidebar = ({ onCreateTeam, onCreateFolder }: SidebarProps) => {
         ) : teams.length > 0 ? (
           <div className="mt-2 space-y-1">
             {teams.map((team) => {
-              const isExpanded = expandedTeams[team.teamUuid] ?? false;
+              const isExpanded = isTeamExpanded(team.teamUuid);
               const isSelected = selectedTeamUuid === team.teamUuid;
               const isHovered = hoveredTeamUuid === team.teamUuid;
               const folders = teamFolders[team.teamUuid] || [];

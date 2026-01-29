@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { LogOut, Link2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { useTeams } from "../contexts/TeamContext";
 import { teamApi, folderApi } from "../services/api";
 import type { Team, Folder as FolderType } from "../types";
 import Sidebar from "../components/layout/Sidebar";
@@ -12,6 +13,7 @@ const TeamPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { addTeam } = useTeams();
 
   // navigate state로 전달받은 정보
   const teamFromState = location.state?.team as Team | undefined;
@@ -165,8 +167,8 @@ const TeamPage = () => {
       <CreateTeamModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onTeamCreated={() => {
-          // 사이드바가 자체적으로 팀 목록을 다시 조회하므로 여기서는 모달만 닫음
+        onTeamCreated={(newTeam) => {
+          addTeam(newTeam);
           setIsModalOpen(false);
         }}
       />

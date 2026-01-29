@@ -3,6 +3,7 @@ import type { Team } from "../types";
 import type { GetTeamMembersResponseData } from "@repo/api";
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useTeams } from "../contexts/TeamContext";
 import { teamApi } from "../services/api";
 import { Users, Copy, LogOut, Check, Crown } from "lucide-react";
 import Sidebar from "../components/layout/Sidebar";
@@ -13,6 +14,7 @@ const SettingPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { addTeam } = useTeams();
 
   const teamFromState = location.state?.team as Team | undefined;
 
@@ -277,7 +279,10 @@ const SettingPage = () => {
       <CreateTeamModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onTeamCreated={() => setIsModalOpen(false)}
+        onTeamCreated={(newTeam) => {
+          addTeam(newTeam);
+          setIsModalOpen(false);
+        }}
       />
     </div>
   );
