@@ -7,4 +7,4 @@ import {
 
 export type CreateFolderRequest = z.infer<typeof CreateFolderRequestSchema>;
 export type FolderResponseData = z.infer<typeof FolderResponseDataSchema>;
-export type PatchFolderRequset = z.infer<typeof PatchFolderRequestSchema>;
+export type PatchFolderRequest = z.infer<typeof PatchFolderRequestSchema>;

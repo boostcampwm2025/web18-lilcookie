@@ -6,11 +6,11 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from "@nestjs/common";
-import { UpdateFolderRequestDto } from "./dto/update-folder.request.dto";
 import { FolderResponseDto } from "./dto/folder.response.dto";
 import { FolderRepository } from "./repositories/folder.repository";
 import { TeamRepository } from "../teams/repositories/team.repository";
 import { DEFAULT_FOLDER_NAME } from "./constants/folder.constants";
+import type { PatchFolderRequest } from "@repo/api";
 
 @Injectable()
 export class FoldersService {
@@ -98,7 +98,7 @@ export class FoldersService {
    * @param userId 요청한 사용자 ID
    * @return 수정된 폴더 정보
    */
-  async update(folderUuid: string, requestDto: UpdateFolderRequestDto, userId: number): Promise<FolderResponseDto> {
+  async update(folderUuid: string, requestDto: PatchFolderRequest, userId: number): Promise<FolderResponseDto> {
     const folder = await this.folderRepository.findByUuid(folderUuid);
     if (!folder) {
       throw new NotFoundException("해당 폴더를 찾을 수 없습니다.");
