@@ -53,7 +53,7 @@ pnpm dev
 
 ### 배포 인프라 아키텍처
 
-<img width="1152" height="664" alt="image" src="https://github.com/user-attachments/assets/d8a12b99-3731-4a25-9447-c6c1d0f080fa" />
+<img width="1152" height="738" alt="image" src="https://github.com/user-attachments/assets/3b5cb844-36fe-48bf-bd48-3a88092d5043" />
 
 ### 팀소개
 
