@@ -4,21 +4,56 @@
 
 [대시보드](https://app.teamstash.eupthere.uk)
 
+Teamstash는 팀의 북마크를 한 곳에 모으고, 각종 협업 도구에 연결하는 저장소입니다. Webhook 알림, OAuth2.0 자원 인가, OIDC1.0 인증을 지원합니다. n8n에 연결하여 워크플로우를 구성할 수 있습니다.
+
 https://github.com/user-attachments/assets/c3df09bc-d69c-4263-80c4-af6e89b5e62d
 
 ### **📖 프로젝트 소개**
 
-> 한 번의 클릭으로 팀의 링크를 모으고 요약하는 브라우저 확장 프로그램
+**문제 정의**: 팀에 공유한 지식이 휘발된다. Slack 메시지에 묻혀 다시 찾기 어려운 정보, 여러 협업 도구에 파편화 되어 저장되는 자료들.
 
-### **프로젝트 기간**
+**핵심 기능**: 북마크를 쉽게 한 곳에 모은다. 모은 자료를 다양한 협업 워크플로우로 활용한다.
 
-`25.12.08 ~ 26.02.06`
+**초기 프로토타입 MVP**: 3번의 클릭으로 팀 저장소에 북마크를 저장할 수 있는 크롬 확장 프로그램.
 
-### **주요 기능**
+**프로토타입 사용자 테스트 결과**: 자료를 쉽게 모으는 것에는 성공했지만, 어떻게 활용할 지에 대한 기획 확장이 필요하다는 인사이트 얻음. 각 팀마다 자료를 구조화 하고 활용하는 방식이 다르다는 것 발견. 
 
-- 웹 브라우저 페이지를 AI 요약하여 링크와 함께 저장
-- n8n 등 외부 서비스와 연결하여 협업 워크플로우를 구성
-- OAuth2.0 Provider 생성
+**기획 확장 요구사항**: 
+- 표준화된 방식으로 외부 서비스에 연결할 수 있다 (OAuth, OIDC).
+- n8n으로 워크플로우를 구성할 수 있다.
+- 외부 개발자가 3rd party 플러그인을 만들어 teamstash 저장소에 연결할 수 있다.
+- 팀 자원의 접근 권한을 설정하고 보호할 수 있다.
+
+## 시작하기
+
+### 개발 환경 구성
+
+#### 요구사항
+- Node.js 22
+- Docker
+- Terraform Client
+
+```shell
+pnpm i
+# 환경 변수 파일 작성
+# apps/backend/.env.sample
+# infra/terraform/secret.auto.tfvars
+# infra/docker/.env.development.local
+pnpm --filter backend prisma:generate
+pnpm run docker:dev:up
+# https://auth.localhost Authentik 서버 초기화 완료 확인
+cd ./infra/terraform
+terraform init
+terraform apply
+cd ../..
+pnpm dev
+```
+
+[Windows OS localhost hostname 설정](https://github.com/boostcampwm2025/web18-lilcookie/issues/142)
+
+### 배포 인프라 아키텍처
+
+<img width="1152" height="664" alt="image" src="https://github.com/user-attachments/assets/d8a12b99-3731-4a25-9447-c6c1d0f080fa" />
 
 ### 팀소개
 
