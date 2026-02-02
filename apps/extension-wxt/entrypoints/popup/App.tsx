@@ -58,6 +58,8 @@ function App() {
     onError: showToast,
   });
 
+  const isTeamFolderSelected =
+    selectedFolderUuid !== "" && selectedTeamUuid !== "";
   const {
     comment,
     tags,
@@ -185,6 +187,7 @@ function App() {
           isSaveSuccess={isSaveSuccess}
           isSaving={isSaving}
           isDisabled={isSaveDisabled}
+          isTeamFolderSelected={isTeamFolderSelected}
         />
       </form>
       <FooterLink disabled={!dashboardUrl} onClick={handleDashboardClick} />

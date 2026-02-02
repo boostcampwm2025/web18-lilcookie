@@ -452,3 +452,10 @@ input[type="text"]::placeholder {
   cursor: pointer;
   padding: 0;
 }
+
+.warning-message {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #b91c1c;
+  text-align: center;
+}
