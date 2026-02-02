@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import type { Team } from "../../schemas/auth.type";
 import type { FolderResponseData } from "@repo/api";
 import CommentField from "./components/CommentField";
+import FooterLink from "./components/FooterLink";
 import Header from "./components/Header";
 import FolderSelect from "./components/FolderSelect";
 import PageInfoCard from "./components/PageInfoCard";
@@ -516,15 +517,10 @@ function App() {
         />
       </form>
 
-      <footer className="footer">
-        <a
-          href="#"
-          onClick={handleDashboardClick}
-          className={`dashboard-link ${!dashboardUrl ? "disabled" : ""}`}
-        >
-          대시보드 열기 →
-        </a>
-      </footer>
+      <FooterLink
+        disabled={!dashboardUrl}
+        onClick={handleDashboardClick}
+      />
     </div>
   );
 }
