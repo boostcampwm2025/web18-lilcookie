@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import type { Team } from "../../schemas/auth.type";
 import type { FolderResponseData } from "@repo/api";
 import Header from "./components/Header";
+import PageInfoCard from "./components/PageInfoCard";
 import { AiSparkleIcon, SaveIcon } from "./components/icons";
 import { MAX_CHARACTER_COUNT, MAX_TAG_COUNT } from "./constants";
 import type { TabInfo } from "./types";
@@ -454,17 +455,11 @@ function App() {
       <Header showLogout onLogout={handleLogout} />
 
       {/* Page Info Card */}
-      <div className="page-info-card">
-        <div className="page-icon">
-          {tab?.favIconUrl && (
-            <img src={tab.favIconUrl} alt="favicon" className="favicon" />
-          )}
-        </div>
-        <div className="page-details">
-          <h2 className="page-title">{tab?.title || "Loading..."}</h2>
-          <p className="page-url">{tab?.url || "Loading..."}</p>
-        </div>
-      </div>
+      <PageInfoCard
+        title={tab?.title}
+        url={tab?.url}
+        favIconUrl={tab?.favIconUrl}
+      />
 
       {/* Team Selection */}
       <div className="team-select">
