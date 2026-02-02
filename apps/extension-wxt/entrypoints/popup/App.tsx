@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import type { Team } from "../../schemas/auth.type";
 import type { FolderResponseData } from "@repo/api";
-import { AiSparkleIcon, LogoIcon, SaveIcon } from "./components/icons";
+import Header from "./components/Header";
+import { AiSparkleIcon, SaveIcon } from "./components/icons";
 import { MAX_CHARACTER_COUNT, MAX_TAG_COUNT } from "./constants";
 import type { TabInfo } from "./types";
 import { buildDashboardUrl } from "./utils";
@@ -435,17 +436,7 @@ function App() {
   if (!isLoggedIn) {
     return (
       <div className="container">
-        <header className="header">
-          <div className="header-content">
-            <div className="logo-icon">
-              <LogoIcon />
-            </div>
-            <div className="header-text">
-              <h1 className="app-name">TeamStash</h1>
-              <p className="tagline">링크를 빠르게 저장하세요</p>
-            </div>
-          </div>
-        </header>
+        <Header showLogout={false} />
         <div style={{ textAlign: "center", padding: "40px 20px" }}>
           <p style={{ marginBottom: "20px" }}>로그인이 필요합니다</p>
           <button className="save-btn" onClick={handleLogin}>
@@ -460,20 +451,7 @@ function App() {
   return (
     <div className="container">
       {/* Header */}
-      <header className="header">
-        <div className="header-content">
-          <div className="logo-icon">
-            <LogoIcon />
-          </div>
-          <div className="header-text">
-            <h1 className="app-name">TeamStash</h1>
-            <p className="tagline">링크를 빠르게 저장하세요</p>
-          </div>
-        </div>
-        <button className="settings-link" onClick={handleLogout}>
-          로그아웃
-        </button>
-      </header>
+      <Header showLogout onLogout={handleLogout} />
 
       {/* Page Info Card */}
       <div className="page-info-card">
