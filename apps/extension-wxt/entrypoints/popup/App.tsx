@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import type { Team } from "../../schemas/auth.type";
 import type { FolderResponseData } from "@repo/api";
 import Header from "./components/Header";
+import FolderSelect from "./components/FolderSelect";
 import PageInfoCard from "./components/PageInfoCard";
+import TeamSelect from "./components/TeamSelect";
 import { AiSparkleIcon, SaveIcon } from "./components/icons";
 import { MAX_CHARACTER_COUNT, MAX_TAG_COUNT } from "./constants";
 import type { TabInfo } from "./types";
@@ -462,46 +464,18 @@ function App() {
       />
 
       {/* Team Selection */}
-      <div className="team-select">
-        <label htmlFor="teamSelect">팀 선택</label>
-        <select
-          id="teamSelect"
-          value={selectedTeamUuid}
-          onChange={handleTeamChange}
-          disabled={teams.length === 0}
-        >
-          {teams.length === 0 ? (
-            <option value="">참여 중인 팀이 없습니다</option>
-          ) : (
-            teams.map((team) => (
-              <option key={team.teamUuid} value={team.teamUuid}>
-                {team.teamName}
-              </option>
-            ))
-          )}
-        </select>
-      </div>
+      <TeamSelect
+        teams={teams}
+        value={selectedTeamUuid}
+        onChange={handleTeamChange}
+      />
 
       {/* Folder Selection */}
-      <div className="folder-select">
-        <label htmlFor="folderSelect">폴더 선택</label>
-        <select
-          id="folderSelect"
-          value={selectedFolderUuid}
-          onChange={handleFolderChange}
-          disabled={folders.length === 0}
-        >
-          {folders.length === 0 ? (
-            <option value="">폴더가 없습니다</option>
-          ) : (
-            folders.map((folder) => (
-              <option key={folder.folderUuid} value={folder.folderUuid}>
-                {folder.folderName}
-              </option>
-            ))
-          )}
-        </select>
-      </div>
+      <FolderSelect
+        folders={folders}
+        value={selectedFolderUuid}
+        onChange={handleFolderChange}
+      />
 
       {/* Form Section */}
       <form className="form-section" onSubmit={handleSave}>
