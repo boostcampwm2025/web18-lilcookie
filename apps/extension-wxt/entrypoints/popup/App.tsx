@@ -8,6 +8,7 @@ import SaveButton from "./components/SaveButton";
 import TagField from "./components/TagField";
 import TeamSelect from "./components/TeamSelect";
 import { MAX_CHARACTER_COUNT, MAX_TAG_COUNT } from "./constants";
+import useAiSummary from "./hooks/useAiSummary";
 import useAuthState from "./hooks/useAuthState";
 import useTeamFolder from "./hooks/useTeamFolder";
 import useTabInfo from "./hooks/useTabInfo";
@@ -17,12 +18,11 @@ function App() {
   // State 관리
   const [comment, setComment] = useState("");
   const [tags, setTags] = useState("");
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [isAiCompleted, setIsAiCompleted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaveSuccess, setIsSaveSuccess] = useState(false);
 
-  const { authState, isLoggedIn, isAuthLoading, login, logout } = useAuthState();
+  const { authState, isLoggedIn, isAuthLoading, login, logout } =
+    useAuthState();
   const hasNoTeams = (authState?.userInfo?.teams ?? []).length === 0;
   const { tab, isAiDisabled, setIsAiDisabled } = useTabInfo({
     isLoggedIn,
@@ -54,6 +54,13 @@ function App() {
     isMountedRef,
   });
 
+  const { isAiLoading, isAiCompleted, handleAiClick } = useAiSummary({
+    aiButtonRef,
+    setComment,
+    setTags,
+    setIsAiDisabled,
+  });
+
   // 댓글 글자 수 계산
   const commentLength = Math.min(comment.length, MAX_CHARACTER_COUNT);
 
@@ -68,65 +75,6 @@ function App() {
     !comment.trim() || !tags.trim() || isSaving || isSaveSuccess;
 
   // 로그인 처리
-
-  // AI 요약 생성
-  const handleAiClick = async () => {
-    if (!aiButtonRef.current) return;
-
-    const originalHTML = aiButtonRef.current.innerHTML;
-
-    try {
-      setIsAiLoading(true);
-      setIsAiDisabled(true);
-
-      const { pageContent } = await chrome.storage.session.get("pageContent");
-
-      if (!pageContent || !(pageContent as any)?.textContent) {
-        setIsAiLoading(false);
-        setIsAiDisabled(false);
-        return;
-      }
-
-      const response = await chrome.runtime.sendMessage({
-        action: "summarize",
-        content: (pageContent as any).textContent,
-      });
-
-      if (response && response.success) {
-        const { summary, tags: aiTags } = response.data;
-        if (summary) {
-          setComment(String(summary).slice(0, MAX_CHARACTER_COUNT));
-        }
-        if (aiTags && Array.isArray(aiTags)) {
-          setTags(aiTags.slice(0, MAX_TAG_COUNT).join(", "));
-        }
-        setIsAiCompleted(true);
-        setIsAiLoading(false);
-      } else {
-        // 실패 시 2초 후 원래 버튼으로 복구
-        if (aiButtonRef.current) {
-          const svg = aiButtonRef.current.querySelector("svg");
-          aiButtonRef.current.innerHTML =
-            (svg?.outerHTML || "") + "AI 생성 실패";
-        }
-        setTimeout(() => {
-          if (aiButtonRef.current) {
-            aiButtonRef.current.innerHTML = originalHTML;
-          }
-          setIsAiDisabled(false);
-          setIsAiLoading(false);
-        }, 2000);
-      }
-    } catch (error) {
-      console.error("AI Error:", error);
-      alert("오류가 발생했습니다: " + (error as Error).message);
-      setIsAiLoading(false);
-      setIsAiDisabled(false);
-      if (aiButtonRef.current) {
-        aiButtonRef.current.innerHTML = originalHTML;
-      }
-    }
-  };
 
   // 댓글 입력 처리
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -383,10 +331,7 @@ function App() {
         />
       </form>
 
-      <FooterLink
-        disabled={!dashboardUrl}
-        onClick={handleDashboardClick}
-      />
+      <FooterLink disabled={!dashboardUrl} onClick={handleDashboardClick} />
     </div>
   );
 }
