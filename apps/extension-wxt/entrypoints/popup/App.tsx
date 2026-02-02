@@ -17,9 +17,6 @@ import useTabInfo from "./hooks/useTabInfo";
 import "./App.css";
 
 function App() {
-  // State 관리
-  const [comment, setComment] = useState("");
-  const [tags, setTags] = useState("");
   const [toast, setToast] = useState<{
     message: string;
     type: "error" | "success";
@@ -37,9 +34,7 @@ function App() {
     isLoggedIn,
     hasNoTeams,
   });
-
   const isMountedRef = useRef(true);
-
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -63,6 +58,28 @@ function App() {
     onError: showToast,
   });
 
+  const {
+    comment,
+    tags,
+    commentLength,
+    tagCount,
+    isSaving,
+    isSaveSuccess,
+    isSaveDisabled,
+    setComment,
+    setTags,
+    handleCommentChange,
+    handleCommentKeyDown,
+    handleCommentPaste,
+    handleTagsChange,
+    handleTagsKeyDown,
+    handleSave,
+  } = useLinkSave({
+    tab,
+    selectedFolderUuid,
+    onError: showToast,
+  });
+
   const { isAiLoading, isAiCompleted, isAiFailed, handleAiClick } =
     useAiSummary({
       setComment,
@@ -71,142 +88,6 @@ function App() {
       onError: showToast,
     });
 
-  const { isSaving, isSaveSuccess, handleSave } = useLinkSave({
-    tab,
-    comment,
-    tags,
-    selectedFolderUuid,
-    onError: showToast,
-  });
-
-  // 댓글 글자 수 계산
-  const commentLength = Math.min(comment.length, MAX_CHARACTER_COUNT);
-
-  // 태그 개수 계산
-  const tagCount = tags
-    .split(",")
-    .map((v) => v.trim())
-    .filter((v) => v !== "").length;
-
-  // 저장 버튼 활성화 여부
-  const isSaveDisabled =
-    !comment.trim() || !tags.trim() || isSaving || isSaveSuccess;
-
-  // 로그인 처리
-
-  // 댓글 입력 처리
-  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    if (value.length <= MAX_CHARACTER_COUNT) {
-      setComment(value);
-    }
-  };
-
-  // 댓글 키 입력 처리 (200자 제한)
-  const handleCommentKeyDown = (
-    e: React.KeyboardEvent<HTMLTextAreaElement>,
-  ) => {
-    const key = e.key;
-    const allowedControls = [
-      "Backspace",
-      "Delete",
-      "ArrowLeft",
-      "ArrowRight",
-      "ArrowUp",
-      "ArrowDown",
-      "Home",
-      "End",
-      "Tab",
-    ];
-    if (allowedControls.includes(key)) return;
-
-    const target = e.target as HTMLTextAreaElement;
-    const selStart = target.selectionStart;
-    const selEnd = target.selectionEnd;
-    const selectionLength = Math.max(0, selEnd - selStart);
-    const currentLength = target.value.length;
-
-    const charLength = key === "Enter" ? 1 : key.length === 1 ? 1 : 0;
-    if (charLength === 0) return;
-
-    const newLength = currentLength - selectionLength + charLength;
-    if (newLength > MAX_CHARACTER_COUNT) {
-      e.preventDefault();
-    }
-  };
-
-  // 댓글 붙여넣기 처리
-  const handleCommentPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    e.preventDefault();
-    const paste = e.clipboardData.getData("text") || "";
-    const target = e.target as HTMLTextAreaElement;
-    const selStart = target.selectionStart;
-    const selEnd = target.selectionEnd;
-    const selectionLength = Math.abs(selEnd - selStart);
-    const currentLength = target.value.length;
-    const allowed = MAX_CHARACTER_COUNT - (currentLength - selectionLength);
-
-    if (allowed <= 0) return;
-
-    const toInsert = paste.slice(0, allowed);
-    const before = target.value.slice(0, selStart);
-    const after = target.value.slice(selEnd);
-    const newValue = before + toInsert + after;
-
-    setComment(newValue);
-
-    // 커서 위치 조정
-    setTimeout(() => {
-      const newCursor = before.length + toInsert.length;
-      target.setSelectionRange(newCursor, newCursor);
-    }, 0);
-  };
-
-  // 태그 입력 처리
-  const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTags(e.target.value);
-  };
-
-  // 태그 키 입력 처리 (콤마 제한)
-  const handleTagsKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === ",") {
-      const target = e.target as HTMLInputElement;
-      const commaCount = (target.value.match(/,/g) || []).length;
-
-      // 1. 최대 태그 수 체크
-      if (commaCount >= MAX_TAG_COUNT - 1) {
-        e.preventDefault();
-        return;
-      }
-
-      // 2. 빈 태그 방지
-      const cursor = target.selectionStart || 0;
-      const val = target.value;
-      const before = val.slice(0, cursor);
-      const after = val.slice(cursor);
-
-      const trimmedBefore = before.trim();
-
-      // 왼쪽에 유효한 태그가 없으면 콤마 입력 방지
-      if (trimmedBefore.length === 0) {
-        e.preventDefault();
-        return;
-      }
-
-      // 이미 콤마로 끝나면 콤마 입력 방지
-      if (trimmedBefore.endsWith(",")) {
-        e.preventDefault();
-        return;
-      }
-
-      // 오른쪽이 콤마로 시작하면 콤마 입력 방지
-      if (after.trim().startsWith(",")) {
-        e.preventDefault();
-        return;
-      }
-    }
-  };
-
   const handleDashboardClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (dashboardUrl) {
@@ -214,7 +95,6 @@ function App() {
     }
   };
 
-  // 로딩 중
   if (isAuthLoading) {
     return (
       <div
@@ -231,7 +111,6 @@ function App() {
     );
   }
 
-  // 미로그인 상태
   if (!isLoggedIn) {
     return (
       <div className="container">
@@ -253,10 +132,8 @@ function App() {
     );
   }
 
-  // 로그인 된 상태
   return (
     <div className="container">
-      {/* Header */}
       <Header showLogout onLogout={logout} />
       {toast && (
         <Toast
@@ -265,31 +142,22 @@ function App() {
           onClose={() => setToast(null)}
         />
       )}
-
-      {/* Page Info Card */}
       <PageInfoCard
         title={tab?.title}
         url={tab?.url}
         favIconUrl={tab?.favIconUrl}
       />
-
-      {/* Team Selection */}
       <TeamSelect
         teams={teams}
         value={selectedTeamUuid}
         onChange={handleTeamChange}
       />
-
-      {/* Folder Selection */}
       <FolderSelect
         folders={folders}
         value={selectedFolderUuid}
         onChange={handleFolderChange}
       />
-
-      {/* Form Section */}
       <form className="form-section" onSubmit={handleSave}>
-        {/* Comment Field */}
         <CommentField
           comment={comment}
           commentLength={commentLength}
@@ -304,8 +172,6 @@ function App() {
           onCommentKeyDown={handleCommentKeyDown}
           onCommentPaste={handleCommentPaste}
         />
-
-        {/* Tag Field */}
         <TagField
           tags={tags}
           tagCount={tagCount}
@@ -315,15 +181,12 @@ function App() {
           onTagsChange={handleTagsChange}
           onTagsKeyDown={handleTagsKeyDown}
         />
-
-        {/* Save Button */}
         <SaveButton
           isSaveSuccess={isSaveSuccess}
           isSaving={isSaving}
           isDisabled={isSaveDisabled}
         />
       </form>
-
       <FooterLink disabled={!dashboardUrl} onClick={handleDashboardClick} />
     </div>
   );
