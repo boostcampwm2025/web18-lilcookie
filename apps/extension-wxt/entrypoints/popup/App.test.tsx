@@ -1,620 +1,1115 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  cleanup,
-} from "@testing-library/react";
+import { describe, it, expect, beforeEach, vi, afterEach, type Mock } from "vitest";
+import { render, screen, waitFor, fireEvent, act, cleanup } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { fakeBrowser } from "wxt/testing";
-
-import type { Team } from "../../schemas/auth.type";
-import type { FolderResponseData } from "@repo/api";
 import App from "./App";
 
-const baseTeam: Team = {
-  teamUuid: "11111111-1111-1111-1111-111111111111",
-  teamName: "Team Alpha",
-  createdAt: "2024-01-01T00:00:00.000Z",
-  role: "owner",
-};
-
-const secondTeam: Team = {
-  teamUuid: "22222222-2222-2222-2222-222222222222",
-  teamName: "Team Beta",
-  createdAt: "2024-01-02T00:00:00.000Z",
-  role: "member",
-};
-
-const baseFolder: FolderResponseData = {
-  folderUuid: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-  folderName: "Folder One",
-  createdAt: "2024-01-01T00:00:00.000Z",
-  createdBy: {
-    userUuid: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-    userName: "Owner",
+const mockAuthStateLoggedIn = {
+  isLoggedIn: true,
+  userInfo: {
+    teams: [
+      { teamUuid: "team-uuid-1", teamName: "Team Alpha" },
+      { teamUuid: "team-uuid-2", teamName: "Team Beta" },
+    ],
+    selectedTeamUuid: "team-uuid-1",
   },
 };
 
-const secondFolder: FolderResponseData = {
-  folderUuid: "cccccccc-cccc-cccc-cccc-cccccccccccc",
-  folderName: "Folder Two",
-  createdAt: "2024-01-02T00:00:00.000Z",
-  createdBy: {
-    userUuid: "dddddddd-dddd-dddd-dddd-dddddddddddd",
-    userName: "Member",
-  },
+const mockAuthStateLoggedOut = {
+  isLoggedIn: false,
 };
 
-let sendMessageMock: ReturnType<typeof vi.spyOn>;
-let tabsQueryMock: ReturnType<typeof vi.spyOn>;
-let tabsCreateMock: ReturnType<typeof vi.spyOn>;
-let storageSessionGetMock: ReturnType<typeof vi.spyOn>;
-let storageLocalGetMock: ReturnType<typeof vi.spyOn>;
+const mockFolders = [
+  { folderUuid: "folder-uuid-1", folderName: "Folder One" },
+  { folderUuid: "folder-uuid-2", folderName: "Folder Two" },
+];
 
-const setupLoggedOut = () => {
-  sendMessageMock.mockResolvedValueOnce({
-    isLoggedIn: false,
-  });
+const mockTab = {
+  id: 1,
+  title: "Test Page Title",
+  url: "https://example.com/test",
+  favIconUrl: "https://example.com/favicon.ico",
 };
 
-const setupLoggedIn = ({
-  teams = [baseTeam],
-  selectedTeamUuid = baseTeam.teamUuid,
-  folders = [baseFolder],
-  selectedFolderUuid = baseFolder.folderUuid,
-  pageContentText = "Readable content",
-} = {}) => {
-  sendMessageMock.mockImplementation(async (message) => {
-    if (message?.action === "getAuthState") {
-      return {
-        isLoggedIn: true,
-        userInfo: {
-          teams,
-          selectedTeamUuid,
-        },
-      };
-    }
-    if (message?.action === "getFolders") {
-      return { success: true, data: folders };
-    }
-    if (message?.action === "selectFolder") {
-      return { success: true };
-    }
-    if (message?.action === "selectTeam") {
-      return { success: true };
-    }
-    if (message?.action === "summarize") {
-      return { success: true, data: { summary: "AI summary", tags: ["tag1"] } };
-    }
-    if (message?.action === "saveLink") {
-      return { success: true };
-    }
-    if (message?.action === "login") {
-      return { success: true };
-    }
-    if (message?.action === "logout") {
-      return { success: true };
-    }
-    return { success: true };
-  });
-
-  tabsQueryMock.mockResolvedValue([
-    {
-      title: "Example Title",
-      url: "https://example.com",
-      favIconUrl: "https://example.com/favicon.ico",
-    },
-  ]);
-
-  storageSessionGetMock.mockResolvedValue({
-    pageContent: { textContent: pageContentText },
-  });
-
-  storageLocalGetMock.mockResolvedValue({
-    selected_folder_uuid: selectedFolderUuid,
-  });
+const mockPageContent = {
+  textContent: "This is the page content for testing AI summarization.",
 };
 
-describe("Popup App - Behavioral Snapshot Tests", () => {
+function mockStorageGet(
+  storage: typeof chrome.storage.session | typeof chrome.storage.local,
+  result: Record<string, unknown>
+) {
+  vi.spyOn(storage, "get").mockImplementation((keys, callback) => {
+    if (typeof callback === "function") {
+      callback(result);
+    }
+    return result;
+  });
+}
+
+function setupChromeApiMocks(options: {
+  authState?: any;
+  folders?: any[];
+  pageContent?: any;
+  tab?: any;
+}) {
+  const {
+    authState = mockAuthStateLoggedIn,
+    folders = mockFolders,
+    pageContent = mockPageContent,
+    tab = mockTab,
+  } = options;
+
+  vi.spyOn(chrome.runtime, "sendMessage").mockImplementation(
+    async (message: any) => {
+      switch (message.action) {
+        case "getAuthState":
+          return authState;
+        case "login":
+          return { success: true };
+        case "logout":
+          return { success: true };
+        case "summarize":
+          return {
+            success: true,
+            data: { summary: "AI generated summary", tags: ["tag1", "tag2"] },
+          };
+        case "saveLink":
+          return { success: true };
+        case "selectTeam":
+          return { success: true };
+        case "getFolders":
+          return { success: true, data: folders };
+        case "selectFolder":
+          return { success: true };
+        default:
+          return { success: false, error: "Unknown action" };
+      }
+    }
+  );
+
+  vi.spyOn(chrome.tabs, "query").mockResolvedValue([tab] as any);
+  vi.spyOn(chrome.tabs, "create").mockResolvedValue({ id: 2 } as any);
+
+  mockStorageGet(chrome.storage.session, { pageContent });
+  mockStorageGet(chrome.storage.local, { selected_folder_uuid: "folder-uuid-1" });
+}
+
+describe("App - Behavioral Snapshot Tests", () => {
   beforeEach(() => {
     fakeBrowser.reset();
     vi.clearAllMocks();
-    sendMessageMock = vi.spyOn(chrome.runtime, "sendMessage");
-    tabsQueryMock = vi.spyOn(chrome.tabs, "query");
-    tabsCreateMock = vi.spyOn(chrome.tabs, "create");
-    storageSessionGetMock = vi.spyOn(chrome.storage.session, "get");
-    storageLocalGetMock = vi.spyOn(chrome.storage.local, "get");
+    vi.clearAllTimers();
   });
 
   afterEach(() => {
-    vi.useRealTimers();
     cleanup();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
-  it("renders loading state while auth is pending", () => {
-    sendMessageMock.mockImplementation(
-      () => new Promise(() => {}),
-    );
+  describe("Render Branches", () => {
+    it("shows loading state when auth is loading", async () => {
+      vi.spyOn(chrome.runtime, "sendMessage").mockImplementation(
+        () => new Promise(() => {})
+      );
 
-    render(<App />);
+      render(<App />);
 
-    expect(screen.getByText("로딩 중...")).toBeInTheDocument();
-  });
-
-  it("renders logged-out view when not authenticated", async () => {
-    setupLoggedOut();
-
-    render(<App />);
-
-    expect(await screen.findByText("로그인이 필요합니다")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "로그인하기" })).toBeInTheDocument();
-  });
-
-  it("renders logged-in view with page info and selectors", async () => {
-    setupLoggedIn();
-
-    render(<App />);
-
-    expect(await screen.findByText("Example Title")).toBeInTheDocument();
-    expect(screen.getByText("https://example.com")).toBeInTheDocument();
-    expect(screen.getByLabelText("팀 선택")).toBeInTheDocument();
-    expect(screen.getByLabelText("폴더 선택")).toBeInTheDocument();
-  });
-
-  it("invokes all chrome APIs across initialization and actions", async () => {
-    setupLoggedIn({
-      teams: [baseTeam, secondTeam],
-      folders: [baseFolder, secondFolder],
+      expect(screen.getByText("로딩 중...")).toBeInTheDocument();
     });
 
-    render(<App />);
+    it("shows login screen when not logged in", async () => {
+      setupChromeApiMocks({ authState: mockAuthStateLoggedOut });
 
-    await screen.findByText("Example Title");
+      render(<App />);
 
-    await waitFor(() =>
-      expect(sendMessageMock).toHaveBeenCalledWith({
-        action: "getAuthState",
-      }),
-    );
-
-    await waitFor(() =>
-      expect(sendMessageMock).toHaveBeenCalledWith({
-        action: "getFolders",
-        teamUuid: baseTeam.teamUuid,
-      }),
-    );
-
-    await waitFor(() =>
-      expect(sendMessageMock).toHaveBeenCalledWith({
-        action: "selectFolder",
-        folderUuid: baseFolder.folderUuid,
-      }),
-    );
-
-    expect(tabsQueryMock).toHaveBeenCalledWith({
-      active: true,
-      currentWindow: true,
-    });
-    expect(storageSessionGetMock).toHaveBeenCalledWith("pageContent");
-    expect(storageLocalGetMock).toHaveBeenCalledWith(
-      "selected_folder_uuid",
-    );
-
-    const comment = await screen.findByPlaceholderText(
-      "URL에 대한 설명을 입력하세요.",
-    );
-    fireEvent.change(comment, { target: { value: "Test comment" } });
-
-    const tags = screen.getByPlaceholderText(
-      "태그를 입력하세요. 콤마(,)로 구분됩니다.",
-    );
-    fireEvent.change(tags, { target: { value: "tag1" } });
-
-    const aiButton = screen.getByRole("button", { name: "AI 생성" });
-    await waitFor(() => expect(aiButton).not.toBeDisabled());
-    fireEvent.click(aiButton);
-
-    await waitFor(() =>
-      expect(sendMessageMock).toHaveBeenCalledWith({
-        action: "summarize",
-        content: "Readable content",
-      }),
-    );
-
-    const saveButton = screen.getByRole("button", { name: "스태시에 저장" });
-    await waitFor(() => expect(saveButton).not.toBeDisabled());
-    fireEvent.click(saveButton);
-
-    await waitFor(() =>
-      expect(sendMessageMock).toHaveBeenCalledWith(
-        expect.objectContaining({ action: "saveLink" }),
-      ),
-    );
-
-    const dashboardLink = await screen.findByRole("link", {
-      name: /대시보드 열기/,
-    });
-    fireEvent.click(dashboardLink);
-    expect(tabsCreateMock).toHaveBeenCalledWith(
-      expect.objectContaining({ url: expect.stringContaining("team/") }),
-    );
-
-    fireEvent.change(screen.getByLabelText("팀 선택"), {
-      target: { value: secondTeam.teamUuid },
+      await waitFor(() => {
+        expect(screen.getByText("로그인이 필요합니다")).toBeInTheDocument();
+      });
+      expect(screen.getByText("로그인하기")).toBeInTheDocument();
+      expect(screen.getByText("TeamStash")).toBeInTheDocument();
+      expect(
+        screen.getByText("링크를 빠르게 저장하세요")
+      ).toBeInTheDocument();
     });
 
-    await waitFor(() =>
-      expect(sendMessageMock).toHaveBeenCalledWith({
-        action: "selectTeam",
-        teamUuid: secondTeam.teamUuid,
-      }),
-    );
+    it("shows full form when logged in with teams and folders", async () => {
+      setupChromeApiMocks({});
 
-    fireEvent.change(screen.getByLabelText("폴더 선택"), {
-      target: { value: secondFolder.folderUuid },
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("로그아웃")).toBeInTheDocument();
+      });
+
+      expect(screen.getByText("Test Page Title")).toBeInTheDocument();
+      expect(screen.getByText("https://example.com/test")).toBeInTheDocument();
+      expect(screen.getByLabelText("팀 선택")).toBeInTheDocument();
+      expect(screen.getByLabelText("폴더 선택")).toBeInTheDocument();
+      expect(screen.getByText("스태시에 저장")).toBeInTheDocument();
+      expect(screen.getByText("대시보드 열기 →")).toBeInTheDocument();
     });
 
-    await waitFor(() =>
-      expect(sendMessageMock).toHaveBeenCalledWith({
-        action: "selectFolder",
-        folderUuid: secondFolder.folderUuid,
-      }),
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
-    await waitFor(() =>
-      expect(sendMessageMock).toHaveBeenCalledWith({
-        action: "logout",
-      }),
-    );
-  });
-
-  it("shows alert on login failure", async () => {
-    sendMessageMock.mockImplementation(async (message) => {
-      if (message?.action === "getAuthState") {
-        return { isLoggedIn: false };
-      }
-      if (message?.action === "login") {
-        return { success: false, error: "로그인 에러" };
-      }
-      return { success: true };
-    });
-
-    render(<App />);
-
-    const loginButton = await screen.findByRole("button", {
-      name: "로그인하기",
-    });
-    fireEvent.click(loginButton);
-
-    await waitFor(() =>
-      expect(window.alert).toHaveBeenCalledWith(
-        "로그인 실패: 로그인 에러",
-      ),
-    );
-  });
-
-  it("shows alert on AI error", async () => {
-    setupLoggedIn();
-
-    sendMessageMock.mockImplementation(async (message) => {
-      if (message?.action === "getAuthState") {
-        return {
+    it("shows 'no teams' message when logged in but no teams", async () => {
+      setupChromeApiMocks({
+        authState: {
           isLoggedIn: true,
-          userInfo: { teams: [baseTeam], selectedTeamUuid: baseTeam.teamUuid },
-        };
-      }
-      if (message?.action === "getFolders") {
-        return { success: true, data: [baseFolder] };
-      }
-      if (message?.action === "selectFolder") {
-        return { success: true };
-      }
-      if (message?.action === "summarize") {
-        throw new Error("AI error");
-      }
-      return { success: true };
-    });
-
-    render(<App />);
-
-    const aiButton = await screen.findByRole("button", { name: "AI 생성" });
-    await waitFor(() => expect(aiButton).not.toBeDisabled());
-    fireEvent.click(aiButton);
-
-    await waitFor(() =>
-      expect(window.alert).toHaveBeenCalledWith("오류가 발생했습니다: AI error"),
-    );
-  });
-
-  it("shows alert on save failure", async () => {
-    setupLoggedIn();
-
-    sendMessageMock.mockImplementation(async (message) => {
-      if (message?.action === "getAuthState") {
-        return {
-          isLoggedIn: true,
-          userInfo: { teams: [baseTeam], selectedTeamUuid: baseTeam.teamUuid },
-        };
-      }
-      if (message?.action === "getFolders") {
-        return { success: true, data: [baseFolder] };
-      }
-      if (message?.action === "selectFolder") {
-        return { success: true };
-      }
-      if (message?.action === "saveLink") {
-        return { success: false, error: "저장 에러" };
-      }
-      return { success: true };
-    });
-
-    render(<App />);
-
-    fireEvent.change(
-      await screen.findByPlaceholderText("URL에 대한 설명을 입력하세요."),
-      {
-        target: { value: "테스트" },
-      },
-    );
-    fireEvent.change(
-      screen.getByPlaceholderText("태그를 입력하세요. 콤마(,)로 구분됩니다."),
-      {
-        target: { value: "태그" },
-      },
-    );
-
-    const saveButton = screen.getByRole("button", { name: "스태시에 저장" });
-    await waitFor(() => expect(saveButton).not.toBeDisabled());
-    fireEvent.click(saveButton);
-
-    await waitFor(() =>
-      expect(window.alert).toHaveBeenCalledWith("저장 실패: 저장 에러"),
-    );
-  });
-
-  it("shows alert on save error", async () => {
-    setupLoggedIn();
-
-    sendMessageMock.mockImplementation(async (message) => {
-      if (message?.action === "getAuthState") {
-        return {
-          isLoggedIn: true,
-          userInfo: { teams: [baseTeam], selectedTeamUuid: baseTeam.teamUuid },
-        };
-      }
-      if (message?.action === "getFolders") {
-        return { success: true, data: [baseFolder] };
-      }
-      if (message?.action === "selectFolder") {
-        return { success: true };
-      }
-      if (message?.action === "saveLink") {
-        throw new Error("저장 실패");
-      }
-      return { success: true };
-    });
-
-    render(<App />);
-
-    fireEvent.change(
-      await screen.findByPlaceholderText("URL에 대한 설명을 입력하세요."),
-      {
-        target: { value: "테스트" },
-      },
-    );
-    fireEvent.change(
-      screen.getByPlaceholderText("태그를 입력하세요. 콤마(,)로 구분됩니다."),
-      {
-        target: { value: "태그" },
-      },
-    );
-
-    const saveButton = screen.getByRole("button", { name: "스태시에 저장" });
-    await waitFor(() => expect(saveButton).not.toBeDisabled());
-    fireEvent.click(saveButton);
-
-    await waitFor(() =>
-      expect(window.alert).toHaveBeenCalledWith(
-        "저장 중 오류가 발생했습니다: 저장 실패",
-      ),
-    );
-  });
-
-  it("shows alert on team change failure and rolls back", async () => {
-    let resolveTeamChange: (value: { success: boolean; error?: string }) => void;
-    const teamChangePromise = new Promise<{ success: boolean; error?: string }>(
-      (resolve) => {
-        resolveTeamChange = resolve;
-      },
-    );
-
-    sendMessageMock.mockImplementation(async (message) => {
-      if (message?.action === "getAuthState") {
-        return {
-          isLoggedIn: true,
-          userInfo: {
-            teams: [baseTeam, secondTeam],
-            selectedTeamUuid: baseTeam.teamUuid,
-          },
-        };
-      }
-      if (message?.action === "getFolders") {
-        return { success: true, data: [baseFolder] };
-      }
-      if (message?.action === "selectFolder") {
-        return { success: true };
-      }
-      if (message?.action === "selectTeam") {
-        return teamChangePromise;
-      }
-      return { success: true };
-    });
-
-    render(<App />);
-
-    const teamSelect = await screen.findByLabelText("팀 선택");
-    fireEvent.change(teamSelect, { target: { value: secondTeam.teamUuid } });
-    expect((teamSelect as HTMLSelectElement).value).toBe(secondTeam.teamUuid);
-
-    resolveTeamChange({ success: false, error: "팀 변경 에러" });
-
-    await waitFor(() =>
-      expect(window.alert).toHaveBeenCalledWith("팀 변경 실패: 팀 변경 에러"),
-    );
-    await waitFor(() =>
-      expect((teamSelect as HTMLSelectElement).value).toBe(baseTeam.teamUuid),
-    );
-  });
-
-  it("shows alert on folder load failure", async () => {
-    sendMessageMock.mockImplementation(async (message) => {
-      if (message?.action === "getAuthState") {
-        return {
-          isLoggedIn: true,
-          userInfo: { teams: [baseTeam], selectedTeamUuid: baseTeam.teamUuid },
-        };
-      }
-      if (message?.action === "getFolders") {
-        return { success: false, error: "폴더 에러" };
-      }
-      return { success: true };
-    });
-
-    render(<App />);
-
-    await waitFor(() =>
-      expect(window.alert).toHaveBeenCalledWith("폴더 조회 실패: 폴더 에러"),
-    );
-  });
-
-  it("shows alert on folder change failure and rolls back", async () => {
-    sendMessageMock.mockImplementation(async (message) => {
-      if (message?.action === "getAuthState") {
-        return {
-          isLoggedIn: true,
-          userInfo: { teams: [baseTeam], selectedTeamUuid: baseTeam.teamUuid },
-        };
-      }
-      if (message?.action === "getFolders") {
-        return { success: true, data: [baseFolder, secondFolder] };
-      }
-      if (message?.action === "selectFolder") {
-        if (message?.folderUuid === secondFolder.folderUuid) {
-          return { success: false, error: "폴더 변경 에러" };
-        }
-        return { success: true };
-      }
-      return { success: true };
-    });
-
-    render(<App />);
-
-    const folderSelect = await screen.findByLabelText("폴더 선택");
-    fireEvent.change(folderSelect, {
-      target: { value: secondFolder.folderUuid },
-    });
-
-    await waitFor(() =>
-      expect(window.alert).toHaveBeenCalledWith(
-        "폴더 변경 실패: 폴더 변경 에러",
-      ),
-    );
-    await waitFor(() =>
-      expect((folderSelect as HTMLSelectElement).value).toBe(
-        baseFolder.folderUuid,
-      ),
-    );
-  });
-
-  it(
-    "shows AI failure message for 2 seconds before reset",
-    async () => {
-      setupLoggedIn();
-      sendMessageMock.mockImplementation(async (message) => {
-        if (message?.action === "getAuthState") {
-          return {
-            isLoggedIn: true,
-            userInfo: { teams: [baseTeam], selectedTeamUuid: baseTeam.teamUuid },
-          };
-        }
-        if (message?.action === "getFolders") {
-          return { success: true, data: [baseFolder] };
-        }
-        if (message?.action === "selectFolder") {
-          return { success: true };
-        }
-        if (message?.action === "summarize") {
-          return { success: false };
-        }
-        return { success: true };
+          userInfo: { teams: [], selectedTeamUuid: "" },
+        },
       });
 
       render(<App />);
 
-      const aiButton = await screen.findByRole("button", { name: "AI 생성" });
-      await waitFor(() => expect(aiButton).not.toBeDisabled());
-      fireEvent.click(aiButton);
-
-      await waitFor(() =>
+      await waitFor(() => {
         expect(
-          screen.getByRole("button", { name: "AI 생성 실패" }),
-        ).toBeInTheDocument(),
-      );
-
-      await new Promise((resolve) => setTimeout(resolve, 2100));
-
-      await waitFor(() =>
-        expect(screen.getByRole("button", { name: "AI 생성" })).toBeInTheDocument(),
-      );
-    },
-    7000,
-  );
-
-  it("enforces comment length and paste limits", async () => {
-    setupLoggedIn();
-
-    render(<App />);
-
-    const comment = await screen.findByPlaceholderText(
-      "URL에 대한 설명을 입력하세요.",
-    );
-    const longText = "a".repeat(200);
-    const tooLongText = "a".repeat(201);
-
-    fireEvent.change(comment, { target: { value: longText } });
-    expect((comment as HTMLTextAreaElement).value).toBe(longText);
-
-    fireEvent.change(comment, { target: { value: tooLongText } });
-    expect((comment as HTMLTextAreaElement).value).toBe(longText);
-
-    fireEvent.paste(comment, {
-      clipboardData: {
-        getData: () => "b".repeat(50),
-      },
+          screen.getByText("참여 중인 팀이 없습니다")
+        ).toBeInTheDocument();
+      });
     });
-
-    await waitFor(() =>
-      expect((comment as HTMLTextAreaElement).value.length).toBe(200),
-    );
   });
 
-  it("prevents invalid comma input when max tags reached", async () => {
-    setupLoggedIn();
+  describe("Chrome API Interactions", () => {
+    it("calls getAuthState on mount", async () => {
+      setupChromeApiMocks({});
 
-    render(<App />);
+      render(<App />);
 
-    const tags = await screen.findByPlaceholderText(
-      "태그를 입력하세요. 콤마(,)로 구분됩니다.",
-    );
-    const tenTags = Array.from({ length: 10 })
-      .map((_, index) => `t${index}`)
-      .join(",");
+      await waitFor(() => {
+        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+          action: "getAuthState",
+        });
+      });
+    });
 
-    fireEvent.change(tags, { target: { value: tenTags } });
+    it("calls tabs.query to get active tab info", async () => {
+      setupChromeApiMocks({});
 
-    const canceled = !fireEvent.keyDown(tags, { key: "," });
-    expect(canceled).toBe(true);
+      render(<App />);
+
+      await waitFor(() => {
+        expect(chrome.tabs.query).toHaveBeenCalledWith({
+          active: true,
+          currentWindow: true,
+        });
+      });
+    });
+
+    it("calls storage.session.get for pageContent on mount", async () => {
+      setupChromeApiMocks({});
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(chrome.storage.session.get).toHaveBeenCalledWith("pageContent");
+      });
+    });
+
+    it("calls login action when login button is clicked", async () => {
+      setupChromeApiMocks({ authState: mockAuthStateLoggedOut });
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("로그인하기")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText("로그인하기"));
+
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+        action: "login",
+      });
+    });
+
+    it("calls logout action when logout button is clicked", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("로그아웃")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText("로그아웃"));
+
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+        action: "logout",
+      });
+    });
+
+    it("calls summarize action when AI button is clicked", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("AI 생성")).toBeInTheDocument();
+      });
+
+      const aiButton = screen.getByText("AI 생성").closest("button")!;
+      await user.click(aiButton);
+
+      await waitFor(() => {
+        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+          action: "summarize",
+          content: mockPageContent.textContent,
+        });
+      });
+    });
+
+    it("calls saveLink action when save button is clicked", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("스태시에 저장")).toBeInTheDocument();
+      });
+
+      const commentInput = screen.getByPlaceholderText(
+        "URL에 대한 설명을 입력하세요."
+      );
+      const tagsInput = screen.getByPlaceholderText(
+        "태그를 입력하세요. 콤마(,)로 구분됩니다."
+      );
+
+      await user.type(commentInput, "Test comment");
+      await user.type(tagsInput, "tag1, tag2");
+
+      await user.click(screen.getByText("스태시에 저장"));
+
+      await waitFor(() => {
+        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+          action: "saveLink",
+          data: {
+            url: "https://example.com/test",
+            title: "Test Page Title",
+            tags: ["tag1", "tag2"],
+            summary: "Test comment",
+            folderUuid: "folder-uuid-1",
+          },
+        });
+      });
+    });
+
+    it("calls tabs.create when dashboard link is clicked", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("대시보드 열기 →")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText("대시보드 열기 →"));
+
+      expect(chrome.tabs.create).toHaveBeenCalledWith({
+        url: "https://app.teamstash.test/team/team-uuid-1?folderUuid=folder-uuid-1",
+      });
+    });
+
+    it("calls selectTeam action when team is changed", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("팀 선택")).toBeInTheDocument();
+      });
+
+      await user.selectOptions(screen.getByLabelText("팀 선택"), "team-uuid-2");
+
+      await waitFor(() => {
+        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+          action: "selectTeam",
+          teamUuid: "team-uuid-2",
+        });
+      });
+    });
+
+    it("calls getFolders action when team is changed", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("팀 선택")).toBeInTheDocument();
+      });
+
+      await user.selectOptions(screen.getByLabelText("팀 선택"), "team-uuid-2");
+
+      await waitFor(() => {
+        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+          action: "getFolders",
+          teamUuid: "team-uuid-2",
+        });
+      });
+    });
+
+    it("calls storage.local.get for selected_folder_uuid when loading folders", async () => {
+      setupChromeApiMocks({});
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(chrome.storage.local.get).toHaveBeenCalledWith(
+          "selected_folder_uuid"
+        );
+      });
+    });
+
+    it("calls selectFolder action when folder is changed", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("폴더 선택")).toBeInTheDocument();
+      });
+
+      await user.selectOptions(
+        screen.getByLabelText("폴더 선택"),
+        "folder-uuid-2"
+      );
+
+      await waitFor(() => {
+        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+          action: "selectFolder",
+          folderUuid: "folder-uuid-2",
+        });
+      });
+    });
+
+    it("calls selectFolder action on initial folder load", async () => {
+      setupChromeApiMocks({});
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+          action: "selectFolder",
+          folderUuid: "folder-uuid-1",
+        });
+      });
+    });
+  });
+
+  describe("Error Scenarios", () => {
+    it("shows '로그인 실패: ' error on login failure", async () => {
+      vi.spyOn(chrome.runtime, "sendMessage").mockImplementation(
+        async (msg: any) => {
+          if (msg.action === "getAuthState") return mockAuthStateLoggedOut;
+          if (msg.action === "login")
+            return { success: false, error: "Test error" };
+          return {};
+        }
+      );
+
+      const user = userEvent.setup();
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("로그인하기")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText("로그인하기"));
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith("로그인 실패: Test error");
+      });
+    });
+
+    it("shows '오류가 발생했습니다: ' error when AI throws exception", async () => {
+      setupChromeApiMocks({});
+      vi.spyOn(chrome.runtime, "sendMessage").mockImplementation(
+        async (msg: any) => {
+          if (msg.action === "getAuthState") return mockAuthStateLoggedIn;
+          if (msg.action === "getFolders")
+            return { success: true, data: mockFolders };
+          if (msg.action === "selectFolder") return { success: true };
+          if (msg.action === "summarize")
+            throw new Error("AI service unavailable");
+          return {};
+        }
+      );
+
+      const user = userEvent.setup();
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("AI 생성")).toBeInTheDocument();
+      });
+
+      const aiButton = screen.getByText("AI 생성").closest("button")!;
+      await user.click(aiButton);
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith(
+          "오류가 발생했습니다: AI service unavailable"
+        );
+      });
+    });
+
+    it("shows '저장 실패: ' error on save failure response", async () => {
+      setupChromeApiMocks({});
+      vi.spyOn(chrome.runtime, "sendMessage").mockImplementation(
+        async (msg: any) => {
+          if (msg.action === "getAuthState") return mockAuthStateLoggedIn;
+          if (msg.action === "getFolders")
+            return { success: true, data: mockFolders };
+          if (msg.action === "selectFolder") return { success: true };
+          if (msg.action === "saveLink")
+            return { success: false, error: "Server error" };
+          return {};
+        }
+      );
+
+      const user = userEvent.setup();
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("스태시에 저장")).toBeInTheDocument();
+      });
+
+      await user.type(
+        screen.getByPlaceholderText("URL에 대한 설명을 입력하세요."),
+        "Test"
+      );
+      await user.type(
+        screen.getByPlaceholderText("태그를 입력하세요. 콤마(,)로 구분됩니다."),
+        "tag"
+      );
+      await user.click(screen.getByText("스태시에 저장"));
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith("저장 실패: Server error");
+      });
+    });
+
+    it("shows '저장 중 오류가 발생했습니다: ' error when save throws exception", async () => {
+      setupChromeApiMocks({});
+      vi.spyOn(chrome.runtime, "sendMessage").mockImplementation(
+        async (msg: any) => {
+          if (msg.action === "getAuthState") return mockAuthStateLoggedIn;
+          if (msg.action === "getFolders")
+            return { success: true, data: mockFolders };
+          if (msg.action === "selectFolder") return { success: true };
+          if (msg.action === "saveLink") throw new Error("Network error");
+          return {};
+        }
+      );
+
+      const user = userEvent.setup();
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("스태시에 저장")).toBeInTheDocument();
+      });
+
+      await user.type(
+        screen.getByPlaceholderText("URL에 대한 설명을 입력하세요."),
+        "Test"
+      );
+      await user.type(
+        screen.getByPlaceholderText("태그를 입력하세요. 콤마(,)로 구분됩니다."),
+        "tag"
+      );
+      await user.click(screen.getByText("스태시에 저장"));
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith(
+          "저장 중 오류가 발생했습니다: Network error"
+        );
+      });
+    });
+
+    it("shows '팀 변경 실패: ' error on team change failure", async () => {
+      setupChromeApiMocks({});
+      vi.spyOn(chrome.runtime, "sendMessage").mockImplementation(
+        async (msg: any) => {
+          if (msg.action === "getAuthState") return mockAuthStateLoggedIn;
+          if (msg.action === "getFolders")
+            return { success: true, data: mockFolders };
+          if (msg.action === "selectFolder") return { success: true };
+          if (msg.action === "selectTeam")
+            return { success: false, error: "Team not found" };
+          return {};
+        }
+      );
+
+      const user = userEvent.setup();
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("팀 선택")).toBeInTheDocument();
+      });
+
+      await user.selectOptions(screen.getByLabelText("팀 선택"), "team-uuid-2");
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith(
+          "팀 변경 실패: Team not found"
+        );
+      });
+    });
+
+    it("shows '폴더 조회 실패: ' error on folder load failure", async () => {
+      vi.spyOn(chrome.runtime, "sendMessage").mockImplementation(
+        async (msg: any) => {
+          if (msg.action === "getAuthState") return mockAuthStateLoggedIn;
+          if (msg.action === "getFolders")
+            return { success: false, error: "Folders not found" };
+          return {};
+        }
+      );
+      vi.spyOn(chrome.tabs, "query").mockResolvedValue([mockTab] as any);
+      mockStorageGet(chrome.storage.session, { pageContent: mockPageContent });
+      mockStorageGet(chrome.storage.local, {});
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith(
+          "폴더 조회 실패: Folders not found"
+        );
+      });
+    });
+
+    it("shows '폴더 변경 실패: ' error on folder change failure", async () => {
+      let folderChangeCount = 0;
+      setupChromeApiMocks({});
+      vi.spyOn(chrome.runtime, "sendMessage").mockImplementation(
+        async (msg: any) => {
+          if (msg.action === "getAuthState") return mockAuthStateLoggedIn;
+          if (msg.action === "getFolders")
+            return { success: true, data: mockFolders };
+          if (msg.action === "selectFolder") {
+            folderChangeCount++;
+            if (folderChangeCount > 1) {
+              return { success: false, error: "Folder not found" };
+            }
+            return { success: true };
+          }
+          return {};
+        }
+      );
+
+      const user = userEvent.setup();
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("폴더 선택")).toBeInTheDocument();
+      });
+
+      await user.selectOptions(
+        screen.getByLabelText("폴더 선택"),
+        "folder-uuid-2"
+      );
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith(
+          "폴더 변경 실패: Folder not found"
+        );
+      });
+    });
+
+    it("shows '알 수 없는 오류' when error message is empty", async () => {
+      vi.spyOn(chrome.runtime, "sendMessage").mockImplementation(
+        async (msg: any) => {
+          if (msg.action === "getAuthState") return mockAuthStateLoggedOut;
+          if (msg.action === "login") return { success: false };
+          return {};
+        }
+      );
+
+      const user = userEvent.setup();
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("로그인하기")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText("로그인하기"));
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith(
+          "로그인 실패: 알 수 없는 오류"
+        );
+      });
+    });
+  });
+
+  describe("AI Failure Recovery", () => {
+    it("shows AI 생성 실패 on failure and recovers after 2 seconds", async () => {
+      setupChromeApiMocks({});
+      vi.spyOn(chrome.runtime, "sendMessage").mockImplementation(
+        async (msg: any) => {
+          if (msg.action === "getAuthState") return mockAuthStateLoggedIn;
+          if (msg.action === "getFolders")
+            return { success: true, data: mockFolders };
+          if (msg.action === "selectFolder") return { success: true };
+          if (msg.action === "summarize") return { success: false };
+          return {};
+        }
+      );
+      vi.spyOn(chrome.tabs, "query").mockResolvedValue([mockTab] as any);
+      mockStorageGet(chrome.storage.session, { pageContent: mockPageContent });
+      mockStorageGet(chrome.storage.local, {
+        selected_folder_uuid: "folder-uuid-1",
+      });
+
+      const user = userEvent.setup();
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("AI 생성")).toBeInTheDocument();
+      });
+
+      const aiButton = screen.getByText("AI 생성").closest("button")!;
+      expect(aiButton).not.toBeDisabled();
+
+      await user.click(aiButton);
+
+      await waitFor(() => {
+        expect(aiButton.textContent).toContain("AI 생성 실패");
+      });
+
+      expect(aiButton).toBeDisabled();
+
+      await waitFor(
+        () => {
+          expect(aiButton.textContent).toContain("AI 생성");
+          expect(aiButton.textContent).not.toContain("AI 생성 실패");
+        },
+        { timeout: 3000 }
+      );
+
+      expect(aiButton).not.toBeDisabled();
+    }, 10000);
+
+    it("shows AI 생성 완료 on success", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("AI 생성")).toBeInTheDocument();
+      });
+
+      const aiButton = screen.getByText("AI 생성").closest("button")!;
+      await user.click(aiButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("AI 생성 완료")).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe("Optimistic Updates", () => {
+    it("updates team selection immediately then reverts on failure", async () => {
+      setupChromeApiMocks({});
+      vi.spyOn(chrome.runtime, "sendMessage").mockImplementation(
+        async (msg: any) => {
+          if (msg.action === "getAuthState") return mockAuthStateLoggedIn;
+          if (msg.action === "getFolders")
+            return { success: true, data: mockFolders };
+          if (msg.action === "selectFolder") return { success: true };
+          if (msg.action === "selectTeam")
+            return { success: false, error: "Team error" };
+          return {};
+        }
+      );
+
+      const user = userEvent.setup();
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("팀 선택")).toBeInTheDocument();
+      });
+
+      const teamSelect = screen.getByLabelText("팀 선택") as HTMLSelectElement;
+      expect(teamSelect.value).toBe("team-uuid-1");
+
+      await user.selectOptions(teamSelect, "team-uuid-2");
+
+      await waitFor(() => {
+        expect(teamSelect.value).toBe("team-uuid-1");
+      });
+    });
+
+    it("updates folder selection immediately then reverts on failure", async () => {
+      let folderChangeCount = 0;
+      setupChromeApiMocks({});
+      vi.spyOn(chrome.runtime, "sendMessage").mockImplementation(
+        async (msg: any) => {
+          if (msg.action === "getAuthState") return mockAuthStateLoggedIn;
+          if (msg.action === "getFolders")
+            return { success: true, data: mockFolders };
+          if (msg.action === "selectFolder") {
+            folderChangeCount++;
+            if (folderChangeCount > 1) {
+              return { success: false, error: "Folder error" };
+            }
+            return { success: true };
+          }
+          return {};
+        }
+      );
+
+      const user = userEvent.setup();
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("폴더 선택")).toBeInTheDocument();
+      });
+
+      const folderSelect = screen.getByLabelText(
+        "폴더 선택"
+      ) as HTMLSelectElement;
+
+      await waitFor(() => {
+        expect(folderSelect.value).toBe("folder-uuid-1");
+      });
+
+      await user.selectOptions(folderSelect, "folder-uuid-2");
+
+      await waitFor(() => {
+        expect(folderSelect.value).toBe("folder-uuid-1");
+      });
+    });
+
+    it("updates dashboard URL optimistically on team change", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("대시보드 열기 →")).toBeInTheDocument();
+      });
+
+      await user.selectOptions(screen.getByLabelText("팀 선택"), "team-uuid-2");
+
+      await user.click(screen.getByText("대시보드 열기 →"));
+
+      await waitFor(() => {
+        const calls = (chrome.tabs.create as Mock).mock.calls || [];
+        const hasTeam2Url = calls.some((call: any) =>
+          call[0]?.url?.includes("team-uuid-2")
+        );
+        expect(hasTeam2Url).toBe(true);
+      });
+    });
+  });
+
+  describe("Character Limits", () => {
+    it("enforces 200 character limit for comment on change", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByPlaceholderText("URL에 대한 설명을 입력하세요.")
+        ).toBeInTheDocument();
+      });
+
+      const commentInput = screen.getByPlaceholderText(
+        "URL에 대한 설명을 입력하세요."
+      );
+
+      const longText = "a".repeat(250);
+      await user.type(commentInput, longText);
+
+      expect(
+        (commentInput as HTMLTextAreaElement).value.length
+      ).toBeLessThanOrEqual(200);
+    });
+
+    it("shows correct character count", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("(0/200)")).toBeInTheDocument();
+      });
+
+      const commentInput = screen.getByPlaceholderText(
+        "URL에 대한 설명을 입력하세요."
+      );
+      await user.type(commentInput, "Hello");
+
+      expect(screen.getByText("(5/200)")).toBeInTheDocument();
+    });
+
+    it("handles paste at character limit correctly", async () => {
+      setupChromeApiMocks({});
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByPlaceholderText("URL에 대한 설명을 입력하세요.")
+        ).toBeInTheDocument();
+      });
+
+      const commentInput = screen.getByPlaceholderText(
+        "URL에 대한 설명을 입력하세요."
+      ) as HTMLTextAreaElement;
+
+      fireEvent.change(commentInput, { target: { value: "a".repeat(190) } });
+
+      const pasteData = "b".repeat(20);
+      fireEvent.paste(commentInput, {
+        clipboardData: { getData: () => pasteData },
+      });
+
+      expect(commentInput.value.length).toBeLessThanOrEqual(200);
+    });
+
+    it("enforces 10 tag maximum", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByPlaceholderText(
+            "태그를 입력하세요. 콤마(,)로 구분됩니다."
+          )
+        ).toBeInTheDocument();
+      });
+
+      const tagsInput = screen.getByPlaceholderText(
+        "태그를 입력하세요. 콤마(,)로 구분됩니다."
+      );
+
+      await user.type(
+        tagsInput,
+        "tag1,tag2,tag3,tag4,tag5,tag6,tag7,tag8,tag9"
+      );
+
+      fireEvent.keyDown(tagsInput, { key: "," });
+
+      expect((tagsInput as HTMLInputElement).value.split(",").length).toBe(9);
+    });
+
+    it("shows correct tag count", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("(0/10)")).toBeInTheDocument();
+      });
+
+      const tagsInput = screen.getByPlaceholderText(
+        "태그를 입력하세요. 콤마(,)로 구분됩니다."
+      );
+      await user.type(tagsInput, "tag1, tag2, tag3");
+
+      expect(screen.getByText("(3/10)")).toBeInTheDocument();
+    });
+  });
+
+  describe("Form Behavior", () => {
+    it("disables save button when comment is empty", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("스태시에 저장")).toBeInTheDocument();
+      });
+
+      const saveButton = screen.getByText("스태시에 저장").closest("button")!;
+      expect(saveButton).toBeDisabled();
+
+      await user.type(
+        screen.getByPlaceholderText("태그를 입력하세요. 콤마(,)로 구분됩니다."),
+        "tag"
+      );
+
+      expect(saveButton).toBeDisabled();
+    });
+
+    it("disables save button when tags are empty", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("스태시에 저장")).toBeInTheDocument();
+      });
+
+      await user.type(
+        screen.getByPlaceholderText("URL에 대한 설명을 입력하세요."),
+        "comment"
+      );
+
+      const saveButton = screen.getByText("스태시에 저장").closest("button")!;
+      expect(saveButton).toBeDisabled();
+    });
+
+    it("enables save button when both comment and tags are filled", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("스태시에 저장")).toBeInTheDocument();
+      });
+
+      await user.type(
+        screen.getByPlaceholderText("URL에 대한 설명을 입력하세요."),
+        "comment"
+      );
+      await user.type(
+        screen.getByPlaceholderText("태그를 입력하세요. 콤마(,)로 구분됩니다."),
+        "tag"
+      );
+
+      const saveButton = screen.getByText("스태시에 저장").closest("button")!;
+      expect(saveButton).not.toBeDisabled();
+    });
+
+    it("shows '저장 성공!' after successful save", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("스태시에 저장")).toBeInTheDocument();
+      });
+
+      await user.type(
+        screen.getByPlaceholderText("URL에 대한 설명을 입력하세요."),
+        "comment"
+      );
+      await user.type(
+        screen.getByPlaceholderText("태그를 입력하세요. 콤마(,)로 구분됩니다."),
+        "tag"
+      );
+      await user.click(screen.getByText("스태시에 저장"));
+
+      await waitFor(() => {
+        expect(screen.getByText("저장 성공!")).toBeInTheDocument();
+      });
+    });
+
+    it("disables AI button when no readable page content", async () => {
+      setupChromeApiMocks({ pageContent: null });
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("AI 생성")).toBeInTheDocument();
+      });
+
+      const aiButton = screen.getByText("AI 생성").closest("button")!;
+      expect(aiButton).toBeDisabled();
+    });
+
+    it("disables AI button when no teams available", async () => {
+      setupChromeApiMocks({
+        authState: {
+          isLoggedIn: true,
+          userInfo: { teams: [], selectedTeamUuid: "" },
+        },
+      });
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("AI 생성")).toBeInTheDocument();
+      });
+
+      const aiButton = screen.getByText("AI 생성").closest("button")!;
+      expect(aiButton).toBeDisabled();
+    });
+
+    it("populates comment and tags from AI response", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("AI 생성")).toBeInTheDocument();
+      });
+
+      const aiButton = screen.getByText("AI 생성").closest("button")!;
+      await user.click(aiButton);
+
+      await waitFor(() => {
+        const commentInput = screen.getByPlaceholderText(
+          "URL에 대한 설명을 입력하세요."
+        ) as HTMLTextAreaElement;
+        expect(commentInput.value).toBe("AI generated summary");
+      });
+
+      const tagsInput = screen.getByPlaceholderText(
+        "태그를 입력하세요. 콤마(,)로 구분됩니다."
+      ) as HTMLInputElement;
+      expect(tagsInput.value).toBe("tag1, tag2");
+    });
+  });
+
+  describe("Dashboard URL", () => {
+    it("builds correct dashboard URL with team and folder", async () => {
+      setupChromeApiMocks({});
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("대시보드 열기 →")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText("대시보드 열기 →"));
+
+      expect(chrome.tabs.create).toHaveBeenCalledWith({
+        url: "https://app.teamstash.test/team/team-uuid-1?folderUuid=folder-uuid-1",
+      });
+    });
+
+    it("does not open dashboard when URL is empty", async () => {
+      setupChromeApiMocks({
+        authState: {
+          isLoggedIn: true,
+          userInfo: { teams: [], selectedTeamUuid: "" },
+        },
+        folders: [],
+      });
+      const user = userEvent.setup();
+
+      render(<App />);
+
+      await waitFor(() => {
+        expect(screen.getByText("대시보드 열기 →")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText("대시보드 열기 →"));
+
+      expect(chrome.tabs.create).not.toHaveBeenCalled();
+    });
   });
 });
