@@ -2,29 +2,25 @@ import { useState } from "react";
 import { MAX_CHARACTER_COUNT, MAX_TAG_COUNT } from "../constants";
 
 type UseAiSummaryArgs = {
-  aiButtonRef: React.RefObject<HTMLButtonElement | null>;
   setComment: (value: string) => void;
   setTags: (value: string) => void;
   setIsAiDisabled: (value: boolean) => void;
 };
 
 function useAiSummary({
-  aiButtonRef,
   setComment,
   setTags,
   setIsAiDisabled,
 }: UseAiSummaryArgs) {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isAiCompleted, setIsAiCompleted] = useState(false);
+  const [isAiFailed, setIsAiFailed] = useState(false);
 
   const handleAiClick = async () => {
-    if (!aiButtonRef.current) return;
-
-    const originalHTML = aiButtonRef.current.innerHTML;
-
     try {
       setIsAiLoading(true);
       setIsAiDisabled(true);
+      setIsAiFailed(false);
 
       const { pageContent } = await chrome.storage.session.get("pageContent");
 
@@ -50,15 +46,9 @@ function useAiSummary({
         setIsAiCompleted(true);
         setIsAiLoading(false);
       } else {
-        if (aiButtonRef.current) {
-          const svg = aiButtonRef.current.querySelector("svg");
-          aiButtonRef.current.innerHTML =
-            (svg?.outerHTML || "") + "AI 생성 실패";
-        }
+        setIsAiFailed(true);
         setTimeout(() => {
-          if (aiButtonRef.current) {
-            aiButtonRef.current.innerHTML = originalHTML;
-          }
+          setIsAiFailed(false);
           setIsAiDisabled(false);
           setIsAiLoading(false);
         }, 2000);
@@ -68,15 +58,14 @@ function useAiSummary({
       alert("오류가 발생했습니다: " + (error as Error).message);
       setIsAiLoading(false);
       setIsAiDisabled(false);
-      if (aiButtonRef.current) {
-        aiButtonRef.current.innerHTML = originalHTML;
-      }
+      setIsAiFailed(false);
     }
   };
 
   return {
     isAiLoading,
     isAiCompleted,
+    isAiFailed,
     handleAiClick,
   };
 }

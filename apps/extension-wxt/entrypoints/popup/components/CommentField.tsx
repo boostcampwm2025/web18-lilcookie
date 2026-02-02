@@ -7,8 +7,8 @@ type CommentFieldProps = {
   isAiLoading: boolean;
   isAiDisabled: boolean;
   isAiCompleted: boolean;
+  isAiFailed: boolean;
   isSaveSuccess: boolean;
-  aiButtonRef: React.RefObject<HTMLButtonElement | null>;
   onAiClick: () => void;
   onCommentChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onCommentKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
@@ -22,8 +22,8 @@ function CommentField({
   isAiLoading,
   isAiDisabled,
   isAiCompleted,
+  isAiFailed,
   isSaveSuccess,
-  aiButtonRef,
   onAiClick,
   onCommentChange,
   onCommentKeyDown,
@@ -39,7 +39,6 @@ function CommentField({
           </span>
         </label>
         <button
-          ref={aiButtonRef}
           type="button"
           className={`ai-badge-btn ${isAiLoading ? "loading" : ""}`}
           onClick={onAiClick}
@@ -49,7 +48,7 @@ function CommentField({
           }
         >
           <AiSparkleIcon />
-          {isAiCompleted ? "AI 생성 완료" : "AI 생성"}
+          {isAiFailed ? "AI 생성 실패" : isAiCompleted ? "AI 생성 완료" : "AI 생성"}
         </button>
       </div>
       <textarea

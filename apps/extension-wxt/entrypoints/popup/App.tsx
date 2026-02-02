@@ -28,7 +28,6 @@ function App() {
     hasNoTeams,
   });
 
-  const aiButtonRef = useRef<HTMLButtonElement>(null);
   const isMountedRef = useRef(true);
 
   useEffect(() => {
@@ -53,12 +52,12 @@ function App() {
     isMountedRef,
   });
 
-  const { isAiLoading, isAiCompleted, handleAiClick } = useAiSummary({
-    aiButtonRef,
-    setComment,
-    setTags,
-    setIsAiDisabled,
-  });
+  const { isAiLoading, isAiCompleted, isAiFailed, handleAiClick } =
+    useAiSummary({
+      setComment,
+      setTags,
+      setIsAiDisabled,
+    });
 
   const { isSaving, isSaveSuccess, handleSave } = useLinkSave({
     tab,
@@ -271,8 +270,8 @@ function App() {
           isAiLoading={isAiLoading}
           isAiDisabled={isAiDisabled}
           isAiCompleted={isAiCompleted}
+          isAiFailed={isAiFailed}
           isSaveSuccess={isSaveSuccess}
-          aiButtonRef={aiButtonRef}
           onAiClick={handleAiClick}
           onCommentChange={handleCommentChange}
           onCommentKeyDown={handleCommentKeyDown}
