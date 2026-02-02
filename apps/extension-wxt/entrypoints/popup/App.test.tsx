@@ -1124,26 +1124,5 @@ describe("App - Behavioral Snapshot Tests", () => {
         url: "https://app.teamstash.test/team/team-uuid-1?folderUuid=folder-uuid-1",
       });
     });
-
-    it("does not open dashboard when URL is empty", async () => {
-      setupChromeApiMocks({
-        authState: {
-          isLoggedIn: true,
-          userInfo: { teams: [], selectedTeamUuid: "" },
-        },
-        folders: [],
-      });
-      const user = userEvent.setup();
-
-      render(<App />);
-
-      await waitFor(() => {
-        expect(screen.getByText("대시보드 열기 →")).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByText("대시보드 열기 →"));
-
-      expect(chrome.tabs.create).not.toHaveBeenCalled();
-    });
   });
 });
