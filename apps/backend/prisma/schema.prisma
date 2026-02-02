@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // 추후 PostgreSQL이나 MySQL로 확장 가능
+}
+
+// --------------------------------------------------------
+// 1. User (서비스 전체 사용자)
+// --------------------------------------------------------
+model User {
+  id        Int      @id @default(autoincrement())
+  uuid      String   @unique @default(uuid()) // 외부 노출용 식별자
+  nickname  String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 관계 설정
+  memberships Member[]   // 사용자가 '멤버'로서 소속된 팀 목록
+  folders     Folder[]   // 사용자가 직접 생성한 폴더들
+  links       Link[]     // 사용자가 직접 생성한 링크들
+  oauthApps   OAuthApp[] // 사용자가 생성한 OAuth 앱들
+
+  @@map("users")
+}
+
+// --------------------------------------------------------
+// 2. Team (공유 작업 공간)
+// --------------------------------------------------------
+model Team {
+  id        Int      @id @default(autoincrement())
+  uuid      String   @unique @default(uuid())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 관계 설정
+  members  Member[]      // 팀에 소속된 멤버 목록
+  folders  Folder[]      // 팀에 속한 폴더들
+  links    Link[]        // 팀에 속한 전체 링크들
+  webhooks TeamWebhook[] // 팀에 등록된 웹훅들
+  tokenUsage TeamTokenUsage[]  // 추가: 팀별 토큰 사용량
+
+  @@map("teams")
+}
+
+// --------------------------------------------------------
+// 3. Member (User와 Team의 다대다 매핑 및 권한)
+// --------------------------------------------------------
+model Member {
+  id       Int      @id @default(autoincrement())
+  role     String   @default("member") // "owner" | "member"
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  // 외래 키
+  teamId Int @map("team_id")
+  userId Int @map("user_id")
+
+  // 관계 설정
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId]) // 한 유저가 한 팀에 중복 가입 방지
+  @@index([userId])
+  @@map("members")
+}
+
+// --------------------------------------------------------
+// 4. Folder (링크를 분류하는 단위)
+// --------------------------------------------------------
+model Folder {
+  id        Int      @id @default(autoincrement())
+  uuid      String   @unique @default(uuid())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 외래 키
+  teamId    Int @map("team_id")
+  createdBy Int @map("created_by")
+
+  // 관계 설정
+  team    Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  creator User   @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  links   Link[]
+
+  @@index([teamId])
+  @@index([createdBy])
+  @@map("folders")
+}
+
+// --------------------------------------------------------
+// 5. Link (최종 데이터 객체)
+// --------------------------------------------------------
+model Link {
+  id        Int      @id @default(autoincrement())
+  uuid      String   @unique @default(uuid())
+  url       String
+  title     String
+  summary   String
+  tags      String   // JSON 형태의 문자열 (SQLite 제약사항)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 외래 키
+  teamId    Int  @map("team_id")
+  // --------------------------------------------------------
+  // 사용자는 링크를 추가할 때 폴더를 지정하지 않을 수 있음
+  // 하지만 우리 팀은 "기본 폴더" 개념을 도입했음
+  // 따라서 모든 링크는 폴더에 속해야 한다고 가정
+  // 팀은 최소 하나의 기본 폴더를 가져야 하고, 폴더 수정/삭제 불가능
+  // 사용자가 폴더를 지정하지 않아도, 비즈니스 로직에서 기본 폴더에 자동으로 할당
+  // --------------------------------------------------------
+  folderId  Int @map("folder_id")
+  createdBy Int  @map("created_by")
+
+  // 관계 설정
+  team    Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  folder  Folder  @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  creator User    @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([teamId])
+  @@index([folderId])
+  @@index([createdBy])
+  @@map("links")
+}
+
+// --------------------------------------------------------
+// 6. TeamWebhook (팀별 웹훅 URL 관리)
+// --------------------------------------------------------
+model TeamWebhook {
+  id       Int     @id @default(autoincrement())
+  uuid     String  @unique @default(uuid()) // 외부 노출용 식별자
+  url      String
+  isActive Boolean @default(true) @map("is_active")
+
+  // 외래 키
+  teamId Int @map("team_id")
+
+  // 관계 설정
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([teamId])
+  @@map("team_webhooks")
+}
+
+// --------------------------------------------------------
+// 7. OAuthApp (사용자가 생성한 OAuth 클라이언트 앱)
+// --------------------------------------------------------
+model OAuthApp {
+  id           Int      @id @default(autoincrement())
+  uuid         String   @unique @default(uuid()) // 외부 노출용 식별자
+  name         String // 앱 이름 (사용자 지정)
+  clientId     String   @unique @map("client_id") // Authentik에서 사용할 Client ID
+  redirectUris String   @map("redirect_uris") // JSON 배열 문자열
+  scopes       String   @default("openid profile links:read") // 허용된 스코프
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Authentik 연동 정보
+  authentikProviderId Int    @unique @map("authentik_provider_id") // Authentik OAuth2 Provider PK
+  authentikAppId      String @unique @map("authentik_app_id") // Authentik Application UUID
+  issuer              String @default("https://auth.localhost/application/o/teamstash/") // JWT issuer
+  jwksUrl             String @default("https://auth.localhost/application/o/teamstash/jwks/") @map("jwks_url") // JWKS 엔드포인트 URL
+
+  // 소유자 정보
+  ownerId Int  @map("owner_id")
+  owner   User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([issuer])
+  @@map("oauth_apps")
+}
+
+// --------------------------------------------------------
+// 8. TeamTokenUsage (팀별 ai 토큰 사용량 관리)
+// --------------------------------------------------------
+model TeamTokenUsage {
+  id         Int      @id @default(autoincrement())
+  date       String   // "2024-01-29" 형식 (일별 집계용)
+  usedTokens Int      @default(0) @map("used_tokens")
+  maxTokens  Int      @default(50000) @map("max_tokens") // 일일 한도
+  
+  teamId Int @map("team_id")
+  team   Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  
+  @@unique([teamId, date]) // 팀+날짜 조합 유니크
+  @@index([teamId])
+  @@map("team_token_usage")
+}

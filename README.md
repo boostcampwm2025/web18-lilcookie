@@ -62,3 +62,39 @@ pnpm dev
 | J123\_박준호                                                    | J193\_이수진                                                     | J204\_이윤표                                                    | J243\_정아현                                                    |
 | --------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- |
 | ![박준호](https://avatars.githubusercontent.com/u/32813311?v=4) | ![이수진](https://avatars.githubusercontent.com/u/182627132?v=4) | ![이윤표](https://avatars.githubusercontent.com/u/30365108?v=4) | ![정아현](https://avatars.githubusercontent.com/u/97656991?v=4) |
+
+
+### 개발 서버 실행 방법
+
+## 개발용 인프라 Docker Compose
+
+`./infra/docker/.env.development.local` 작성
+
+`pnpm run docker:dev:up`
+`pnpm run docker:dev:down`
+`pnpm run docker:dev:logs`
+
+## Terraform
+
+1. [Terraform 설치](https://developer.hashicorp.com/terraform/install)
+2. 개발용 인프라 정상 동작 확인 (https://auth.localhost 연결 시 Authentik 정상 표시되는지 확인)
+3. `cd infra/terraform`
+4. `terraform init` : terraform 초기화
+5. `terraform plan` : 어떤 작업을 실행할 것인지 미리 확인
+6. `terraform apply` : 작업 반영 (yes 타이핑 필요)
+
+## Frontend, backend
+
+개발 과정에서 HMR을 위해 docker compose에 포함하지 않음.
+
+1. 프로젝트 루트에서 `pnpm run start:dev`
+2. 백엔드: 브라우저에서 `https://api.localhost/health` 접속 시도
+3. 프론트엔드: 브라우저에서 `https://app.localhost` 접속 시도
+
+## 개발 환경 TLS 인증서
+
+### 윈도우10 기준 인증서 세팅법:
+`web18-lilcookie\infra\caddy\data\caddy\pki\authorities\local\root.crt` 우클릭 -> 인증서 설치 -> 저장소 위치(로컬 컴퓨터) -> 모든 인증서를 다음 위치에 저장 -> 찾아보기 -> 신뢰할 수 있는 루트 기관 -> 다음다음 -> END
+
+### MacOS 기반 인증서 세팅 방법
+`web18-lilcookie/infra/caddy/data/caddy/pki/authorities/local/root.crt` 더블 클릭 → Keychain Access에 인증서 설치된 것 확인 (관리자 인증) → Caddy Local Authority 우클릭 → get info → Trust → When using this certificate: Always Trust (관리자 인증)
