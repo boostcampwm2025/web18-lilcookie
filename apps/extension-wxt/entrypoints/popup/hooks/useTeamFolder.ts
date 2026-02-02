@@ -34,7 +34,7 @@ function useTeamFolder({
     if (!teamUuid) {
       setFolders([]);
       setSelectedFolderUuid("");
-      setDashboardUrl("");
+      setDashboardUrl(buildDashboardUrl(""));
       return;
     }
 
@@ -93,7 +93,7 @@ function useTeamFolder({
         setTeams(userTeams ?? []);
         const nextTeamUuid = storedTeamUuid || userTeams?.[0]?.teamUuid || "";
         setSelectedTeamUuid(nextTeamUuid);
-        setDashboardUrl(buildDashboardUrl(nextTeamUuid));
+        setDashboardUrl(buildDashboardUrl(nextTeamUuid, selectedFolderUuid));
         if (!isMounted) return;
         await loadFolders(nextTeamUuid);
       }

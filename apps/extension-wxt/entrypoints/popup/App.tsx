@@ -190,7 +190,7 @@ function App() {
           isTeamFolderSelected={isTeamFolderSelected}
         />
       </form>
-      <FooterLink disabled={!dashboardUrl} onClick={handleDashboardClick} />
+      <FooterLink href={dashboardUrl || "#"} disabled={!dashboardUrl} onClick={handleDashboardClick} />
     </div>
   );
 }

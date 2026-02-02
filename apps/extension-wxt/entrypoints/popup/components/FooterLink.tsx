@@ -1,13 +1,14 @@
 type FooterLinkProps = {
+  href: string;
   disabled: boolean;
   onClick: (event: React.MouseEvent) => void;
 };
 
-function FooterLink({ disabled, onClick }: FooterLinkProps) {
+function FooterLink({ href = "#", disabled, onClick }: FooterLinkProps) {
   return (
     <footer className="footer">
       <a
-        href="#"
+        href={href}
         onClick={onClick}
         className={`dashboard-link ${disabled ? "disabled" : ""}`}
       >
