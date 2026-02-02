@@ -22,12 +22,17 @@ function useTabInfo({ isLoggedIn, hasNoTeams }: UseTabInfoArgs) {
     }
 
     (async () => {
-      const [activeTab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
+      const [tabResult, pageContentResult] = await Promise.all([
+        chrome.tabs.query({
+          active: true,
+          currentWindow: true,
+        }),
+        chrome.storage.session.get("pageContent"),
+      ]);
 
       if (!isMounted) return;
+
+      const [activeTab] = tabResult;
 
       if (activeTab) {
         setTab({
@@ -35,13 +40,10 @@ function useTabInfo({ isLoggedIn, hasNoTeams }: UseTabInfoArgs) {
           url: activeTab.url || "Loading...",
           favIconUrl: activeTab.favIconUrl,
         });
-
-        const { pageContent } = await chrome.storage.session.get("pageContent");
-        if (!isMounted) return;
-
-        const isReaderable = (pageContent as any)?.textContent;
-        setIsAiDisabled(!isReaderable || hasNoTeams);
       }
+
+      const isReaderable = (pageContentResult as any)?.pageContent?.textContent;
+      setIsAiDisabled(!isReaderable || hasNoTeams);
     })();
 
     return () => {
