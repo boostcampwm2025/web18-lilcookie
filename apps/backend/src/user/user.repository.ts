@@ -37,7 +37,7 @@ export class UserRepository {
     const upserted = await this.prisma.user.upsert({
       where: { uuid: data.uuid },
       create: data,
-      update: { nickname: data.nickname },
+      update: { nickname: data.nickname, email: data.email },
     });
     return UserMapper.fromPrisma(upserted);
   }

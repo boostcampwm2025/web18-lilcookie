@@ -5,5 +5,6 @@ import { User } from "../entities/user.entity";
  */
 export interface UpsertUserInput {
   uuid: string;
+  email?: string | null;
   nickname: string;
 }

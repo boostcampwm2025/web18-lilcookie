@@ -1,6 +1,7 @@
 export class User {
   userId: number;
   userUuid: string;
+  userEmail: string | null;
   userNickname: string;
   createdAt: Date;
 
