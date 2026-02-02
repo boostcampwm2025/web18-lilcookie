@@ -2,7 +2,7 @@ import api from "./api";
 import { getAuthState } from "./auth.background";
 import { API_CONFIG } from "../../config/api";
 
-const MAX_AI_INPUT_CHARACTER_COUNT = 300;
+const MAX_AI_INPUT_CHARACTER_COUNT = 2000;
 
 export async function summarizeContent(content: string) {
   try {
