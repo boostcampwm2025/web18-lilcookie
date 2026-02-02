@@ -635,6 +635,12 @@ describe("App - Behavioral Snapshot Tests", () => {
         expect(screen.getByLabelText("폴더 선택")).toBeInTheDocument();
       });
 
+      await waitFor(() => {
+        expect(
+          screen.getByRole("option", { name: "Folder Two" }),
+        ).toBeInTheDocument();
+      });
+
       await user.selectOptions(
         screen.getByLabelText("폴더 선택"),
         "folder-uuid-2"
