@@ -5,6 +5,7 @@ import CommentField from "./components/CommentField";
 import Header from "./components/Header";
 import FolderSelect from "./components/FolderSelect";
 import PageInfoCard from "./components/PageInfoCard";
+import TagField from "./components/TagField";
 import TeamSelect from "./components/TeamSelect";
 import { SaveIcon } from "./components/icons";
 import { MAX_CHARACTER_COUNT, MAX_TAG_COUNT } from "./constants";
@@ -497,31 +498,15 @@ function App() {
         />
 
         {/* Tag Field */}
-        <div className="input-group">
-          <div className="label-row">
-            <label>
-              태그{" "}
-              <span className="tag-count">
-                ({Math.min(tagCount, MAX_TAG_COUNT)}/{MAX_TAG_COUNT})
-              </span>
-            </label>
-          </div>
-          <div className="tag-input-container">
-            <input
-              id="tags"
-              type="text"
-              name="tags"
-              placeholder={
-                isSaveSuccess ? "" : "태그를 입력하세요. 콤마(,)로 구분됩니다."
-              }
-              value={tags}
-              onChange={handleTagsChange}
-              onKeyDown={handleTagsKeyDown}
-              disabled={isSaveSuccess}
-              className={isAiLoading ? "loading" : ""}
-            />
-          </div>
-        </div>
+        <TagField
+          tags={tags}
+          tagCount={tagCount}
+          maxTagCount={MAX_TAG_COUNT}
+          isSaveSuccess={isSaveSuccess}
+          isAiLoading={isAiLoading}
+          onTagsChange={handleTagsChange}
+          onTagsKeyDown={handleTagsKeyDown}
+        />
 
         {/* Save Button */}
         <button type="submit" className="save-btn" disabled={isSaveDisabled}>
