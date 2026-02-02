@@ -5,9 +5,9 @@ import CommentField from "./components/CommentField";
 import Header from "./components/Header";
 import FolderSelect from "./components/FolderSelect";
 import PageInfoCard from "./components/PageInfoCard";
+import SaveButton from "./components/SaveButton";
 import TagField from "./components/TagField";
 import TeamSelect from "./components/TeamSelect";
-import { SaveIcon } from "./components/icons";
 import { MAX_CHARACTER_COUNT, MAX_TAG_COUNT } from "./constants";
 import type { TabInfo } from "./types";
 import { buildDashboardUrl } from "./utils";
@@ -509,14 +509,11 @@ function App() {
         />
 
         {/* Save Button */}
-        <button type="submit" className="save-btn" disabled={isSaveDisabled}>
-          <SaveIcon />
-          {isSaveSuccess
-            ? "저장 성공!"
-            : isSaving
-              ? "저장 중..."
-              : "스태시에 저장"}
-        </button>
+        <SaveButton
+          isSaveSuccess={isSaveSuccess}
+          isSaving={isSaving}
+          isDisabled={isSaveDisabled}
+        />
       </form>
 
       <footer className="footer">
