@@ -443,7 +443,7 @@ describe("App - Behavioral Snapshot Tests", () => {
       await user.click(screen.getByText("로그인하기"));
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith("로그인 실패: Test error");
+        expect(screen.getByText("로그인 실패: Test error")).toBeInTheDocument();
       });
     });
 
@@ -472,9 +472,9 @@ describe("App - Behavioral Snapshot Tests", () => {
       await user.click(aiButton);
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith(
-          "오류가 발생했습니다: AI service unavailable"
-        );
+        expect(
+          screen.getByText("오류가 발생했습니다: AI service unavailable")
+        ).toBeInTheDocument();
       });
     });
 
@@ -510,7 +510,7 @@ describe("App - Behavioral Snapshot Tests", () => {
       await user.click(screen.getByText("스태시에 저장"));
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith("저장 실패: Server error");
+        expect(screen.getByText("저장 실패: Server error")).toBeInTheDocument();
       });
     });
 
@@ -545,9 +545,9 @@ describe("App - Behavioral Snapshot Tests", () => {
       await user.click(screen.getByText("스태시에 저장"));
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith(
-          "저장 중 오류가 발생했습니다: Network error"
-        );
+        expect(
+          screen.getByText("저장 중 오류가 발생했습니다: Network error")
+        ).toBeInTheDocument();
       });
     });
 
@@ -581,9 +581,7 @@ describe("App - Behavioral Snapshot Tests", () => {
       await user.selectOptions(screen.getByLabelText("팀 선택"), "team-uuid-2");
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith(
-          "팀 변경 실패: Team not found"
-        );
+        expect(screen.getByText("팀 변경 실패: Team not found")).toBeInTheDocument();
       });
     });
 
@@ -603,9 +601,9 @@ describe("App - Behavioral Snapshot Tests", () => {
       render(<App />);
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith(
-          "폴더 조회 실패: Folders not found"
-        );
+        expect(
+          screen.getByText("폴더 조회 실패: Folders not found")
+        ).toBeInTheDocument();
       });
     });
 
@@ -647,9 +645,9 @@ describe("App - Behavioral Snapshot Tests", () => {
       );
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith(
-          "폴더 변경 실패: Folder not found"
-        );
+        expect(
+          screen.getByText("폴더 변경 실패: Folder not found")
+        ).toBeInTheDocument();
       });
     });
 
@@ -672,9 +670,9 @@ describe("App - Behavioral Snapshot Tests", () => {
       await user.click(screen.getByText("로그인하기"));
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith(
-          "로그인 실패: 알 수 없는 오류"
-        );
+        expect(
+          screen.getByText("로그인 실패: 알 수 없는 오류")
+        ).toBeInTheDocument();
       });
     });
   });
@@ -771,7 +769,9 @@ describe("App - Behavioral Snapshot Tests", () => {
       });
 
       const teamSelect = screen.getByLabelText("팀 선택") as HTMLSelectElement;
-      expect(teamSelect.value).toBe("team-uuid-1");
+      await waitFor(() => {
+        expect(teamSelect.value).toBe("team-uuid-1");
+      });
 
       await user.selectOptions(teamSelect, "team-uuid-2");
 
