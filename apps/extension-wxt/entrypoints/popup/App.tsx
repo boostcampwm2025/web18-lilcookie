@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import type { Team } from "../../schemas/auth.type";
 import type { FolderResponseData } from "@repo/api";
+import CommentField from "./components/CommentField";
 import Header from "./components/Header";
 import FolderSelect from "./components/FolderSelect";
 import PageInfoCard from "./components/PageInfoCard";
 import TeamSelect from "./components/TeamSelect";
-import { AiSparkleIcon, SaveIcon } from "./components/icons";
+import { SaveIcon } from "./components/icons";
 import { MAX_CHARACTER_COUNT, MAX_TAG_COUNT } from "./constants";
 import type { TabInfo } from "./types";
 import { buildDashboardUrl } from "./utils";
@@ -480,42 +481,20 @@ function App() {
       {/* Form Section */}
       <form className="form-section" onSubmit={handleSave}>
         {/* Comment Field */}
-        <div className="input-group">
-          <div className="label-row">
-            <label>
-              코멘트{" "}
-              <span className="char-count">
-                ({commentLength}/{MAX_CHARACTER_COUNT})
-              </span>
-            </label>
-            <button
-              ref={aiButtonRef}
-              type="button"
-              className={`ai-badge-btn ${isAiLoading ? "loading" : ""}`}
-              onClick={handleAiClick}
-              disabled={isAiDisabled || isAiCompleted}
-              title={
-                isAiDisabled
-                  ? "이 페이지는 요약할 수 없습니다"
-                  : "AI로 요약 생성"
-              }
-            >
-              <AiSparkleIcon />
-              {isAiCompleted ? "AI 생성 완료" : "AI 생성"}
-            </button>
-          </div>
-          <textarea
-            id="comment"
-            name="comment"
-            placeholder={isSaveSuccess ? "" : "URL에 대한 설명을 입력하세요."}
-            value={comment}
-            onChange={handleCommentChange}
-            onKeyDown={handleCommentKeyDown}
-            onPaste={handleCommentPaste}
-            disabled={isSaveSuccess}
-            className={isAiLoading ? "loading" : ""}
-          />
-        </div>
+        <CommentField
+          comment={comment}
+          commentLength={commentLength}
+          maxCharacterCount={MAX_CHARACTER_COUNT}
+          isAiLoading={isAiLoading}
+          isAiDisabled={isAiDisabled}
+          isAiCompleted={isAiCompleted}
+          isSaveSuccess={isSaveSuccess}
+          aiButtonRef={aiButtonRef}
+          onAiClick={handleAiClick}
+          onCommentChange={handleCommentChange}
+          onCommentKeyDown={handleCommentKeyDown}
+          onCommentPaste={handleCommentPaste}
+        />
 
         {/* Tag Field */}
         <div className="input-group">
