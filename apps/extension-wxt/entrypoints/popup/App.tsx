@@ -7,6 +7,7 @@ import PageInfoCard from "./components/PageInfoCard";
 import SaveButton from "./components/SaveButton";
 import TagField from "./components/TagField";
 import TeamSelect from "./components/TeamSelect";
+import Toast from "./components/Toast";
 import { MAX_CHARACTER_COUNT, MAX_TAG_COUNT } from "./constants";
 import useAiSummary from "./hooks/useAiSummary";
 import useAuthState from "./hooks/useAuthState";
@@ -19,9 +20,18 @@ function App() {
   // State 관리
   const [comment, setComment] = useState("");
   const [tags, setTags] = useState("");
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "error" | "success";
+  } | null>(null);
 
-  const { authState, isLoggedIn, isAuthLoading, login, logout } =
-    useAuthState();
+  const showToast = (message: string, type: "error" | "success" = "error") => {
+    setToast({ message, type });
+  };
+
+  const { authState, isLoggedIn, isAuthLoading, login, logout } = useAuthState({
+    onError: showToast,
+  });
   const hasNoTeams = (authState?.userInfo?.teams ?? []).length === 0;
   const { tab, isAiDisabled, setIsAiDisabled } = useTabInfo({
     isLoggedIn,
@@ -50,6 +60,7 @@ function App() {
     isAuthLoading,
     isLoggedIn,
     isMountedRef,
+    onError: showToast,
   });
 
   const { isAiLoading, isAiCompleted, isAiFailed, handleAiClick } =
@@ -57,6 +68,7 @@ function App() {
       setComment,
       setTags,
       setIsAiDisabled,
+      onError: showToast,
     });
 
   const { isSaving, isSaveSuccess, handleSave } = useLinkSave({
@@ -64,6 +76,7 @@ function App() {
     comment,
     tags,
     selectedFolderUuid,
+    onError: showToast,
   });
 
   // 댓글 글자 수 계산
@@ -223,6 +236,13 @@ function App() {
     return (
       <div className="container">
         <Header showLogout={false} />
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
         <div style={{ textAlign: "center", padding: "40px 20px" }}>
           <p style={{ marginBottom: "20px" }}>로그인이 필요합니다</p>
           <button className="save-btn" onClick={login}>
@@ -238,6 +258,13 @@ function App() {
     <div className="container">
       {/* Header */}
       <Header showLogout onLogout={logout} />
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
 
       {/* Page Info Card */}
       <PageInfoCard

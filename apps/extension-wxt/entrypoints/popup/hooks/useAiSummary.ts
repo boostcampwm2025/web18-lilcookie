@@ -5,12 +5,14 @@ type UseAiSummaryArgs = {
   setComment: (value: string) => void;
   setTags: (value: string) => void;
   setIsAiDisabled: (value: boolean) => void;
+  onError: (message: string) => void;
 };
 
 function useAiSummary({
   setComment,
   setTags,
   setIsAiDisabled,
+  onError,
 }: UseAiSummaryArgs) {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isAiCompleted, setIsAiCompleted] = useState(false);
@@ -55,7 +57,7 @@ function useAiSummary({
       }
     } catch (error) {
       console.error("AI Error:", error);
-      alert("오류가 발생했습니다: " + (error as Error).message);
+      onError("오류가 발생했습니다: " + (error as Error).message);
       setIsAiLoading(false);
       setIsAiDisabled(false);
       setIsAiFailed(false);

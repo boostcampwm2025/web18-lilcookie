@@ -7,6 +7,7 @@ type UseLinkSaveArgs = {
   comment: string;
   tags: string;
   selectedFolderUuid: string;
+  onError: (message: string) => void;
 };
 
 function useLinkSave({
@@ -14,6 +15,7 @@ function useLinkSave({
   comment,
   tags,
   selectedFolderUuid,
+  onError,
 }: UseLinkSaveArgs) {
   const [isSaving, setIsSaving] = useState(false);
   const [isSaveSuccess, setIsSaveSuccess] = useState(false);
@@ -46,12 +48,12 @@ function useLinkSave({
       if (response && response.success) {
         setIsSaveSuccess(true);
       } else {
-        alert("저장 실패: " + (response?.error || "알 수 없는 오류"));
+        onError("저장 실패: " + (response?.error || "알 수 없는 오류"));
         setIsSaving(false);
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("저장 중 오류가 발생했습니다: " + (error as Error).message);
+      onError("저장 중 오류가 발생했습니다: " + (error as Error).message);
       setIsSaving(false);
     }
   };

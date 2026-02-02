@@ -13,6 +13,7 @@ type UseTeamFolderArgs = {
   isAuthLoading: boolean;
   isLoggedIn: boolean;
   isMountedRef: React.MutableRefObject<boolean>;
+  onError: (message: string) => void;
 };
 
 function useTeamFolder({
@@ -20,6 +21,7 @@ function useTeamFolder({
   isAuthLoading,
   isLoggedIn,
   isMountedRef,
+  onError,
 }: UseTeamFolderArgs) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeamUuid, setSelectedTeamUuid] = useState("");
@@ -46,7 +48,7 @@ function useTeamFolder({
     if (!response?.success) {
       setFolders([]);
       setSelectedFolderUuid("");
-      alert("폴더 조회 실패: " + (response?.error || "알 수 없는 오류"));
+      onError("폴더 조회 실패: " + (response?.error || "알 수 없는 오류"));
       return;
     }
 
@@ -119,7 +121,7 @@ function useTeamFolder({
       setSelectedTeamUuid(previousTeamUuid);
       setSelectedFolderUuid(previousFolderUuid);
       setDashboardUrl(buildDashboardUrl(previousTeamUuid, previousFolderUuid));
-      alert("팀 변경 실패: " + (response?.error || "알 수 없는 오류"));
+      onError("팀 변경 실패: " + (response?.error || "알 수 없는 오류"));
       await loadFolders(previousTeamUuid);
       return;
     }
@@ -144,7 +146,7 @@ function useTeamFolder({
     if (!response?.success) {
       setSelectedFolderUuid(previousFolderUuid);
       setDashboardUrl(buildDashboardUrl(selectedTeamUuid, previousFolderUuid));
-      alert("폴더 변경 실패: " + (response?.error || "알 수 없는 오류"));
+      onError("폴더 변경 실패: " + (response?.error || "알 수 없는 오류"));
     }
   };
 

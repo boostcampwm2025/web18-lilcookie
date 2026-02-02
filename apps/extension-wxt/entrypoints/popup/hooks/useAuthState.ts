@@ -9,7 +9,11 @@ type AuthState = {
   };
 };
 
-function useAuthState() {
+type UseAuthStateArgs = {
+  onError: (message: string) => void;
+};
+
+function useAuthState({ onError }: UseAuthStateArgs) {
   const [authState, setAuthState] = useState<AuthState | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -39,7 +43,7 @@ function useAuthState() {
       setIsLoggedIn(true);
       window.location.reload();
     } else {
-      alert("로그인 실패: " + (response?.error || "알 수 없는 오류"));
+      onError("로그인 실패: " + (response?.error || "알 수 없는 오류"));
     }
   };
 
