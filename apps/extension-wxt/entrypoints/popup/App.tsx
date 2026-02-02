@@ -10,6 +10,7 @@ import SaveButton from "./components/SaveButton";
 import TagField from "./components/TagField";
 import TeamSelect from "./components/TeamSelect";
 import { MAX_CHARACTER_COUNT, MAX_TAG_COUNT } from "./constants";
+import useAuthState from "./hooks/useAuthState";
 import type { TabInfo } from "./types";
 import { buildDashboardUrl } from "./utils";
 import "./App.css";
@@ -26,43 +27,51 @@ function App() {
   const [isSaveSuccess, setIsSaveSuccess] = useState(false);
 
   const [dashboardUrl, setDashboardUrl] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeamUuid, setSelectedTeamUuid] = useState("");
   const [folders, setFolders] = useState<FolderResponseData[]>([]);
   const [selectedFolderUuid, setSelectedFolderUuid] = useState("");
 
+  const { authState, isLoggedIn, isAuthLoading, login, logout } = useAuthState();
+
   const aiButtonRef = useRef<HTMLButtonElement>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // 현재 탭 정보 가져오기
   useEffect(() => {
+    let isMounted = true;
+
     (async () => {
-      // 인증 상태 확인
-      const authState = await chrome.runtime.sendMessage({
-        action: "getAuthState",
-      });
-      setIsLoggedIn(authState?.isLoggedIn ?? false);
-      setIsAuthLoading(false);
+      if (isAuthLoading || !isLoggedIn) return;
 
-      // 로그인 안 됐으면 나머지 로직 스킵
-      if (!authState?.isLoggedIn) return;
+      if (!isMounted) return;
 
-      if (authState.userInfo) {
+      if (authState?.userInfo) {
         const { teams: userTeams, selectedTeamUuid: storedTeamUuid } =
           authState.userInfo;
         setTeams(userTeams ?? []);
         const nextTeamUuid = storedTeamUuid || userTeams?.[0]?.teamUuid || "";
         setSelectedTeamUuid(nextTeamUuid);
         setDashboardUrl(buildDashboardUrl(nextTeamUuid));
+        if (!isMounted) return;
         await loadFolders(nextTeamUuid);
+        if (!isMounted) return;
       }
 
-      // 기존 탭 정보 가져오기 로직
+      if (!isMounted) return;
       const [activeTab] = await chrome.tabs.query({
         active: true,
         currentWindow: true,
       });
+
+      if (!isMounted) return;
 
       if (activeTab) {
         setTab({
@@ -71,14 +80,19 @@ function App() {
           favIconUrl: activeTab.favIconUrl,
         });
 
-        // 페이지 내용이 있는지 확인하여 AI 버튼 활성화 여부 결정
+        if (!isMounted) return;
+
         const { pageContent } = await chrome.storage.session.get("pageContent");
         const isReaderable = (pageContent as any)?.textContent;
-        const hasNoTeams = (authState.userInfo?.teams ?? []).length === 0;
+        const hasNoTeams = (authState?.userInfo?.teams ?? []).length === 0;
         setIsAiDisabled(!isReaderable || hasNoTeams);
       }
     })();
-  }, []);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [authState, isAuthLoading, isLoggedIn]);
 
   // 댓글 글자 수 계산
   const commentLength = Math.min(comment.length, MAX_CHARACTER_COUNT);
@@ -94,22 +108,6 @@ function App() {
     !comment.trim() || !tags.trim() || isSaving || isSaveSuccess;
 
   // 로그인 처리
-  const handleLogin = async () => {
-    const response = await chrome.runtime.sendMessage({ action: "login" });
-    if (response?.success) {
-      setIsLoggedIn(true);
-      // 페이지 새로고침해서 탭 정보 등을 다시 로드
-      window.location.reload();
-    } else {
-      alert("로그인 실패: " + (response?.error || "알 수 없는 오류"));
-    }
-  };
-
-  // 로그아웃 처리
-  const handleLogout = async () => {
-    await chrome.runtime.sendMessage({ action: "logout" });
-    setIsLoggedIn(false);
-  };
 
   // AI 요약 생성
   const handleAiClick = async () => {
@@ -355,6 +353,7 @@ function App() {
   };
 
   const loadFolders = async (teamUuid: string) => {
+    if (!isMountedRef.current) return;
     if (!teamUuid) {
       setFolders([]);
       setSelectedFolderUuid("");
@@ -367,6 +366,8 @@ function App() {
       teamUuid,
     });
 
+    if (!isMountedRef.current) return;
+
     if (!response?.success) {
       setFolders([]);
       setSelectedFolderUuid("");
@@ -378,6 +379,7 @@ function App() {
     setFolders(folderList);
 
     const storage = await chrome.storage.local.get("selected_folder_uuid");
+    if (!isMountedRef.current) return;
     const storedFolderUuid = storage?.selected_folder_uuid as
       | string
       | undefined;
@@ -393,6 +395,7 @@ function App() {
     setDashboardUrl(buildDashboardUrl(teamUuid, nextFolderUuid));
 
     if (nextFolderUuid) {
+      if (!isMountedRef.current) return;
       await chrome.runtime.sendMessage({
         action: "selectFolder",
         folderUuid: nextFolderUuid,
@@ -445,7 +448,7 @@ function App() {
         <Header showLogout={false} />
         <div style={{ textAlign: "center", padding: "40px 20px" }}>
           <p style={{ marginBottom: "20px" }}>로그인이 필요합니다</p>
-          <button className="save-btn" onClick={handleLogin}>
+          <button className="save-btn" onClick={login}>
             로그인하기
           </button>
         </div>
@@ -457,7 +460,7 @@ function App() {
   return (
     <div className="container">
       {/* Header */}
-      <Header showLogout onLogout={handleLogout} />
+      <Header showLogout onLogout={logout} />
 
       {/* Page Info Card */}
       <PageInfoCard

@@ -143,8 +143,10 @@ describe("App - Behavioral Snapshot Tests", () => {
         expect(screen.getByText("로그아웃")).toBeInTheDocument();
       });
 
-      expect(screen.getByText("Test Page Title")).toBeInTheDocument();
-      expect(screen.getByText("https://example.com/test")).toBeInTheDocument();
+      expect(await screen.findByText("Test Page Title")).toBeInTheDocument();
+      expect(
+        await screen.findByText("https://example.com/test"),
+      ).toBeInTheDocument();
       expect(screen.getByLabelText("팀 선택")).toBeInTheDocument();
       expect(screen.getByLabelText("폴더 선택")).toBeInTheDocument();
       expect(screen.getByText("스태시에 저장")).toBeInTheDocument();
@@ -323,6 +325,12 @@ describe("App - Behavioral Snapshot Tests", () => {
         expect(screen.getByLabelText("팀 선택")).toBeInTheDocument();
       });
 
+      await waitFor(() => {
+        expect(
+          screen.getByRole("option", { name: "Team Beta" }),
+        ).toBeInTheDocument();
+      });
+
       await user.selectOptions(screen.getByLabelText("팀 선택"), "team-uuid-2");
 
       await waitFor(() => {
@@ -341,6 +349,12 @@ describe("App - Behavioral Snapshot Tests", () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText("팀 선택")).toBeInTheDocument();
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("option", { name: "Team Beta" }),
+        ).toBeInTheDocument();
       });
 
       await user.selectOptions(screen.getByLabelText("팀 선택"), "team-uuid-2");
@@ -373,6 +387,12 @@ describe("App - Behavioral Snapshot Tests", () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText("폴더 선택")).toBeInTheDocument();
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("option", { name: "Folder Two" }),
+        ).toBeInTheDocument();
       });
 
       await user.selectOptions(
@@ -552,6 +572,12 @@ describe("App - Behavioral Snapshot Tests", () => {
         expect(screen.getByLabelText("팀 선택")).toBeInTheDocument();
       });
 
+      await waitFor(() => {
+        expect(
+          screen.getByRole("option", { name: "Team Beta" }),
+        ).toBeInTheDocument();
+      });
+
       await user.selectOptions(screen.getByLabelText("팀 선택"), "team-uuid-2");
 
       await waitFor(() => {
@@ -674,7 +700,9 @@ describe("App - Behavioral Snapshot Tests", () => {
       });
 
       const aiButton = screen.getByText("AI 생성").closest("button")!;
-      expect(aiButton).not.toBeDisabled();
+      await waitFor(() => {
+        expect(aiButton).not.toBeDisabled();
+      });
 
       await user.click(aiButton);
 
