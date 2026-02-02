@@ -11,17 +11,15 @@ import TagField from "./components/TagField";
 import TeamSelect from "./components/TeamSelect";
 import { MAX_CHARACTER_COUNT, MAX_TAG_COUNT } from "./constants";
 import useAuthState from "./hooks/useAuthState";
-import type { TabInfo } from "./types";
+import useTabInfo from "./hooks/useTabInfo";
 import { buildDashboardUrl } from "./utils";
 import "./App.css";
 
 function App() {
   // State 관리
-  const [tab, setTab] = useState<TabInfo | null>(null);
   const [comment, setComment] = useState("");
   const [tags, setTags] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [isAiDisabled, setIsAiDisabled] = useState(true);
   const [isAiCompleted, setIsAiCompleted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaveSuccess, setIsSaveSuccess] = useState(false);
@@ -33,6 +31,11 @@ function App() {
   const [selectedFolderUuid, setSelectedFolderUuid] = useState("");
 
   const { authState, isLoggedIn, isAuthLoading, login, logout } = useAuthState();
+  const hasNoTeams = (authState?.userInfo?.teams ?? []).length === 0;
+  const { tab, isAiDisabled, setIsAiDisabled } = useTabInfo({
+    isLoggedIn,
+    hasNoTeams,
+  });
 
   const aiButtonRef = useRef<HTMLButtonElement>(null);
   const isMountedRef = useRef(true);
@@ -66,27 +69,6 @@ function App() {
       }
 
       if (!isMounted) return;
-      const [activeTab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-
-      if (!isMounted) return;
-
-      if (activeTab) {
-        setTab({
-          title: activeTab.title || "Loading...",
-          url: activeTab.url || "Loading...",
-          favIconUrl: activeTab.favIconUrl,
-        });
-
-        if (!isMounted) return;
-
-        const { pageContent } = await chrome.storage.session.get("pageContent");
-        const isReaderable = (pageContent as any)?.textContent;
-        const hasNoTeams = (authState?.userInfo?.teams ?? []).length === 0;
-        setIsAiDisabled(!isReaderable || hasNoTeams);
-      }
     })();
 
     return () => {
