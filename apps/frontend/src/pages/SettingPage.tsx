@@ -21,7 +21,7 @@ const SettingPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { addTeam } = useTeams();
+  const { addTeam, refreshTeams } = useTeams();
 
   const teamFromState = location.state?.team as Team | undefined;
 
@@ -50,8 +50,6 @@ const SettingPage = () => {
 
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [selectedMember, setSelectedMember] =
-    useState<GetTeamMembersResponseData | null>(null);
 
   const sortedMembers = useMemo(() => {
     return [...members].sort((a, b) => {
@@ -233,17 +231,12 @@ const SettingPage = () => {
     });
   };
 
-  // 권한 위임 클릭시
-  const handleTransferClick = (member: GetTeamMembersResponseData) => {
-    setSelectedMember(member);
-    setTransferModalOpen(true);
-  };
-
   const handleTransferSuccess = () => {
     window.location.reload();
   };
 
-  const handleDeleteSuccess = () => {
+  const handleDeleteSuccess = async () => {
+    await refreshTeams();
     navigate("/my-teams");
   };
 
@@ -295,26 +288,37 @@ const SettingPage = () => {
             <SectionContainer
               title={`팀원 (${members.length}명)`}
               headerAction={
-                <button
-                  onClick={handleCopyInviteLink}
-                  className={`flex items-center justify-center gap-2 px-3 py-1.5 text-sm min-w-[120px] rounded-lg transition-colors cursor-pointer ${
-                    copied
-                      ? "text-blue-600 border border-blue-300 bg-blue-50"
-                      : "text-blue-600 border border-blue-200 hover:bg-blue-50"
-                  }`}
-                >
-                  {copied ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>복사됨!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-4 h-4" />
-                      <span>초대 링크 복사</span>
-                    </>
+                <div className="flex gap-2">
+                  {isAdmin && members.length > 1 && (
+                    <button
+                      onClick={() => setTransferModalOpen(true)}
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-50 transition-colors cursor-pointer"
+                    >
+                      <Crown className="w-4 h-4" />
+                      권한 위임
+                    </button>
                   )}
-                </button>
+                  <button
+                    onClick={handleCopyInviteLink}
+                    className={`flex items-center justify-center gap-2 px-3 py-1.5 text-sm min-w-[120px] rounded-lg transition-colors cursor-pointer ${
+                      copied
+                        ? "text-blue-600 border border-blue-300 bg-blue-50"
+                        : "text-blue-600 border border-blue-200 hover:bg-blue-50"
+                    }`}
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>복사됨!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        <span>초대 링크 복사</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               }
             >
               <div className="space-y-1">
@@ -349,17 +353,6 @@ const SettingPage = () => {
                         </span>
                       </div>
                     </div>
-
-                    {/* Owner가 다른 멤버에게 권한 위임 버튼 */}
-                    {isAdmin && member.role !== "owner" && (
-                      <button
-                        onClick={() => handleTransferClick(member)}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-50 transition-colors cursor-pointer"
-                      >
-                        <Crown className="w-3 h-3" />
-                        권한 위임
-                      </button>
-                    )}
                   </div>
                 ))}
               </div>
@@ -548,7 +541,7 @@ const SettingPage = () => {
       <TransferOwnershipModal
         isOpen={transferModalOpen}
         onClose={() => setTransferModalOpen(false)}
-        targetMember={selectedMember}
+        members={sortedMembers.filter((m) => m.role !== "owner")} // owner 제외
         teamUuid={teamUuid!}
         onSuccess={handleTransferSuccess}
       />
