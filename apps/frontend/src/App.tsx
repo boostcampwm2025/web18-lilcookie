@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import InvitePage from "./pages/InvitePage";
 import SettingPage from "./pages/SettingPage";
+import MyPage from "./pages/MyPage";
 import { TeamsProvider } from "./contexts/TeamContext";
 
 function App() {
@@ -39,6 +40,16 @@ function App() {
               element={
                 <ProtectedRoute>
                   <OAuthApps />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* 보호된 라우트 - 마이페이지 */}
+            <Route
+              path="/my-page"
+              element={
+                <ProtectedRoute>
+                  <MyPage />
                 </ProtectedRoute>
               }
             />
