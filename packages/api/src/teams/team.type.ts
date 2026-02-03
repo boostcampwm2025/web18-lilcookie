@@ -7,6 +7,7 @@ import {
   JoinTeamResponseDataSchema,
   PreviewTeamRespondDataSchema,
   TeamResponseDataSchema,
+  TransferOwnershipRequestSchema,
 } from "./team.schema.js";
 
 export type CreateTeamRequest = z.infer<typeof CreateTeamRequestSchema>;
@@ -23,4 +24,7 @@ export type GetTeamWebhooksResponseData = z.infer<
 >;
 export type GetTeamTokenUsageResponseData = z.infer<
   typeof GetTeamTokenUsageResponseDataSchema
+>;
+export type TransferOwnershipRequest = z.infer<
+  typeof TransferOwnershipRequestSchema
 >;
