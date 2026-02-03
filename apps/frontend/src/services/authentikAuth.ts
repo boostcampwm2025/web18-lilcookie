@@ -269,16 +269,17 @@ export async function refreshAccessToken(): Promise<TokenResponse | null> {
 export async function getValidAccessToken(): Promise<string | null> {
   const accessToken = getStoredAccessToken();
 
-  if (!accessToken) {
-    return null;
-  }
-
-  // 토큰이 만료되지 않았으면 그대로 반환
-  if (!isTokenExpired()) {
+  // 토큰이 있고 만료되지 않았으면 그대로 반환
+  if (accessToken && !isTokenExpired()) {
     return accessToken;
   }
 
-  // 토큰이 만료되었으면 갱신 시도
+  // 토큰이 없거나 만료되었으면 refresh_token으로 갱신 시도
+  const refreshToken = getStoredRefreshToken();
+  if (!refreshToken) {
+    return null;
+  }
+
   const newTokens = await refreshAccessToken();
 
   if (newTokens) {
