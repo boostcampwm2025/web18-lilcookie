@@ -34,11 +34,27 @@ export class UserRepository {
    * @return 생성 또는 업데이트된 사용자 엔티티
    */
   async upsert(data: UpsertUserInput): Promise<User> {
-    const upserted = await this.prisma.user.upsert({
+    // 기존 사용자 조회
+    const existingUser = await this.prisma.user.findUnique({
       where: { uuid: data.uuid },
-      create: data,
-      update: { nickname: data.nickname, email: data.email },
     });
-    return UserMapper.fromPrisma(upserted);
+
+    if (existingUser) {
+      // 기존 사용자: email 이 null일 때만 새 email로 업데이트
+      const updated = await this.prisma.user.update({
+        where: { uuid: data.uuid },
+        data: {
+          nickname: data.nickname,
+          ...(existingUser.email === null && data.email ? { email: data.email } : {}),
+        },
+      });
+      return UserMapper.fromPrisma(updated);
+    }
+
+    // 새 사용자 생성
+    const created = await this.prisma.user.create({
+      data: data,
+    });
+    return UserMapper.fromPrisma(created);
   }
 }
