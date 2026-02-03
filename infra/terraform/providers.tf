@@ -10,11 +10,7 @@ resource "authentik_provider_oauth2" "teamstash" {
   invalidation_flow   = authentik_flow.post_logout_redirect.uuid
   signing_key         = data.authentik_certificate_key_pair.default.id
 
-  allowed_redirect_uris = [
-    { matching_mode = "strict", url = var.app_redirect_uri },
-    { matching_mode = "strict", url = "https://app.insomnia.rest/oauth/redirect" },
-    { matching_mode = "strict", url = "https://${var.chrome_extension_id}.chromiumapp.org/" }
-  ]
+  allowed_redirect_uris = var.allowed_redirect_uris
 
   property_mappings = [
     data.authentik_property_mapping_provider_scope.openid.id,
