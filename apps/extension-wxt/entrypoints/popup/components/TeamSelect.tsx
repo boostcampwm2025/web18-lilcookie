@@ -3,10 +3,11 @@ import type { Team } from "../../../schemas/auth.type";
 type TeamSelectProps = {
   teams: Team[];
   value: string;
+  isDisabled: boolean;
   onChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
 };
 
-function TeamSelect({ teams, value, onChange }: TeamSelectProps) {
+function TeamSelect({ teams, value, isDisabled, onChange }: TeamSelectProps) {
   const isEmpty = teams.length === 0;
 
   return (
@@ -16,7 +17,7 @@ function TeamSelect({ teams, value, onChange }: TeamSelectProps) {
         id="teamSelect"
         value={value}
         onChange={onChange}
-        disabled={isEmpty}
+        disabled={isDisabled || isEmpty}
       >
         {isEmpty ? (
           <option value="">참여 중인 팀이 없습니다</option>

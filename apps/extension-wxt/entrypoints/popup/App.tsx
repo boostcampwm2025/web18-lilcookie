@@ -97,6 +97,8 @@ function App() {
     }
   };
 
+  const disableSelects = isAuthLoading || isSaving || isSaveSuccess;
+
   if (isAuthLoading) {
     return (
       <div
@@ -152,11 +154,13 @@ function App() {
       <TeamSelect
         teams={teams}
         value={selectedTeamUuid}
+        isDisabled={disableSelects}
         onChange={handleTeamChange}
       />
       <FolderSelect
         folders={folders}
         value={selectedFolderUuid}
+        isDisabled={disableSelects}
         onChange={handleFolderChange}
       />
       <form className="form-section" onSubmit={handleSave}>
@@ -190,7 +194,11 @@ function App() {
           isTeamFolderSelected={isTeamFolderSelected}
         />
       </form>
-      <FooterLink href={dashboardUrl || "#"} disabled={!dashboardUrl} onClick={handleDashboardClick} />
+      <FooterLink
+        href={dashboardUrl || "#"}
+        disabled={!dashboardUrl}
+        onClick={handleDashboardClick}
+      />
     </div>
   );
 }

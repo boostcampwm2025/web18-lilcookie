@@ -3,10 +3,16 @@ import type { FolderResponseData } from "@repo/api";
 type FolderSelectProps = {
   folders: FolderResponseData[];
   value: string;
+  isDisabled: boolean;
   onChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
 };
 
-function FolderSelect({ folders, value, onChange }: FolderSelectProps) {
+function FolderSelect({
+  folders,
+  value,
+  isDisabled,
+  onChange,
+}: FolderSelectProps) {
   const isEmpty = folders.length === 0;
 
   return (
@@ -16,7 +22,7 @@ function FolderSelect({ folders, value, onChange }: FolderSelectProps) {
         id="folderSelect"
         value={value}
         onChange={onChange}
-        disabled={isEmpty}
+        disabled={isDisabled || isEmpty}
       >
         {isEmpty ? (
           <option value="">폴더가 없습니다</option>
