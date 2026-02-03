@@ -245,6 +245,13 @@ input[type="text"]::placeholder {
   color: #9ca3af;
 }
 
+textarea:disabled,
+input[type="text"]:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
 .tag-input-container {
   position: relative;
   display: flex;
