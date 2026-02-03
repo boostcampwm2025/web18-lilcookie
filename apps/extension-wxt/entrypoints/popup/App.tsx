@@ -1,332 +1,94 @@
 import { useState, useEffect, useRef } from "react";
-import type { Team } from "../../schemas/auth.type";
-import type { FolderResponseData } from "@repo/api";
+import CommentField from "./components/CommentField";
+import FooterLink from "./components/FooterLink";
+import Header from "./components/Header";
+import FolderSelect from "./components/FolderSelect";
+import PageInfoCard from "./components/PageInfoCard";
+import SaveButton from "./components/SaveButton";
+import TagField from "./components/TagField";
+import TeamSelect from "./components/TeamSelect";
+import Toast from "./components/Toast";
+import { MAX_CHARACTER_COUNT, MAX_TAG_COUNT } from "./constants";
+import useAiSummary from "./hooks/useAiSummary";
+import useAuthState from "./hooks/useAuthState";
+import useLinkSave from "./hooks/useLinkSave";
+import useTeamFolder from "./hooks/useTeamFolder";
+import useTabInfo from "./hooks/useTabInfo";
 import "./App.css";
 
-// 상수 정의
-const BASE_URL = import.meta.env.VITE_FE_BASE_URL;
-const MAX_TAG_COUNT = 10;
-const MAX_CHARACTER_COUNT = 200;
-
-interface TabInfo {
-  title: string;
-  url: string;
-  favIconUrl?: string;
-}
-
-const buildDashboardUrl = (teamUuid: string, folderUuid?: string) => {
-  if (!teamUuid) return "";
-  const baseUrl = `${BASE_URL}/team/${teamUuid.toLowerCase()}`;
-  return folderUuid ? `${baseUrl}?folderUuid=${folderUuid}` : baseUrl;
-};
-
 function App() {
-  // State 관리
-  const [tab, setTab] = useState<TabInfo | null>(null);
-  const [comment, setComment] = useState("");
-  const [tags, setTags] = useState("");
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [isAiDisabled, setIsAiDisabled] = useState(true);
-  const [isAiCompleted, setIsAiCompleted] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSaveSuccess, setIsSaveSuccess] = useState(false);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "error" | "success";
+  } | null>(null);
 
-  const [dashboardUrl, setDashboardUrl] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [selectedTeamUuid, setSelectedTeamUuid] = useState("");
-  const [folders, setFolders] = useState<FolderResponseData[]>([]);
-  const [selectedFolderUuid, setSelectedFolderUuid] = useState("");
+  const showToast = (message: string, type: "error" | "success" = "error") => {
+    setToast({ message, type });
+  };
 
-  const aiButtonRef = useRef<HTMLButtonElement>(null);
-
-  // 현재 탭 정보 가져오기
+  const { authState, isLoggedIn, isAuthLoading, login, logout } = useAuthState({
+    onError: showToast,
+  });
+  const hasNoTeams = (authState?.userInfo?.teams ?? []).length === 0;
+  const { tab, isAiDisabled, setIsAiDisabled } = useTabInfo({
+    isLoggedIn,
+    hasNoTeams,
+  });
+  const isMountedRef = useRef(true);
   useEffect(() => {
-    (async () => {
-      // 인증 상태 확인
-      const authState = await chrome.runtime.sendMessage({
-        action: "getAuthState",
-      });
-      setIsLoggedIn(authState?.isLoggedIn ?? false);
-      setIsAuthLoading(false);
-
-      // 로그인 안 됐으면 나머지 로직 스킵
-      if (!authState?.isLoggedIn) return;
-
-      if (authState.userInfo) {
-        const { teams: userTeams, selectedTeamUuid: storedTeamUuid } =
-          authState.userInfo;
-        setTeams(userTeams ?? []);
-        const nextTeamUuid = storedTeamUuid || userTeams?.[0]?.teamUuid || "";
-        setSelectedTeamUuid(nextTeamUuid);
-        setDashboardUrl(buildDashboardUrl(nextTeamUuid));
-        await loadFolders(nextTeamUuid);
-      }
-
-      // 기존 탭 정보 가져오기 로직
-      const [activeTab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-
-      if (activeTab) {
-        setTab({
-          title: activeTab.title || "Loading...",
-          url: activeTab.url || "Loading...",
-          favIconUrl: activeTab.favIconUrl,
-        });
-
-        // 페이지 내용이 있는지 확인하여 AI 버튼 활성화 여부 결정
-        const { pageContent } = await chrome.storage.session.get("pageContent");
-        const isReaderable = (pageContent as any)?.textContent;
-        const hasNoTeams = (authState.userInfo?.teams ?? []).length === 0;
-        setIsAiDisabled(!isReaderable || hasNoTeams);
-      }
-    })();
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
-  // 댓글 글자 수 계산
-  const commentLength = Math.min(comment.length, MAX_CHARACTER_COUNT);
+  const {
+    teams,
+    selectedTeamUuid,
+    folders,
+    selectedFolderUuid,
+    dashboardUrl,
+    handleTeamChange,
+    handleFolderChange,
+  } = useTeamFolder({
+    authState,
+    isAuthLoading,
+    isLoggedIn,
+    isMountedRef,
+    onError: showToast,
+  });
 
-  // 태그 개수 계산
-  const tagCount = tags
-    .split(",")
-    .map((v) => v.trim())
-    .filter((v) => v !== "").length;
+  const isTeamFolderSelected =
+    selectedFolderUuid !== "" && selectedTeamUuid !== "";
+  const {
+    comment,
+    tags,
+    commentLength,
+    tagCount,
+    isSaving,
+    isSaveSuccess,
+    isSaveDisabled,
+    setComment,
+    setTags,
+    handleCommentChange,
+    handleCommentKeyDown,
+    handleCommentPaste,
+    handleTagsChange,
+    handleTagsKeyDown,
+    handleSave,
+  } = useLinkSave({
+    tab,
+    selectedFolderUuid,
+    onError: showToast,
+  });
 
-  // 저장 버튼 활성화 여부
-  const isSaveDisabled =
-    !comment.trim() || !tags.trim() || isSaving || isSaveSuccess;
-
-  // 로그인 처리
-  const handleLogin = async () => {
-    const response = await chrome.runtime.sendMessage({ action: "login" });
-    if (response?.success) {
-      setIsLoggedIn(true);
-      // 페이지 새로고침해서 탭 정보 등을 다시 로드
-      window.location.reload();
-    } else {
-      alert("로그인 실패: " + (response?.error || "알 수 없는 오류"));
-    }
-  };
-
-  // 로그아웃 처리
-  const handleLogout = async () => {
-    await chrome.runtime.sendMessage({ action: "logout" });
-    setIsLoggedIn(false);
-  };
-
-  // AI 요약 생성
-  const handleAiClick = async () => {
-    if (!aiButtonRef.current) return;
-
-    const originalHTML = aiButtonRef.current.innerHTML;
-
-    try {
-      setIsAiLoading(true);
-      setIsAiDisabled(true);
-
-      const { pageContent } = await chrome.storage.session.get("pageContent");
-
-      if (!pageContent || !(pageContent as any)?.textContent) {
-        setIsAiLoading(false);
-        setIsAiDisabled(false);
-        return;
-      }
-
-      const response = await chrome.runtime.sendMessage({
-        action: "summarize",
-        content: (pageContent as any).textContent,
-      });
-
-      if (response && response.success) {
-        const { summary, tags: aiTags } = response.data;
-        if (summary) {
-          setComment(String(summary).slice(0, MAX_CHARACTER_COUNT));
-        }
-        if (aiTags && Array.isArray(aiTags)) {
-          setTags(aiTags.slice(0, MAX_TAG_COUNT).join(", "));
-        }
-        setIsAiCompleted(true);
-        setIsAiLoading(false);
-      } else {
-        // 실패 시 2초 후 원래 버튼으로 복구
-        if (aiButtonRef.current) {
-          const svg = aiButtonRef.current.querySelector("svg");
-          aiButtonRef.current.innerHTML =
-            (svg?.outerHTML || "") + "AI 생성 실패";
-        }
-        setTimeout(() => {
-          if (aiButtonRef.current) {
-            aiButtonRef.current.innerHTML = originalHTML;
-          }
-          setIsAiDisabled(false);
-          setIsAiLoading(false);
-        }, 2000);
-      }
-    } catch (error) {
-      console.error("AI Error:", error);
-      alert("오류가 발생했습니다: " + (error as Error).message);
-      setIsAiLoading(false);
-      setIsAiDisabled(false);
-      if (aiButtonRef.current) {
-        aiButtonRef.current.innerHTML = originalHTML;
-      }
-    }
-  };
-
-  // 댓글 입력 처리
-  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    if (value.length <= MAX_CHARACTER_COUNT) {
-      setComment(value);
-    }
-  };
-
-  // 댓글 키 입력 처리 (200자 제한)
-  const handleCommentKeyDown = (
-    e: React.KeyboardEvent<HTMLTextAreaElement>,
-  ) => {
-    const key = e.key;
-    const allowedControls = [
-      "Backspace",
-      "Delete",
-      "ArrowLeft",
-      "ArrowRight",
-      "ArrowUp",
-      "ArrowDown",
-      "Home",
-      "End",
-      "Tab",
-    ];
-    if (allowedControls.includes(key)) return;
-
-    const target = e.target as HTMLTextAreaElement;
-    const selStart = target.selectionStart;
-    const selEnd = target.selectionEnd;
-    const selectionLength = Math.max(0, selEnd - selStart);
-    const currentLength = target.value.length;
-
-    const charLength = key === "Enter" ? 1 : key.length === 1 ? 1 : 0;
-    if (charLength === 0) return;
-
-    const newLength = currentLength - selectionLength + charLength;
-    if (newLength > MAX_CHARACTER_COUNT) {
-      e.preventDefault();
-    }
-  };
-
-  // 댓글 붙여넣기 처리
-  const handleCommentPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    e.preventDefault();
-    const paste = e.clipboardData.getData("text") || "";
-    const target = e.target as HTMLTextAreaElement;
-    const selStart = target.selectionStart;
-    const selEnd = target.selectionEnd;
-    const selectionLength = Math.abs(selEnd - selStart);
-    const currentLength = target.value.length;
-    const allowed = MAX_CHARACTER_COUNT - (currentLength - selectionLength);
-
-    if (allowed <= 0) return;
-
-    const toInsert = paste.slice(0, allowed);
-    const before = target.value.slice(0, selStart);
-    const after = target.value.slice(selEnd);
-    const newValue = before + toInsert + after;
-
-    setComment(newValue);
-
-    // 커서 위치 조정
-    setTimeout(() => {
-      const newCursor = before.length + toInsert.length;
-      target.setSelectionRange(newCursor, newCursor);
-    }, 0);
-  };
-
-  // 태그 입력 처리
-  const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTags(e.target.value);
-  };
-
-  // 태그 키 입력 처리 (콤마 제한)
-  const handleTagsKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === ",") {
-      const target = e.target as HTMLInputElement;
-      const commaCount = (target.value.match(/,/g) || []).length;
-
-      // 1. 최대 태그 수 체크
-      if (commaCount >= MAX_TAG_COUNT - 1) {
-        e.preventDefault();
-        return;
-      }
-
-      // 2. 빈 태그 방지
-      const cursor = target.selectionStart || 0;
-      const val = target.value;
-      const before = val.slice(0, cursor);
-      const after = val.slice(cursor);
-
-      const trimmedBefore = before.trim();
-
-      // 왼쪽에 유효한 태그가 없으면 콤마 입력 방지
-      if (trimmedBefore.length === 0) {
-        e.preventDefault();
-        return;
-      }
-
-      // 이미 콤마로 끝나면 콤마 입력 방지
-      if (trimmedBefore.endsWith(",")) {
-        e.preventDefault();
-        return;
-      }
-
-      // 오른쪽이 콤마로 시작하면 콤마 입력 방지
-      if (after.trim().startsWith(",")) {
-        e.preventDefault();
-        return;
-      }
-    }
-  };
-
-  // 저장 처리
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!tab) return;
-
-    try {
-      const formData = {
-        url: tab.url,
-        title: tab.title,
-        tags: tags
-          .split(",")
-          .map((v) => v.trim())
-          .filter((v) => v !== "")
-          .slice(0, MAX_TAG_COUNT),
-        summary: comment.slice(0, MAX_CHARACTER_COUNT),
-        folderUuid: selectedFolderUuid || undefined,
-      };
-
-      setIsSaving(true);
-
-      const response = await chrome.runtime.sendMessage({
-        action: "saveLink",
-        data: formData,
-      });
-
-      if (response && response.success) {
-        setIsSaveSuccess(true);
-      } else {
-        alert("저장 실패: " + (response?.error || "알 수 없는 오류"));
-        setIsSaving(false);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("저장 중 오류가 발생했습니다: " + (error as Error).message);
-      setIsSaving(false);
-    }
-  };
+  const { isAiLoading, isAiCompleted, isAiFailed, handleAiClick } =
+    useAiSummary({
+      setComment,
+      setTags,
+      setIsAiDisabled,
+      onError: showToast,
+    });
 
   const handleDashboardClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -335,99 +97,8 @@ function App() {
     }
   };
 
-  const handleTeamChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const nextTeamUuid = e.target.value;
-    const previousTeamUuid = selectedTeamUuid;
-    const previousFolderUuid = selectedFolderUuid;
+  const disableSelects = isAuthLoading || isSaving || isSaveSuccess;
 
-    setSelectedTeamUuid(nextTeamUuid);
-    setDashboardUrl(buildDashboardUrl(nextTeamUuid));
-
-    const response = await chrome.runtime.sendMessage({
-      action: "selectTeam",
-      teamUuid: nextTeamUuid,
-    });
-
-    if (!response?.success) {
-      setSelectedTeamUuid(previousTeamUuid);
-      setSelectedFolderUuid(previousFolderUuid);
-      setDashboardUrl(buildDashboardUrl(previousTeamUuid, previousFolderUuid));
-      alert("팀 변경 실패: " + (response?.error || "알 수 없는 오류"));
-      await loadFolders(previousTeamUuid);
-      return;
-    }
-
-    await loadFolders(nextTeamUuid);
-  };
-
-  const loadFolders = async (teamUuid: string) => {
-    if (!teamUuid) {
-      setFolders([]);
-      setSelectedFolderUuid("");
-      setDashboardUrl("");
-      return;
-    }
-
-    const response = await chrome.runtime.sendMessage({
-      action: "getFolders",
-      teamUuid,
-    });
-
-    if (!response?.success) {
-      setFolders([]);
-      setSelectedFolderUuid("");
-      alert("폴더 조회 실패: " + (response?.error || "알 수 없는 오류"));
-      return;
-    }
-
-    const folderList = (response.data ?? []) as FolderResponseData[];
-    setFolders(folderList);
-
-    const storage = await chrome.storage.local.get("selected_folder_uuid");
-    const storedFolderUuid = storage?.selected_folder_uuid as
-      | string
-      | undefined;
-
-    const nextFolderUuid =
-      (storedFolderUuid &&
-        folderList.some((folder) => folder.folderUuid === storedFolderUuid) &&
-        storedFolderUuid) ||
-      folderList[0]?.folderUuid ||
-      "";
-
-    setSelectedFolderUuid(nextFolderUuid);
-    setDashboardUrl(buildDashboardUrl(teamUuid, nextFolderUuid));
-
-    if (nextFolderUuid) {
-      await chrome.runtime.sendMessage({
-        action: "selectFolder",
-        folderUuid: nextFolderUuid,
-      });
-    }
-  };
-
-  const handleFolderChange = async (
-    e: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
-    const nextFolderUuid = e.target.value;
-    const previousFolderUuid = selectedFolderUuid;
-
-    setSelectedFolderUuid(nextFolderUuid);
-    setDashboardUrl(buildDashboardUrl(selectedTeamUuid, nextFolderUuid));
-
-    const response = await chrome.runtime.sendMessage({
-      action: "selectFolder",
-      folderUuid: nextFolderUuid,
-    });
-
-    if (!response?.success) {
-      setSelectedFolderUuid(previousFolderUuid);
-      setDashboardUrl(buildDashboardUrl(selectedTeamUuid, previousFolderUuid));
-      alert("폴더 변경 실패: " + (response?.error || "알 수 없는 오류"));
-    }
-  };
-
-  // 로딩 중
   if (isAuthLoading) {
     return (
       <div
@@ -444,42 +115,20 @@ function App() {
     );
   }
 
-  // 미로그인 상태
   if (!isLoggedIn) {
     return (
       <div className="container">
-        <header className="header">
-          <div className="header-content">
-            <div className="logo-icon">
-              <svg
-                width="36"
-                height="36"
-                viewBox="0 0 36 36"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M0 11.0341C0 4.94016 4.94015 0 11.0341 0H24.2751C30.3691 0 35.3092 4.94015 35.3092 11.0341V24.2751C35.3092 30.3691 30.3691 35.3092 24.2751 35.3092H11.0341C4.94016 35.3092 0 30.3691 0 24.2751V11.0341Z"
-                  fill="#E0E7FF"
-                />
-                <path
-                  d="M22.8032 24.275L17.6539 21.3326L12.5046 24.275V12.5053C12.5046 12.1151 12.6596 11.7409 12.9355 11.465C13.2115 11.1891 13.5857 11.0341 13.9759 11.0341H21.3319C21.7221 11.0341 22.0963 11.1891 22.3723 11.465C22.6482 11.7409 22.8032 12.1151 22.8032 12.5053V24.275Z"
-                  stroke="#4F39F6"
-                  strokeWidth="1.47122"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-            <div className="header-text">
-              <h1 className="app-name">TeamStash</h1>
-              <p className="tagline">링크를 빠르게 저장하세요</p>
-            </div>
-          </div>
-        </header>
+        <Header showLogout={false} />
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
         <div style={{ textAlign: "center", padding: "40px 20px" }}>
           <p style={{ marginBottom: "20px" }}>로그인이 필요합니다</p>
-          <button className="save-btn" onClick={handleLogin}>
+          <button className="save-btn" onClick={login}>
             로그인하기
           </button>
         </div>
@@ -487,241 +136,69 @@ function App() {
     );
   }
 
-  // 로그인 된 상태
   return (
     <div className="container">
-      {/* Header */}
-      <header className="header">
-        <div className="header-content">
-          <div className="logo-icon">
-            <svg
-              width="36"
-              height="36"
-              viewBox="0 0 36 36"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M0 11.0341C0 4.94016 4.94015 0 11.0341 0H24.2751C30.3691 0 35.3092 4.94015 35.3092 11.0341V24.2751C35.3092 30.3691 30.3691 35.3092 24.2751 35.3092H11.0341C4.94016 35.3092 0 30.3691 0 24.2751V11.0341Z"
-                fill="#E0E7FF"
-              />
-              <path
-                d="M22.8032 24.275L17.6539 21.3326L12.5046 24.275V12.5053C12.5046 12.1151 12.6596 11.7409 12.9355 11.465C13.2115 11.1891 13.5857 11.0341 13.9759 11.0341H21.3319C21.7221 11.0341 22.0963 11.1891 22.3723 11.465C22.6482 11.7409 22.8032 12.1151 22.8032 12.5053V24.275Z"
-                stroke="#4F39F6"
-                strokeWidth="1.47122"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <div className="header-text">
-            <h1 className="app-name">TeamStash</h1>
-            <p className="tagline">링크를 빠르게 저장하세요</p>
-          </div>
-        </div>
-        <button className="settings-link" onClick={handleLogout}>
-          로그아웃
-        </button>
-      </header>
-
-      {/* Page Info Card */}
-      <div className="page-info-card">
-        <div className="page-icon">
-          {tab?.favIconUrl && (
-            <img src={tab.favIconUrl} alt="favicon" className="favicon" />
-          )}
-        </div>
-        <div className="page-details">
-          <h2 className="page-title">{tab?.title || "Loading..."}</h2>
-          <p className="page-url">{tab?.url || "Loading..."}</p>
-        </div>
-      </div>
-
-      {/* Team Selection */}
-      <div className="team-select">
-        <label htmlFor="teamSelect">팀 선택</label>
-        <select
-          id="teamSelect"
-          value={selectedTeamUuid}
-          onChange={handleTeamChange}
-          disabled={teams.length === 0}
-        >
-          {teams.length === 0 ? (
-            <option value="">참여 중인 팀이 없습니다</option>
-          ) : (
-            teams.map((team) => (
-              <option key={team.teamUuid} value={team.teamUuid}>
-                {team.teamName}
-              </option>
-            ))
-          )}
-        </select>
-      </div>
-
-      {/* Folder Selection */}
-      <div className="folder-select">
-        <label htmlFor="folderSelect">폴더 선택</label>
-        <select
-          id="folderSelect"
-          value={selectedFolderUuid}
-          onChange={handleFolderChange}
-          disabled={folders.length === 0}
-        >
-          {folders.length === 0 ? (
-            <option value="">폴더가 없습니다</option>
-          ) : (
-            folders.map((folder) => (
-              <option key={folder.folderUuid} value={folder.folderUuid}>
-                {folder.folderName}
-              </option>
-            ))
-          )}
-        </select>
-      </div>
-
-      {/* Form Section */}
+      <Header showLogout onLogout={logout} />
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+      <PageInfoCard
+        title={tab?.title}
+        url={tab?.url}
+        favIconUrl={tab?.favIconUrl}
+      />
+      <TeamSelect
+        teams={teams}
+        value={selectedTeamUuid}
+        isDisabled={disableSelects}
+        onChange={handleTeamChange}
+      />
+      <FolderSelect
+        folders={folders}
+        value={selectedFolderUuid}
+        isDisabled={disableSelects}
+        onChange={handleFolderChange}
+      />
       <form className="form-section" onSubmit={handleSave}>
-        {/* Comment Field */}
-        <div className="input-group">
-          <div className="label-row">
-            <label>
-              코멘트{" "}
-              <span className="char-count">
-                ({commentLength}/{MAX_CHARACTER_COUNT})
-              </span>
-            </label>
-            <button
-              ref={aiButtonRef}
-              type="button"
-              className={`ai-badge-btn ${isAiLoading ? "loading" : ""}`}
-              onClick={handleAiClick}
-              disabled={isAiDisabled || isAiCompleted}
-              title={
-                isAiDisabled
-                  ? "이 페이지는 요약할 수 없습니다"
-                  : "AI로 요약 생성"
-              }
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 14 14"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <g clipPath="url(#clip0_81_172)">
-                  <path
-                    d="M6.08104 1.55246C6.10468 1.4259 6.17184 1.31159 6.27088 1.22934C6.36992 1.14708 6.49462 1.10205 6.62337 1.10205C6.75212 1.10205 6.87681 1.14708 6.97585 1.22934C7.0749 1.31159 7.14206 1.4259 7.16569 1.55246L7.74554 4.61885C7.78672 4.83685 7.89267 5.03738 8.04954 5.19426C8.20642 5.35114 8.40695 5.45708 8.62496 5.49827L11.6913 6.07811C11.8179 6.10175 11.9322 6.16891 12.0145 6.26795C12.0967 6.367 12.1418 6.49169 12.1418 6.62044C12.1418 6.74919 12.0967 6.87388 12.0145 6.97292C11.9322 7.07197 11.8179 7.13913 11.6913 7.16276L8.62496 7.74261C8.40695 7.78379 8.20642 7.88974 8.04954 8.04662C7.89267 8.20349 7.78672 8.40402 7.74554 8.62203L7.16569 11.6884C7.14206 11.815 7.0749 11.9293 6.97585 12.0115C6.87681 12.0938 6.75212 12.1388 6.62337 12.1388C6.49462 12.1388 6.36992 12.0938 6.27088 12.0115C6.17184 11.9293 6.10468 11.815 6.08104 11.6884L5.5012 8.62203C5.46001 8.40402 5.35407 8.20349 5.19719 8.04662C5.04031 7.88974 4.83978 7.78379 4.62178 7.74261L1.55539 7.16276C1.42883 7.13913 1.31452 7.07197 1.23227 6.97292C1.15001 6.87388 1.10498 6.74919 1.10498 6.62044C1.10498 6.49169 1.15001 6.367 1.23227 6.26795C1.31452 6.16891 1.42883 6.10175 1.55539 6.07811L4.62178 5.49827C4.83978 5.45708 5.04031 5.35114 5.19719 5.19426C5.35407 5.03738 5.46001 4.83685 5.5012 4.61885L6.08104 1.55246Z"
-                    stroke="#9810FA"
-                    strokeWidth="1.10341"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M11.0388 1.10327V3.3101"
-                    stroke="#9810FA"
-                    strokeWidth="1.10341"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M12.1414 2.20679H9.93457"
-                    stroke="#9810FA"
-                    strokeWidth="1.10341"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M2.21206 12.1375C2.82145 12.1375 3.31547 11.6435 3.31547 11.0341C3.31547 10.4247 2.82145 9.93066 2.21206 9.93066C1.60266 9.93066 1.10864 10.4247 1.10864 11.0341C1.10864 11.6435 1.60266 12.1375 2.21206 12.1375Z"
-                    stroke="#9810FA"
-                    strokeWidth="1.10341"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </g>
-                <defs>
-                  <clipPath id="clip0_81_172">
-                    <rect width="13.241" height="13.241" fill="white" />
-                  </clipPath>
-                </defs>
-              </svg>
-              {isAiCompleted ? "AI 생성 완료" : "AI 생성"}
-            </button>
-          </div>
-          <textarea
-            id="comment"
-            name="comment"
-            placeholder={isSaveSuccess ? "" : "URL에 대한 설명을 입력하세요."}
-            value={comment}
-            onChange={handleCommentChange}
-            onKeyDown={handleCommentKeyDown}
-            onPaste={handleCommentPaste}
-            disabled={isSaveSuccess}
-            className={isAiLoading ? "loading" : ""}
-          />
-        </div>
-
-        {/* Tag Field */}
-        <div className="input-group">
-          <div className="label-row">
-            <label>
-              태그{" "}
-              <span className="tag-count">
-                ({Math.min(tagCount, MAX_TAG_COUNT)}/{MAX_TAG_COUNT})
-              </span>
-            </label>
-          </div>
-          <div className="tag-input-container">
-            <input
-              id="tags"
-              type="text"
-              name="tags"
-              placeholder={
-                isSaveSuccess ? "" : "태그를 입력하세요. 콤마(,)로 구분됩니다."
-              }
-              value={tags}
-              onChange={handleTagsChange}
-              onKeyDown={handleTagsKeyDown}
-              disabled={isSaveSuccess}
-              className={isAiLoading ? "loading" : ""}
-            />
-          </div>
-        </div>
-
-        {/* Save Button */}
-        <button type="submit" className="save-btn" disabled={isSaveDisabled}>
-          <svg
-            width="23"
-            height="23"
-            viewBox="0 0 23 23"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M17.4711 19.3097L11.0345 15.6317L4.5979 19.3097V4.59757C4.5979 4.10983 4.79165 3.64207 5.13654 3.29718C5.48142 2.9523 5.94918 2.75854 6.43692 2.75854H15.632C16.1198 2.75854 16.5875 2.9523 16.9324 3.29718C17.2773 3.64207 17.4711 4.10983 17.4711 4.59757V19.3097Z"
-              stroke="#A1A1A1"
-              strokeWidth="1.83902"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          {isSaveSuccess
-            ? "저장 성공!"
-            : isSaving
-              ? "저장 중..."
-              : "스태시에 저장"}
-        </button>
+        <CommentField
+          comment={comment}
+          commentLength={commentLength}
+          maxCharacterCount={MAX_CHARACTER_COUNT}
+          isAiLoading={isAiLoading}
+          isAiDisabled={isAiDisabled}
+          isAiCompleted={isAiCompleted}
+          isAiFailed={isAiFailed}
+          isSaveSuccess={isSaveSuccess}
+          onAiClick={handleAiClick}
+          onCommentChange={handleCommentChange}
+          onCommentKeyDown={handleCommentKeyDown}
+          onCommentPaste={handleCommentPaste}
+        />
+        <TagField
+          tags={tags}
+          tagCount={tagCount}
+          maxTagCount={MAX_TAG_COUNT}
+          isSaveSuccess={isSaveSuccess}
+          isAiLoading={isAiLoading}
+          onTagsChange={handleTagsChange}
+          onTagsKeyDown={handleTagsKeyDown}
+        />
+        <SaveButton
+          isSaveSuccess={isSaveSuccess}
+          isSaving={isSaving}
+          isDisabled={isSaveDisabled}
+          isTeamFolderSelected={isTeamFolderSelected}
+        />
       </form>
-
-      <footer className="footer">
-        <a
-          href="#"
-          onClick={handleDashboardClick}
-          className={`dashboard-link ${!dashboardUrl ? "disabled" : ""}`}
-        >
-          대시보드 열기 →
-        </a>
-      </footer>
+      <FooterLink
+        href={dashboardUrl || "#"}
+        disabled={!dashboardUrl}
+        onClick={handleDashboardClick}
+      />
     </div>
   );
 }
