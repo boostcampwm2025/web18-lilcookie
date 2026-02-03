@@ -1,14 +1,25 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
-import { Users, ChevronRight, Folder, FolderPlus, Trash2, Settings } from "lucide-react";
+import {
+  Users,
+  ChevronRight,
+  Folder,
+  FolderPlus,
+  Trash2,
+  Settings,
+} from "lucide-react";
 import type { Team, Folder as FolderType } from "../../types";
-import { folderApi } from "../../services/api";
 import { useTeams } from "../../contexts/TeamContext";
+import { useFolders } from "../../hooks";
 
 interface SidebarProps {
   onCreateTeam?: () => void;
   onCreateFolder?: (teamUuid: string) => void;
-  onDeleteFolder?: (teamUuid: string, folderUuid: string, folderName: string) => void;
+  onDeleteFolder?: (
+    teamUuid: string,
+    folderUuid: string,
+    folderName: string,
+  ) => void;
   selectedFolderUuid?: string | null;
   onFolderSelect?: (folder: FolderType) => void;
   folderRefreshKey?: number; // 이 값이 변경되면 선택된 팀의 폴더 캐시를 무효화하고 다시 조회
@@ -30,99 +41,22 @@ const Sidebar = ({
   const isMyTeamsActive = location.pathname === "/my-teams";
   const isSettingPage = location.pathname.endsWith("/setting");
 
-  // 폴더 데이터 캐시
-  const [teamFolders, setTeamFolders] = useState<Record<string, FolderType[]>>({});
+  // useFolders 훅 사용
+  const { teamFolders, fetchFoldersIfNeeded } = useFolders({
+    selectedTeamUuid,
+    folderRefreshKey,
+  });
+
   // 수동으로 펼침/접힘 토글한 팀 상태
-  const [manualExpandedTeams, setManualExpandedTeams] = useState<Record<string, boolean>>({});
+  const [manualExpandedTeams, setManualExpandedTeams] = useState<
+    Record<string, boolean>
+  >({});
   // 호버 중인 팀
   const [hoveredTeamUuid, setHoveredTeamUuid] = useState<string | null>(null);
   // 호버 중인 폴더
-  const [hoveredFolderUuid, setHoveredFolderUuid] = useState<string | null>(null);
-
-  // 이미 폴더를 조회한 팀 추적 (중복 API 호출 방지)
-  const fetchedFoldersRef = useRef<Set<string>>(new Set());
-
-  // 폴더 조회 함수 (이벤트 핸들러에서 호출)
-  const fetchFoldersIfNeeded = useCallback(async (teamUuid: string) => {
-    if (fetchedFoldersRef.current.has(teamUuid)) return;
-
-    fetchedFoldersRef.current.add(teamUuid);
-    try {
-      const response = await folderApi.getFolders(teamUuid);
-      if (response.success) {
-        setTeamFolders((prev) => ({
-          ...prev,
-          [teamUuid]: response.data,
-        }));
-      }
-    } catch (error) {
-      console.error("폴더 조회 실패:", error);
-      fetchedFoldersRef.current.delete(teamUuid);
-    }
-  }, []);
-
-  // 선택된 팀의 폴더 조회 (URL 변경 시)
-  useEffect(() => {
-    if (!selectedTeamUuid) return;
-
-    // 이미 폴더 데이터가 있으면 스킵
-    if (teamFolders[selectedTeamUuid]) return;
-
-    let cancelled = false;
-
-    const fetchFolders = async () => {
-      fetchedFoldersRef.current.add(selectedTeamUuid);
-      try {
-        const response = await folderApi.getFolders(selectedTeamUuid);
-        if (!cancelled && response.success) {
-          setTeamFolders((prev) => ({
-            ...prev,
-            [selectedTeamUuid]: response.data,
-          }));
-        }
-      } catch (error) {
-        console.error("폴더 조회 실패:", error);
-        if (!cancelled) {
-          fetchedFoldersRef.current.delete(selectedTeamUuid);
-        }
-      }
-    };
-
-    fetchFolders();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedTeamUuid, teamFolders]);
-
-  // folderRefreshKey가 변경되면 선택된 팀의 폴더 캐시 무효화 및 재조회
-  useEffect(() => {
-    if (folderRefreshKey === undefined || folderRefreshKey === 0) return;
-    if (!selectedTeamUuid) return;
-
-    // 폴더 다시 조회 (캐시 무효화 포함)
-    const refetchFolders = async () => {
-      fetchedFoldersRef.current.delete(selectedTeamUuid);
-
-      try {
-        fetchedFoldersRef.current.add(selectedTeamUuid);
-        const response = await folderApi.getFolders(selectedTeamUuid);
-        if (response.success) {
-          setTeamFolders((prev) => ({
-            ...prev,
-            [selectedTeamUuid]: response.data,
-          }));
-        }
-      } catch (error) {
-        console.error("폴더 조회 실패:", error);
-        fetchedFoldersRef.current.delete(selectedTeamUuid);
-      }
-    };
-
-    refetchFolders();
-    // selectedTeamUuid 변경 시에는 실행하지 않고, folderRefreshKey 변경 시에만 실행
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [folderRefreshKey]);
+  const [hoveredFolderUuid, setHoveredFolderUuid] = useState<string | null>(
+    null,
+  );
 
   // 팀이 펼쳐져 있는지 계산 (수동 상태 우선, 없으면 선택된 팀만 펼침)
   const isTeamExpanded = (teamUuid: string): boolean => {
@@ -224,7 +158,9 @@ const Sidebar = ({
         <button
           onClick={() => navigate("/my-teams")}
           className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer ${
-            isMyTeamsActive ? "bg-blue-50 text-blue-600 font-semibold" : "text-gray-700 hover:bg-gray-100"
+            isMyTeamsActive
+              ? "bg-blue-50 text-blue-600 font-semibold"
+              : "text-gray-700 hover:bg-gray-100"
           }`}
         >
           <Users className="w-4 h-4" />
@@ -249,7 +185,9 @@ const Sidebar = ({
                   {/* 팀 헤더 */}
                   <div
                     className={`group flex items-center gap-1 px-2 py-1.5 rounded-lg transition-colors cursor-pointer ${
-                      isSelected && !isSettingPage ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-100"
+                      isSelected && !isSettingPage
+                        ? "bg-blue-50 text-blue-600"
+                        : "text-gray-700 hover:bg-gray-100"
                     }`}
                     onMouseEnter={() => setHoveredTeamUuid(team.teamUuid)}
                     onMouseLeave={() => setHoveredTeamUuid(null)}
@@ -272,7 +210,9 @@ const Sidebar = ({
                     <Users className="w-4 h-4 shrink-0" />
 
                     {/* 팀 이름 */}
-                    <span className="text-sm font-medium flex-1 truncate">{team.teamName}</span>
+                    <span className="text-sm font-medium flex-1 truncate">
+                      {team.teamName}
+                    </span>
 
                     {/* 호버 시 액션 버튼들 - opacity로 표시/숨김 */}
                     <div
@@ -281,7 +221,9 @@ const Sidebar = ({
                       }`}
                     >
                       <button
-                        onClick={(e) => handleCreateFolderClick(e, team.teamUuid)}
+                        onClick={(e) =>
+                          handleCreateFolderClick(e, team.teamUuid)
+                        }
                         className="p-1 hover:bg-gray-200 rounded cursor-pointer"
                         title="폴더 생성"
                       >
@@ -301,7 +243,8 @@ const Sidebar = ({
                   {(() => {
                     // 선택된 폴더가 현재 폴더 목록에 있는지 확인
                     const selectedFolderInList =
-                      selectedFolderUuid && folders.some((f) => f.folderUuid === selectedFolderUuid);
+                      selectedFolderUuid &&
+                      folders.some((f) => f.folderUuid === selectedFolderUuid);
 
                     return (
                       <div
@@ -316,9 +259,11 @@ const Sidebar = ({
                           const isFolderSelected =
                             isSelected &&
                             !isSettingPage &&
-                            (selectedFolderUuid === folder.folderUuid || (!selectedFolderInList && index === 0));
+                            (selectedFolderUuid === folder.folderUuid ||
+                              (!selectedFolderInList && index === 0));
 
-                          const isFolderHovered = hoveredFolderUuid === folder.folderUuid;
+                          const isFolderHovered =
+                            hoveredFolderUuid === folder.folderUuid;
                           const isDefaultFolder = index === 0; // 첫번째 폴더는 기본 폴더
 
                           return (
@@ -327,9 +272,13 @@ const Sidebar = ({
                               role="button"
                               tabIndex={0}
                               className={`group flex items-center gap-1 px-2 py-1.5 rounded-lg transition-colors cursor-pointer ${
-                                isFolderSelected ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:bg-gray-100"
+                                isFolderSelected
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "text-gray-600 hover:bg-gray-100"
                               }`}
-                              onMouseEnter={() => setHoveredFolderUuid(folder.folderUuid)}
+                              onMouseEnter={() =>
+                                setHoveredFolderUuid(folder.folderUuid)
+                              }
                               onMouseLeave={() => setHoveredFolderUuid(null)}
                               onClick={() => handleFolderClick(folder, team)}
                               onKeyDown={(e) => {
@@ -340,7 +289,9 @@ const Sidebar = ({
                               }}
                             >
                               <Folder className="w-4 h-4 shrink-0" />
-                              <span className={`text-sm flex-1 truncate ${isFolderSelected ? "font-medium" : ""}`}>
+                              <span
+                                className={`text-sm flex-1 truncate ${isFolderSelected ? "font-medium" : ""}`}
+                              >
                                 {folder.folderName}
                               </span>
 
@@ -356,7 +307,9 @@ const Sidebar = ({
                                     )
                                   }
                                   className={`p-1 hover:bg-gray-200 rounded cursor-pointer transition-opacity duration-150 ${
-                                    isFolderHovered ? "opacity-100" : "opacity-0"
+                                    isFolderHovered
+                                      ? "opacity-100"
+                                      : "opacity-0"
                                   }`}
                                   title="폴더 삭제"
                                 >
@@ -374,7 +327,9 @@ const Sidebar = ({
             })}
           </div>
         ) : (
-          <p className="mt-2 ml-6 text-xs text-gray-400">가입한 팀이 없습니다</p>
+          <p className="mt-2 ml-6 text-xs text-gray-400">
+            가입한 팀이 없습니다
+          </p>
         )}
       </nav>
 

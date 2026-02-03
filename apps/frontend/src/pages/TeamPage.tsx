@@ -1,10 +1,16 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import {
+  useParams,
+  useNavigate,
+  useLocation,
+  useSearchParams,
+} from "react-router-dom";
 import { LogOut, Link2, X, Search } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useTeams } from "../contexts/TeamContext";
-import { teamApi, folderApi, linkApi } from "../services/api";
-import type { Team, Folder as FolderType, Link } from "../types";
+import { teamApi, folderApi } from "../services/api";
+import { useLinks } from "../hooks";
+import type { Team, Folder as FolderType } from "../types";
 import Sidebar from "../components/layout/Sidebar";
 import CreateTeamModal from "../components/teams/CreateTeamModal";
 import CreateFolderModal from "../components/folders/CreateFolderModal";
@@ -30,20 +36,33 @@ const TeamPage = () => {
 
   const [currentTeam, setCurrentTeam] = useState<Team | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<FolderType | null>(null);
-  const [links, setLinks] = useState<Link[]>([]);
   const [loading, setLoading] = useState(true);
-  const [linksLoading, setLinksLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [folderModalTeamUuid, setFolderModalTeamUuid] = useState<string | null>(
     null,
   );
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
 
   // Sidebar 폴더 캐시 갱신 트리거
   const [folderRefreshKey, setFolderRefreshKey] = useState(0);
+
+  // useLinks 훅 사용
+  const {
+    links,
+    filteredLinks,
+    loading: linksLoading,
+    selectedTags,
+    searchQuery,
+    deleteLink,
+    setSearchQuery,
+    handleTagClick,
+    removeTag: handleRemoveTag,
+    clearTags: handleClearTags,
+  } = useLinks({
+    teamUuid,
+    folderUuid: selectedFolder?.folderUuid,
+  });
 
   // 팀 및 폴더 정보 조회 (팀이 변경될 때만)
   useEffect(() => {
@@ -109,61 +128,9 @@ const TeamPage = () => {
     }
   };
 
-  // 폴더 선택 또는 태그 필터 변경 시 링크 로드
-  useEffect(() => {
-    const fetchLinks = async () => {
-      if (!selectedFolder || !teamUuid) return;
-
-      try {
-        setLinksLoading(true);
-        const response = await linkApi.getLinks({
-          teamUuid,
-          folderUuid: selectedFolder.folderUuid,
-          tags: selectedTags.length > 0 ? selectedTags : undefined,
-        });
-        if (response.success) {
-          setLinks(response.data);
-        } else {
-          console.error("링크 조회 실패:", response.message);
-          setLinks([]);
-        }
-      } catch (error) {
-        console.error("링크 조회 중 오류:", error);
-        setLinks([]);
-      } finally {
-        setLinksLoading(false);
-      }
-    };
-
-    fetchLinks();
-  }, [selectedFolder, teamUuid, selectedTags]);
-
   const handleLogout = async () => {
     await logout();
     navigate("/login");
-  };
-
-  const handleDeleteLink = async (linkUuid: string) => {
-    try {
-      await linkApi.deleteLink(linkUuid);
-      setLinks((prev) => prev.filter((link) => link.linkUuid !== linkUuid));
-    } catch (error) {
-      console.error("링크 삭제 실패:", error);
-    }
-  };
-
-  const handleTagClick = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
-    );
-  };
-
-  const handleRemoveTag = (tag: string) => {
-    setSelectedTags((prev) => prev.filter((t) => t !== tag));
-  };
-
-  const handleClearTags = () => {
-    setSelectedTags([]);
   };
 
   // 폴더 생성 모달 열기
@@ -203,17 +170,6 @@ const TeamPage = () => {
       alert("폴더 삭제에 실패했습니다.");
     }
   };
-
-  // 검색 필터링
-  const filteredLinks = links.filter((link) => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      link.title.toLowerCase().includes(query) ||
-      link.summary.toLowerCase().includes(query) ||
-      link.tags.some((tag) => tag.toLowerCase().includes(query))
-    );
-  });
 
   if (loading) {
     return (
@@ -355,7 +311,7 @@ const TeamPage = () => {
             <LinkGrid
               links={filteredLinks}
               loading={linksLoading}
-              onDeleteLink={handleDeleteLink}
+              onDeleteLink={deleteLink}
               onTagClick={handleTagClick}
             />
           )}
