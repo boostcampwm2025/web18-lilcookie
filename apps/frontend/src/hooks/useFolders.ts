@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useFolderApi } from "./api";
+import { folderApi } from "../services/api";
 import type { Folder } from "../types";
 
 interface UseFoldersOptions {
@@ -12,7 +12,6 @@ export const useFolders = ({
   selectedTeamUuid,
   folderRefreshKey,
 }: UseFoldersOptions) => {
-  const { getFolders } = useFolderApi();
 
   // 팀별 폴더 데이터 캐시
   const [teamFolders, setTeamFolders] = useState<Record<string, Folder[]>>({});
@@ -21,26 +20,23 @@ export const useFolders = ({
 
   // 폴더 조회 (필요한 경우에만)
   // 이미 조회한 팀은 캐시 사용
-  const fetchFoldersIfNeeded = useCallback(
-    async (teamUuid: string) => {
-      if (fetchedFoldersRef.current.has(teamUuid)) return;
+  const fetchFoldersIfNeeded = useCallback(async (teamUuid: string) => {
+    if (fetchedFoldersRef.current.has(teamUuid)) return;
 
-      fetchedFoldersRef.current.add(teamUuid);
-      try {
-        const response = await getFolders(teamUuid);
-        if (response.success) {
-          setTeamFolders((prev) => ({
-            ...prev,
-            [teamUuid]: response.data,
-          }));
-        }
-      } catch (error) {
-        console.error("폴더 조회 실패:", error);
-        fetchedFoldersRef.current.delete(teamUuid);
+    fetchedFoldersRef.current.add(teamUuid);
+    try {
+      const response = await folderApi.getFolders(teamUuid);
+      if (response.success) {
+        setTeamFolders((prev) => ({
+          ...prev,
+          [teamUuid]: response.data,
+        }));
       }
-    },
-    [getFolders],
-  );
+    } catch (error) {
+      console.error("폴더 조회 실패:", error);
+      fetchedFoldersRef.current.delete(teamUuid);
+    }
+  }, []);
 
   // 폴더 강제 재조회
   // 캐시를 무효화하고 다시 조회
@@ -72,7 +68,7 @@ export const useFolders = ({
     const fetchFolders = async () => {
       fetchedFoldersRef.current.add(selectedTeamUuid);
       try {
-        const response = await getFolders(selectedTeamUuid);
+        const response = await folderApi.getFolders(selectedTeamUuid);
         if (!cancelled && response.success) {
           setTeamFolders((prev) => ({
             ...prev,
@@ -92,7 +88,7 @@ export const useFolders = ({
     return () => {
       cancelled = true;
     };
-  }, [selectedTeamUuid, teamFolders, getFolders]);
+  }, [selectedTeamUuid, teamFolders]);
 
   // folderRefreshKey가 변경되면 선택된 팀의 폴더 캐시 무효화 및 재조회
   useEffect(() => {
@@ -105,7 +101,7 @@ export const useFolders = ({
 
       try {
         fetchedFoldersRef.current.add(selectedTeamUuid);
-        const response = await getFolders(selectedTeamUuid);
+        const response = await folderApi.getFolders(selectedTeamUuid);
         if (response.success) {
           setTeamFolders((prev) => ({
             ...prev,

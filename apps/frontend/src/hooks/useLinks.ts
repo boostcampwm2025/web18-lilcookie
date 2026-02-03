@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
-import { useLinkApi } from "./api";
+import { linkApi } from "../services/api";
 import type { Link } from "../types";
 
 interface UseLinksOptions {
@@ -9,7 +9,6 @@ interface UseLinksOptions {
 
 // 링크 관리 훅
 export const useLinks = ({ teamUuid, folderUuid }: UseLinksOptions) => {
-  const { getLinks, deleteLink: deleteLinkApi } = useLinkApi();
 
   const [links, setLinks] = useState<Link[]>([]);
 
@@ -42,7 +41,7 @@ export const useLinks = ({ teamUuid, folderUuid }: UseLinksOptions) => {
         options.tags = selectedTags;
       }
 
-      const response = await getLinks(options);
+      const response = await linkApi.getLinks(options);
       if (response.success) {
         setLinks(response.data);
       } else {
@@ -55,7 +54,7 @@ export const useLinks = ({ teamUuid, folderUuid }: UseLinksOptions) => {
     } finally {
       setLoading(false);
     }
-  }, [teamUuid, folderUuid, selectedTags, getLinks]);
+  }, [teamUuid, folderUuid, selectedTags]);
 
   // teamUuid, folderUuid, selectedTags 변경 시 자동으로 링크 조회
   useEffect(() => {
@@ -63,19 +62,16 @@ export const useLinks = ({ teamUuid, folderUuid }: UseLinksOptions) => {
   }, [fetchLinks]);
 
   // 링크 삭제
-  const deleteLink = useCallback(
-    async (linkUuid: string) => {
-      try {
-        await deleteLinkApi(linkUuid);
-        // 로컬 상태에서도 즉시 제거
-        setLinks((prev) => prev.filter((link) => link.linkUuid !== linkUuid));
-      } catch (err) {
-        console.error("링크 삭제 실패:", err);
-        throw err;
-      }
-    },
-    [deleteLinkApi],
-  );
+  const deleteLink = useCallback(async (linkUuid: string) => {
+    try {
+      await linkApi.deleteLink(linkUuid);
+      // 로컬 상태에서도 즉시 제거
+      setLinks((prev) => prev.filter((link) => link.linkUuid !== linkUuid));
+    } catch (err) {
+      console.error("링크 삭제 실패:", err);
+      throw err;
+    }
+  }, []);
 
   // 태그 클릭 핸들러 - 태그 필터에 추가
   const handleTagClick = useCallback((tag: string) => {
