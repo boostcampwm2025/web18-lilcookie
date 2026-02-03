@@ -9,7 +9,7 @@ export default defineConfig({
       port: 3001, // 백엔드(3000)와 충돌 방지
     },
   },
-  manifest: () => ({
+  manifest: ({ mode }) => ({
     name: "TeamStash",
     version: "1.1.1",
     description: "URL을 간편히 저장하고 팀과 공유하는 확장프로그램",
@@ -34,6 +34,8 @@ export default defineConfig({
         id: "teamstash@boostcamp.connect",
       },
     },
-    ...(import.meta.env.DEV && { key: import.meta.env.CHROME_EXTENSION_KEY }),
+    ...(mode === "development" && {
+      key: import.meta.env.CHROME_EXTENSION_KEY,
+    }),
   }),
 });
