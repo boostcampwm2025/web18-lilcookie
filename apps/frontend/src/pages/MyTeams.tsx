@@ -38,8 +38,13 @@ const MyTeams = () => {
         {/* 헤더 */}
         <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-end">
           <div className="flex items-center gap-3">
-            {/* 사용자 이름 */}
-            <span className="text-sm font-medium text-gray-700">{user?.nickname || user?.email?.split("@")[0]}</span>
+            {/* 사용자 이름 - 마이페이지 링크 */}
+            <button
+              onClick={() => navigate("/my-page")}
+              className="text-sm font-medium text-gray-700 hover:text-gray-900 cursor-pointer"
+            >
+              {user?.nickname || user?.email?.split("@")[0]}
+            </button>
 
             {/* OAuth 연결하기 버튼 */}
             <button

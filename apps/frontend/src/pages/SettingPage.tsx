@@ -10,13 +10,15 @@ import { useTeams } from "../contexts/TeamContext";
 import { teamApi } from "../services/api";
 import { Users, Copy, LogOut, Check, Crown, Plus, Trash2 } from "lucide-react";
 import Sidebar from "../components/layout/Sidebar";
+import Header from "../components/layout/Header";
 import CreateTeamModal from "../components/teams/CreateTeamModal";
+import SectionContainer from "../components/common/SectionContainer";
 
 const SettingPage = () => {
   const { teamUuid } = useParams<{ teamUuid: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { addTeam } = useTeams();
 
   const teamFromState = location.state?.team as Team | undefined;
@@ -143,12 +145,6 @@ const SettingPage = () => {
     }
   };
 
-  // 로그아웃
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
-
   // 웹훅 추가
   const handleAddWebhook = async () => {
     if (!webhookUrl.trim() || !teamUuid) return;
@@ -231,21 +227,7 @@ const SettingPage = () => {
 
       {/* 메인 영역 */}
       <div className="flex-1 flex flex-col">
-        {/* 헤더 */}
-        <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-end">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-700">
-              {user?.nickname || user?.email?.split("@")[0]}
-            </span>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="text-sm">로그아웃</span>
-            </button>
-          </div>
-        </header>
+        <Header />
 
         {/* 컨텐츠 */}
         <main className="flex-1 p-8 overflow-auto">
@@ -253,10 +235,7 @@ const SettingPage = () => {
 
           <div className="max-w-4xl space-y-8">
             {/* 팀 정보 섹션 */}
-            <div className="bg-white rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                팀 정보
-              </h2>
+            <SectionContainer title="팀 정보">
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">팀 이름</span>
@@ -272,14 +251,12 @@ const SettingPage = () => {
                   </span>
                 </div>
               </div>
-            </div>
+            </SectionContainer>
 
             {/* 멤버 목록 섹션 */}
-            <div className="bg-white rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  팀원 ({members.length}명)
-                </h2>
+            <SectionContainer
+              title={`팀원 (${members.length}명)`}
+              headerAction={
                 <button
                   onClick={handleCopyInviteLink}
                   className={`flex items-center justify-center gap-2 px-3 py-1.5 text-sm min-w-[120px] rounded-lg transition-colors cursor-pointer ${
@@ -300,7 +277,8 @@ const SettingPage = () => {
                     </>
                   )}
                 </button>
-              </div>
+              }
+            >
               <div className="space-y-1">
                 {members.map((member) => (
                   <div
@@ -336,14 +314,11 @@ const SettingPage = () => {
                   </div>
                 ))}
               </div>
-            </div>
+            </SectionContainer>
 
             {/* 토큰 사용량 섹션 */}
             {tokenUsage && (
-              <div className="bg-white rounded-xl p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  AI 사용량
-                </h2>
+              <SectionContainer title="AI 사용량">
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">오늘 사용량</span>
@@ -364,23 +339,15 @@ const SettingPage = () => {
                     </span>
                   </div>
                 </div>
-              </div>
+              </SectionContainer>
             )}
 
             {/* 웹훅 관리 섹션 */}
-            <div className="bg-white rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                웹훅 관리{" "}
-                {isAdmin && (
-                  <span className="text-sm font-normal text-gray-500">
-                    (Owner)
-                  </span>
-                )}
-              </h2>
-              <p className="text-sm text-gray-500 mb-4">
-                팀 내 이벤트 발생 시 데이터를 전송할 URL을 관리합니다.
-              </p>
-
+            <SectionContainer
+              title="웹훅 관리"
+              badge={isAdmin ? "Owner" : undefined}
+              subtitle="팀 내 이벤트 발생 시 데이터를 전송할 URL을 관리합니다."
+            >
               {/* 웹훅 목록 */}
               <div className="space-y-3 mb-4">
                 {webhooks.length === 0 ? (
@@ -484,23 +451,17 @@ const SettingPage = () => {
                     웹훅 추가
                   </button>
                 ))}
-            </div>
+            </SectionContainer>
 
             {/* 팀 탈퇴 섹션 */}
-            <div className="bg-white rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                팀 탈퇴
-              </h2>
-              {isAdmin ? (
-                <p className="text-sm text-gray-500 mb-4">
-                  관리자는 팀에서 탈퇴할 수 없습니다. 다른 멤버에게 관리자
-                  권한을 넘긴 후 탈퇴해주세요.
-                </p>
-              ) : (
-                <p className="text-sm text-gray-500 mb-4">
-                  팀에서 탈퇴하면 더 이상 이 팀의 콘텐츠에 접근할 수 없습니다.
-                </p>
-              )}
+            <SectionContainer
+              title="팀 탈퇴"
+              subtitle={
+                isAdmin
+                  ? "관리자는 팀에서 탈퇴할 수 없습니다. 다른 멤버에게 관리자 권한을 넘긴 후 탈퇴해주세요."
+                  : "팀에서 탈퇴하면 더 이상 이 팀의 콘텐츠에 접근할 수 없습니다."
+              }
+            >
               <button
                 onClick={handleLeaveTeam}
                 disabled={isAdmin || leaving}
@@ -509,7 +470,7 @@ const SettingPage = () => {
                 <LogOut className="w-4 h-4" />
                 {leaving ? "탈퇴 중..." : "팀 탈퇴"}
               </button>
-            </div>
+            </SectionContainer>
           </div>
         </main>
       </div>
