@@ -40,7 +40,7 @@ export class OidcGuard implements CanActivate {
         throw new UnauthorizedException("OIDC 토큰에 sub(사용자 고유 ID)가 필요합니다.");
       }
 
-      const user = await this.userService.findOrCreate(uuid, preferred_username);
+      const user = await this.userService.findOrCreate(uuid, preferred_username, payload.email);
 
       /**
        * 요청 객체에 사용자 정보 추가
