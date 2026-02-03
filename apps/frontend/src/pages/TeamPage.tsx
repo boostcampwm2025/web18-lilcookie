@@ -5,13 +5,12 @@ import {
   useLocation,
   useSearchParams,
 } from "react-router-dom";
-import { LogOut, Link2, X, Search } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
+import { Link2, X, Search } from "lucide-react";
 import { useTeams } from "../contexts/TeamContext";
 import { teamApi, folderApi } from "../services/api";
 import { useLinks } from "../hooks";
 import type { Team, Folder as FolderType } from "../types";
-import Sidebar from "../components/layout/Sidebar";
+import Layout from "../components/layout/Layout";
 import CreateTeamModal from "../components/teams/CreateTeamModal";
 import CreateFolderModal from "../components/folders/CreateFolderModal";
 import LinkGrid from "../components/dashboard/LinkGrid";
@@ -21,7 +20,6 @@ const TeamPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { user, logout } = useAuth();
   const { addTeam } = useTeams();
 
   // navigate state로 전달받은 팀 정보 및 폴더 UUID
@@ -128,11 +126,6 @@ const TeamPage = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
-
   // 폴더 생성 모달 열기
   const handleCreateFolder = (targetTeamUuid: string) => {
     setFolderModalTeamUuid(targetTeamUuid);
@@ -196,127 +189,101 @@ const TeamPage = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* 사이드바 */}
-      <Sidebar
-        onCreateTeam={() => setIsModalOpen(true)}
-        onCreateFolder={handleCreateFolder}
-        onDeleteFolder={handleDeleteFolder}
-        selectedFolderUuid={selectedFolder?.folderUuid}
-        onFolderSelect={handleFolderSelect}
-        folderRefreshKey={folderRefreshKey}
-      />
+    <Layout
+      sidebarProps={{
+        onCreateTeam: () => setIsModalOpen(true),
+        onCreateFolder: handleCreateFolder,
+        onDeleteFolder: handleDeleteFolder,
+        selectedFolderUuid: selectedFolder?.folderUuid,
+        onFolderSelect: handleFolderSelect,
+        folderRefreshKey: folderRefreshKey,
+      }}
+    >
+      {/* 제목 */}
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">
+        {currentTeam?.teamName} &gt; {selectedFolder?.folderName || "폴더 없음"}
+      </h1>
+      <p className="text-sm text-gray-500 mb-4">
+        {filteredLinks.length}개의 링크
+        {searchQuery && ` (전체 ${links.length}개 중)`}
+      </p>
 
-      {/* 메인 영역 */}
-      <div className="flex-1 flex flex-col">
-        {/* 헤더 */}
-        <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-end">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-700">
-              {user?.nickname || user?.email?.split("@")[0]}
-            </span>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="text-sm">로그아웃</span>
-            </button>
-          </div>
-        </header>
-
-        {/* 컨텐츠 */}
-        <main className="flex-1 p-8 overflow-auto">
-          {/* 제목 */}
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            {currentTeam?.teamName} &gt;{" "}
-            {selectedFolder?.folderName || "폴더 없음"}
-          </h1>
-          <p className="text-sm text-gray-500 mb-4">
-            {filteredLinks.length}개의 링크
-            {searchQuery && ` (전체 ${links.length}개 중)`}
-          </p>
-
-          {/* 검색 바 */}
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="제목, 요약, 태그로 검색..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
-          {/* 선택된 태그 필터 */}
-          {selectedTags.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 mb-6">
-              <span className="text-sm text-gray-500">필터:</span>
-              {selectedTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-1 text-sm px-3 py-1 bg-blue-100 text-blue-700 rounded-full"
-                >
-                  #{tag}
-                  <button
-                    onClick={() => handleRemoveTag(tag)}
-                    className="hover:bg-blue-200 rounded-full p-0.5 transition-colors cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
-              <button
-                onClick={handleClearTags}
-                className="text-sm text-gray-500 hover:text-gray-700 underline cursor-pointer"
-              >
-                모두 지우기
-              </button>
-            </div>
-          )}
-
-          {/* 링크 카드 영역 */}
-          {filteredLinks.length === 0 && !linksLoading ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-12">
-              <div className="flex flex-col items-center justify-center text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                  {searchQuery ? (
-                    <Search className="w-8 h-8 text-gray-400" />
-                  ) : (
-                    <Link2 className="w-8 h-8 text-gray-400" />
-                  )}
-                </div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                  {searchQuery
-                    ? "검색 결과가 없습니다"
-                    : "아직 링크가 없습니다"}
-                </h2>
-                <p className="text-sm text-gray-500">
-                  {searchQuery
-                    ? "다른 검색어로 시도해보세요"
-                    : "익스텐션을 통해 링크를 추가해보세요"}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <LinkGrid
-              links={filteredLinks}
-              loading={linksLoading}
-              onDeleteLink={deleteLink}
-              onTagClick={handleTagClick}
-            />
-          )}
-        </main>
+      {/* 검색 바 */}
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="제목, 요약, 태그로 검색..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
+
+      {/* 선택된 태그 필터 */}
+      {selectedTags.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-6">
+          <span className="text-sm text-gray-500">필터:</span>
+          {selectedTags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1 text-sm px-3 py-1 bg-blue-100 text-blue-700 rounded-full"
+            >
+              #{tag}
+              <button
+                onClick={() => handleRemoveTag(tag)}
+                className="hover:bg-blue-200 rounded-full p-0.5 transition-colors cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+          <button
+            onClick={handleClearTags}
+            className="text-sm text-gray-500 hover:text-gray-700 underline cursor-pointer"
+          >
+            모두 지우기
+          </button>
+        </div>
+      )}
+
+      {/* 링크 카드 영역 */}
+      {filteredLinks.length === 0 && !linksLoading ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-12">
+          <div className="flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              {searchQuery ? (
+                <Search className="w-8 h-8 text-gray-400" />
+              ) : (
+                <Link2 className="w-8 h-8 text-gray-400" />
+              )}
+            </div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">
+              {searchQuery ? "검색 결과가 없습니다" : "아직 링크가 없습니다"}
+            </h2>
+            <p className="text-sm text-gray-500">
+              {searchQuery
+                ? "다른 검색어로 시도해보세요"
+                : "익스텐션을 통해 링크를 추가해보세요"}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <LinkGrid
+          links={filteredLinks}
+          loading={linksLoading}
+          onDeleteLink={deleteLink}
+          onTagClick={handleTagClick}
+        />
+      )}
 
       {/* 팀 만들기 모달 */}
       <CreateTeamModal
@@ -343,7 +310,7 @@ const TeamPage = () => {
           setFolderRefreshKey((prev) => prev + 1);
         }}
       />
-    </div>
+    </Layout>
   );
 };
 
