@@ -38,18 +38,41 @@ function CommentField({
             ({commentLength}/{maxCharacterCount})
           </span>
         </label>
-        <button
-          type="button"
-          className={`ai-badge-btn ${isAiLoading ? "loading" : ""}`}
-          onClick={onAiClick}
-          disabled={isAiDisabled || isAiCompleted}
-          title={
-            isAiDisabled ? "이 페이지는 요약할 수 없습니다" : "AI로 요약 생성"
-          }
-        >
-          <AiSparkleIcon />
-          {isAiFailed ? "AI 생성 실패" : isAiCompleted ? "AI 생성 완료" : "AI 생성"}
-        </button>
+        <div className="ai-controls">
+          <button
+            type="button"
+            className={`ai-badge-btn ${isAiLoading ? "loading" : ""}`}
+            onClick={onAiClick}
+            disabled={isAiDisabled || isAiCompleted}
+            title={
+              isAiDisabled ? "이 페이지는 요약할 수 없습니다" : "AI로 요약 생성"
+            }
+          >
+            <AiSparkleIcon />
+            {isAiFailed
+              ? "AI 생성 실패"
+              : isAiCompleted
+                ? "AI 생성 완료"
+                : "AI 생성"}
+          </button>
+          {isAiDisabled && (
+            <div className="ai-info">
+              <button
+                type="button"
+                className="ai-info-button"
+                aria-label="AI 요약 안내"
+                aria-describedby="ai-info-popup"
+              >
+                i
+              </button>
+              <span className="ai-info-popup" id="ai-info-popup" role="tooltip">
+                <b>이 페이지는 요약할 수 없어요.</b>
+                <br /> 본문 형태의 글을 찾지 못해 AI 요약이 지원되지 않을 수
+                있습니다. (예: 이미지 위주 페이지, 앱 형태의 웹사이트 등)
+              </span>
+            </div>
+          )}
+        </div>
       </div>
       <textarea
         id="comment"

@@ -182,6 +182,70 @@ body {
   stroke: #9ca3af;
 }
 
+.ai-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-info {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ai-info-button {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ai-info-button:hover {
+  background-color: #f9fafb;
+  color: #374151;
+}
+
+.ai-info-button:focus-visible {
+  outline: 2px solid #c4b5fd;
+  outline-offset: 2px;
+}
+
+.ai-info-popup {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 220px;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 11px;
+  line-height: 1.4;
+  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.12);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.ai-info:hover .ai-info-popup,
+.ai-info:focus-within .ai-info-popup {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 @keyframes passing-shine {
   0% { background-position: 200% center; }
   100% { background-position: -200% center; }
