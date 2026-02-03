@@ -13,6 +13,8 @@ import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
 import CreateTeamModal from "../components/teams/CreateTeamModal";
 import SectionContainer from "../components/common/SectionContainer";
+import { TransferOwnershipModal } from "../components/setting/TransferOwnershipModal";
+import { DeleteTeamModal } from "../components/setting/DeleteTeamModal";
 
 const SettingPage = () => {
   const { teamUuid } = useParams<{ teamUuid: string }>();
@@ -25,6 +27,8 @@ const SettingPage = () => {
 
   const [currentTeam, setCurrentTeam] = useState<Team | null>(null);
   const [members, setMembers] = useState<GetTeamMembersResponseData[]>([]);
+  // 혼자인지 확인
+  const isAlone = members.length === 1;
   const [loading, setLoading] = useState(true);
   const [, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -43,6 +47,11 @@ const SettingPage = () => {
     maxTokens: number;
     percentage: number;
   } | null>(null);
+
+  const [transferModalOpen, setTransferModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedMember, setSelectedMember] =
+    useState<GetTeamMembersResponseData | null>(null);
 
   // 팀 정보 및 멤버 조회
   useEffect(() => {
@@ -209,6 +218,20 @@ const SettingPage = () => {
     });
   };
 
+  // 권한 위임 클릭시
+  const handleTransferClick = (member: GetTeamMembersResponseData) => {
+    setSelectedMember(member);
+    setTransferModalOpen(true);
+  };
+
+  const handleTransferSuccess = () => {
+    window.location.reload();
+  };
+
+  const handleDeleteSuccess = () => {
+    navigate("/my-teams");
+  };
+
   // 로딩 중
   if (loading) {
     return (
@@ -311,6 +334,17 @@ const SettingPage = () => {
                         </span>
                       </div>
                     </div>
+
+                    {/* Owner가 다른 멤버에게 권한 위임 버튼 */}
+                    {isAdmin && member.role !== "owner" && (
+                      <button
+                        onClick={() => handleTransferClick(member)}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-50 transition-colors cursor-pointer"
+                      >
+                        <Crown className="w-3 h-3" />
+                        권한 위임
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -453,23 +487,34 @@ const SettingPage = () => {
                 ))}
             </SectionContainer>
 
-            {/* 팀 탈퇴 섹션 */}
+            {/* 팀 탈퇴 / 삭제 섹션 */}
             <SectionContainer
-              title="팀 탈퇴"
+              title={isAdmin && isAlone ? "팀 삭제" : "팀 탈퇴"}
               subtitle={
-                isAdmin
-                  ? "관리자는 팀에서 탈퇴할 수 없습니다. 다른 멤버에게 관리자 권한을 넘긴 후 탈퇴해주세요."
-                  : "팀에서 탈퇴하면 더 이상 이 팀의 콘텐츠에 접근할 수 없습니다."
+                isAdmin && isAlone
+                  ? "팀을 삭제하면 모든 데이터가 영구적으로 삭제됩니다."
+                  : isAdmin
+                    ? "관리자는 팀에서 탈퇴할 수 없습니다. 다른 멤버에게 관리자 권한을 넘긴 후 탈퇴해주세요."
+                    : "팀에서 탈퇴하면 더 이상 이 팀의 콘텐츠에 접근할 수 없습니다."
               }
             >
-              <button
-                onClick={handleLeaveTeam}
-                disabled={isAdmin || leaving}
-                className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <LogOut className="w-4 h-4" />
-                {leaving ? "탈퇴 중..." : "팀 탈퇴"}
-              </button>
+              {isAdmin && isAlone ? (
+                <button
+                  onClick={() => setDeleteModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />팀 삭제
+                </button>
+              ) : (
+                <button
+                  onClick={handleLeaveTeam}
+                  disabled={isAdmin || leaving}
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <LogOut className="w-4 h-4" />
+                  {leaving ? "탈퇴 중..." : "팀 탈퇴"}
+                </button>
+              )}
             </SectionContainer>
           </div>
         </main>
@@ -483,6 +528,22 @@ const SettingPage = () => {
           addTeam(newTeam);
           setIsModalOpen(false);
         }}
+      />
+
+      <TransferOwnershipModal
+        isOpen={transferModalOpen}
+        onClose={() => setTransferModalOpen(false)}
+        targetMember={selectedMember}
+        teamUuid={teamUuid!}
+        onSuccess={handleTransferSuccess}
+      />
+
+      <DeleteTeamModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        teamName={currentTeam?.teamName || ""}
+        teamUuid={teamUuid!}
+        onSuccess={handleDeleteSuccess}
       />
     </div>
   );
