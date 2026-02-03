@@ -7,11 +7,11 @@ import { User } from "../../user/entities/user.entity";
 export class TeamMemberResponseDto {
   userUuid: string;
   userName: string;
-  userEmail?: string;
+  userEmail: string;
   role: string;
   joinedAt: string;
 
-  constructor(data: { userUuid: string; userName: string; userEmail?: string; role: string; joinedAt: string }) {
+  constructor(data: { userUuid: string; userName: string; userEmail: string; role: string; joinedAt: string }) {
     this.userUuid = data.userUuid;
     this.userName = data.userName;
     this.userEmail = data.userEmail;
