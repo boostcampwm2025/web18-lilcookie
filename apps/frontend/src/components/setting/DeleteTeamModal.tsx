@@ -87,6 +87,12 @@ export const DeleteTeamModal = ({
               autoFocus
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
               disabled={loading}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleDelete();
+                }
+              }}
             />
           </div>
 
