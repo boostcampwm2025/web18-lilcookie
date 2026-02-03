@@ -329,7 +329,7 @@ const SettingPage = () => {
                           )}
                         </div>
                         <span className="text-sm text-gray-500">
-                          {member.userEmail ?? "이메일 없음"}
+                          {member.userEmail}
                         </span>
                       </div>
                     </div>

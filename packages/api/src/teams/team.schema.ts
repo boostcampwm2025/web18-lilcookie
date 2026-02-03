@@ -28,7 +28,7 @@ export const JoinTeamResponseDataSchema = z.object({
 export const GetTeamMembersResponsedDataSchema = z.object({
   userUuid: z.string().uuid(),
   userName: z.string(),
-  userEmail: z.string().nullable(),
+  userEmail: z.string(),
   role: RoleSchema,
   joinedAt: z.string().datetime(),
 });

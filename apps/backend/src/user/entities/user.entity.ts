@@ -1,7 +1,7 @@
 export class User {
   userId: number;
   userUuid: string;
-  userEmail: string | null;
+  userEmail: string;
   userNickname: string;
   createdAt: Date;
 
