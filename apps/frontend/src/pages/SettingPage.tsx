@@ -254,8 +254,9 @@ const SettingPage = () => {
             </SectionContainer>
 
             {/* 멤버 목록 섹션 */}
-            <SectionContainer title={`팀원 (${members.length}명)`}>
-              <div className="flex items-center justify-end mb-4">
+            <SectionContainer
+              title={`팀원 (${members.length}명)`}
+              headerAction={
                 <button
                   onClick={handleCopyInviteLink}
                   className={`flex items-center justify-center gap-2 px-3 py-1.5 text-sm min-w-[120px] rounded-lg transition-colors cursor-pointer ${
@@ -276,7 +277,8 @@ const SettingPage = () => {
                     </>
                   )}
                 </button>
-              </div>
+              }
+            >
               <div className="space-y-1">
                 {members.map((member) => (
                   <div
