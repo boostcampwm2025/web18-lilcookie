@@ -46,7 +46,7 @@ export const DeleteTeamModal = ({
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <div className="flex items-center gap-3">
@@ -65,14 +65,16 @@ export const DeleteTeamModal = ({
 
         {/* Body */}
         <div className="p-5">
-          <p className="text-gray-600 mb-2">
-            정말 이 팀을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
-          </p>
-          <p className="text-sm text-gray-500 mb-4">
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-800">
+              정말 이 팀을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+            </p>
+          </div>
+          <p className="text-sm text-gray-500 my-4">
             팀의 모든 폴더, 링크, 웹훅이 영구적으로 삭제됩니다.
           </p>
 
-          <div className="mb-4">
+          <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               확인을 위해 팀 이름{" "}
               <span className="font-semibold text-red-600">"{teamName}"</span>을
