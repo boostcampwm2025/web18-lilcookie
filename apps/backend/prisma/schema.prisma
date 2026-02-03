@@ -12,7 +12,7 @@ datasource db {
 model User {
   id        Int      @id @default(autoincrement())
   uuid      String   @unique @default(uuid()) // 외부 노출용 식별자
-  email     String   // OIDC에서 받아온 이메일
+  email     String?  // OIDC에서 받아온 이메일 (optional)
   nickname  String
   createdAt DateTime @default(now()) @map("created_at")
 
