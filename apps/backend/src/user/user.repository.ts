@@ -53,7 +53,11 @@ export class UserRepository {
 
     // 새 사용자 생성
     const created = await this.prisma.user.create({
-      data: data,
+      data: {
+        uuid: data.uuid,
+        nickname: data.nickname,
+        ...(data.email && { email: data.email }),
+      },
     });
     return UserMapper.fromPrisma(created);
   }
