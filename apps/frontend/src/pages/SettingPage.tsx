@@ -4,7 +4,7 @@ import type {
   GetTeamMembersResponseData,
   GetTeamWebhooksResponseData,
 } from "@repo/api";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useTeams } from "../contexts/TeamContext";
 import { teamApi } from "../services/api";
@@ -52,6 +52,21 @@ const SettingPage = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] =
     useState<GetTeamMembersResponseData | null>(null);
+
+  const sortedMembers = useMemo(() => {
+    return [...members].sort((a, b) => {
+      const aIsMe = a.userUuid === user?.uuid;
+      const bIsMe = b.userUuid === user?.uuid;
+
+      if (aIsMe) return -1;
+      if (bIsMe) return 1;
+
+      if (a.role === "owner") return -1;
+      if (b.role === "owner") return 1;
+
+      return 0;
+    });
+  }, [members, user?.uuid]);
 
   // 팀 정보 및 멤버 조회
   useEffect(() => {
@@ -303,7 +318,7 @@ const SettingPage = () => {
               }
             >
               <div className="space-y-1">
-                {members.map((member) => (
+                {sortedMembers.map((member) => (
                   <div
                     key={member.userUuid}
                     className="flex items-center justify-between py-3"
