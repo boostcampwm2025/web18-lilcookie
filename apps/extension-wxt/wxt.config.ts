@@ -34,6 +34,6 @@ export default defineConfig({
         id: "teamstash@boostcamp.connect",
       },
     },
-    key: import.meta.env.CHROME_EXTENSION_KEY,
+    ...(import.meta.env.DEV && { key: import.meta.env.CHROME_EXTENSION_KEY }),
   }),
 });
