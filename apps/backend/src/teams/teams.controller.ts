@@ -186,7 +186,7 @@ export class TeamsController {
     await this.teamsService.deleteTeam(teamUuid, user.userId);
 
     return ResponseBuilder.success<Record<string, never>>()
-      .status(HttpStatus.OK)
+      .status(HttpStatus.NO_CONTENT)
       .message("팀이 성공적으로 삭제되었습니다.")
       .data({})
       .build();

@@ -340,11 +340,10 @@ export const teamApi = {
   transferOwnership: async (
     teamUuid: string,
     targetUserUuid: string,
-  ): Promise<ApiResponse<Record<string, never>>> => {
-    const response = await api.patch(`teams/${teamUuid}/transfer-ownership`, {
+  ): Promise<void> => {
+    await api.patch(`teams/${teamUuid}/transfer-ownership`, {
       targetUserUuid,
     });
-    return response.data;
   },
 
   // DELETE /teams/:teamUuid/delete - 팀 삭제
