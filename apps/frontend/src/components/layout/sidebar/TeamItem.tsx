@@ -15,6 +15,7 @@ interface TeamItemProps {
   onFolderClick: (folder: FolderType) => void;
   onCreateFolder: () => void;
   onDeleteFolder: (folderUuid: string, folderName: string) => void;
+  onRenameFolder: (folderUuid: string, newName: string) => void;
   onSettingClick: () => void;
 }
 
@@ -30,6 +31,7 @@ const TeamItem = ({
   onFolderClick,
   onCreateFolder,
   onDeleteFolder,
+  onRenameFolder,
   onSettingClick,
 }: TeamItemProps) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -148,6 +150,9 @@ const TeamItem = ({
               onClick={() => onFolderClick(folder)}
               onDelete={() =>
                 onDeleteFolder(folder.folderUuid, folder.folderName)
+              }
+              onRename={(newName) =>
+                onRenameFolder(folder.folderUuid, newName)
               }
             />
           );

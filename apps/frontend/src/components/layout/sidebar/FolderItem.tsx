@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Folder, Trash2 } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Folder, Trash2, Pencil } from "lucide-react";
 import type { Folder as FolderType } from "../../../types";
 
 interface FolderItemProps {
@@ -8,6 +8,7 @@ interface FolderItemProps {
   isDefaultFolder: boolean;
   onClick: () => void;
   onDelete: () => void;
+  onRename: (newName: string) => void;
 }
 
 const FolderItem = ({
@@ -16,10 +17,21 @@ const FolderItem = ({
   isDefaultFolder,
   onClick,
   onDelete,
+  onRename,
 }: FolderItemProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(folder.folderName);
   const nameRef = useRef<HTMLSpanElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
 
   const handleNameMouseEnter = () => {
     if (nameRef.current) {
@@ -28,6 +40,7 @@ const FolderItem = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (isEditing) return;
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       onClick();
@@ -37,6 +50,34 @@ const FolderItem = ({
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDelete();
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditName(folder.folderName);
+    setIsEditing(true);
+  };
+
+  const handleEditSubmit = () => {
+    const trimmedName = editName.trim();
+    if (trimmedName && trimmedName !== folder.folderName) {
+      onRename(trimmedName);
+    }
+    setIsEditing(false);
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleEditSubmit();
+    } else if (e.key === "Escape") {
+      setEditName(folder.folderName);
+      setIsEditing(false);
+    }
+  };
+
+  const handleEditBlur = () => {
+    handleEditSubmit();
   };
 
   return (
@@ -50,30 +91,55 @@ const FolderItem = ({
       }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={onClick}
+      onClick={isEditing ? undefined : onClick}
       onKeyDown={handleKeyDown}
     >
       <Folder className="w-4 h-4 shrink-0" />
-      <span
-        ref={nameRef}
-        className={`text-sm flex-1 truncate ${isSelected ? "font-medium" : ""}`}
-        title={showTooltip ? folder.folderName : undefined}
-        onMouseEnter={handleNameMouseEnter}
-      >
-        {folder.folderName}
-      </span>
 
-      {/* 호버 시 삭제 버튼 (기본 폴더 제외) */}
-      {!isDefaultFolder && (
-        <button
-          onClick={handleDeleteClick}
-          className={`p-1 hover:bg-gray-200 rounded cursor-pointer transition-opacity duration-150 ${
-            isHovered ? "opacity-100" : "opacity-0"
-          }`}
-          title="폴더 삭제"
+      {isEditing ? (
+        <input
+          ref={inputRef}
+          type="text"
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          onKeyDown={handleEditKeyDown}
+          onBlur={handleEditBlur}
+          className="text-sm flex-1 bg-white border border-blue-400 rounded px-1 py-0.5 outline-none"
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : (
+        <span
+          ref={nameRef}
+          className={`text-sm flex-1 truncate ${isSelected ? "font-medium" : ""}`}
+          title={showTooltip ? folder.folderName : undefined}
+          onMouseEnter={handleNameMouseEnter}
         >
-          <Trash2 className="w-3.5 h-3.5 text-gray-500" />
-        </button>
+          {folder.folderName}
+        </span>
+      )}
+
+      {/* 호버 시 편집/삭제 버튼 (기본 폴더 제외) */}
+      {!isDefaultFolder && !isEditing && (
+        <>
+          <button
+            onClick={handleEditClick}
+            className={`p-1 hover:bg-gray-200 rounded cursor-pointer transition-opacity duration-150 ${
+              isHovered ? "opacity-100" : "opacity-0"
+            }`}
+            title="폴더 이름 수정"
+          >
+            <Pencil className="w-3.5 h-3.5 text-gray-500" />
+          </button>
+          <button
+            onClick={handleDeleteClick}
+            className={`p-1 hover:bg-gray-200 rounded cursor-pointer transition-opacity duration-150 ${
+              isHovered ? "opacity-100" : "opacity-0"
+            }`}
+            title="폴더 삭제"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-gray-500" />
+          </button>
+        </>
       )}
     </div>
   );

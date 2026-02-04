@@ -33,10 +33,15 @@ const Sidebar = ({
   );
 
   // useFolders 훅 사용
-  const { teamFolders, fetchFoldersIfNeeded, createFolder, deleteFolder } =
-    useFolders({
-      selectedTeamUuid,
-    });
+  const {
+    teamFolders,
+    fetchFoldersIfNeeded,
+    createFolder,
+    deleteFolder,
+    renameFolder,
+  } = useFolders({
+    selectedTeamUuid,
+  });
 
   // 수동으로 펼침/접힘 토글한 팀 상태
   const [manualExpandedTeams, setManualExpandedTeams] = useState<
@@ -157,6 +162,9 @@ const Sidebar = ({
                 onCreateFolder={() => handleCreateFolderClick(team.teamUuid)}
                 onDeleteFolder={(folderUuid, folderName) =>
                   handleDeleteFolderClick(team, folderUuid, folderName)
+                }
+                onRenameFolder={(folderUuid, newName) =>
+                  renameFolder(team.teamUuid, folderUuid, newName)
                 }
                 onSettingClick={() => handleSettingClick(team.teamUuid)}
               />
