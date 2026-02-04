@@ -8,6 +8,7 @@ interface CreateFolderModalProps {
   teamUuid: string | null;
   onClose: () => void;
   onFolderCreated: (folder: Folder) => void;
+  createFolder?: (teamUuid: string, folderName: string) => Promise<Folder>;
 }
 
 const CreateFolderModal = ({
@@ -15,6 +16,7 @@ const CreateFolderModal = ({
   teamUuid,
   onClose,
   onFolderCreated,
+  createFolder,
 }: CreateFolderModalProps) => {
   const [folderName, setFolderName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,17 +43,26 @@ const CreateFolderModal = ({
       setLoading(true);
       setError(null);
 
-      const response = await folderApi.createFolder({
-        teamUuid,
-        folderName: folderName.trim(),
-      });
-
-      if (response.success) {
-        onFolderCreated(response.data);
+      // createFolder prop이 있으면 사용 (useFolders 훅의 캐시 업데이트 포함)
+      if (createFolder) {
+        const folder = await createFolder(teamUuid!, folderName.trim());
+        onFolderCreated(folder);
         setFolderName("");
         onClose();
       } else {
-        setError(response.message || "폴더 생성에 실패했습니다.");
+        // 기존 로직 (하위 호환성)
+        const response = await folderApi.createFolder({
+          teamUuid: teamUuid!,
+          folderName: folderName.trim(),
+        });
+
+        if (response.success) {
+          onFolderCreated(response.data);
+          setFolderName("");
+          onClose();
+        } else {
+          setError(response.message || "폴더 생성에 실패했습니다.");
+        }
       }
     } catch {
       setError("폴더 생성 중 오류가 발생했습니다.");

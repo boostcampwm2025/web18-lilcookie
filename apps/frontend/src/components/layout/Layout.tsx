@@ -4,15 +4,8 @@ import Header from "./Header";
 
 interface SidebarProps {
   onCreateTeam?: () => void;
-  onCreateFolder?: (teamUuid: string) => void;
-  onDeleteFolder?: (
-    teamUuid: string,
-    folderUuid: string,
-    folderName: string,
-  ) => void;
   selectedFolderUuid?: string | null;
   onFolderSelect?: (folder: Folder) => void;
-  folderRefreshKey?: number;
 }
 
 interface HeaderProps {
