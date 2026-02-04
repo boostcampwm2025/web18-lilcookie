@@ -39,8 +39,11 @@ export const WebhookSection = ({
         setWebhookUrl("");
         setShowWebhookInput(false);
       }
-    } catch {
-      onError?.("웹훅 추가에 실패했습니다.");
+    } catch (error) {
+      const message =
+        (error as { response?: { data?: { message?: string } } })?.response
+          ?.data?.message || "웹훅 추가에 실패했습니다.";
+      onError?.(message);
     } finally {
       setIsAddingWebhook(false);
     }

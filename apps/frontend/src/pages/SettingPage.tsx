@@ -131,8 +131,9 @@ const SettingPage = () => {
     <Layout sidebarProps={{ onCreateTeam: () => setIsModalOpen(true) }}>
       <h1 className="text-2xl font-bold text-gray-900 mb-8">팀 설정</h1>
 
+      {/* 에러 보여주기 */}
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm shadow-lg">
           {error}
         </div>
       )}
