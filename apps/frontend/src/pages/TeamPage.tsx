@@ -12,7 +12,6 @@ import { useLinks } from "../hooks";
 import type { Team, Folder as FolderType } from "../types";
 import Layout from "../components/layout/Layout";
 import CreateTeamModal from "../components/teams/CreateTeamModal";
-import CreateFolderModal from "../components/folders/CreateFolderModal";
 import LinkGrid from "../components/dashboard/LinkGrid";
 
 const TeamPage = () => {
@@ -37,13 +36,6 @@ const TeamPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
-  const [folderModalTeamUuid, setFolderModalTeamUuid] = useState<string | null>(
-    null,
-  );
-
-  // Sidebar 폴더 캐시 갱신 트리거
-  const [folderRefreshKey, setFolderRefreshKey] = useState(0);
 
   // useLinks 훅 사용
   const {
@@ -126,44 +118,6 @@ const TeamPage = () => {
     }
   };
 
-  // 폴더 생성 모달 열기
-  const handleCreateFolder = (targetTeamUuid: string) => {
-    setFolderModalTeamUuid(targetTeamUuid);
-    setIsFolderModalOpen(true);
-  };
-
-  // 폴더 삭제
-  const handleDeleteFolder = async (
-    targetTeamUuid: string,
-    folderUuid: string,
-    folderName: string,
-  ) => {
-    const confirmed = window.confirm(
-      `"${folderName}" 폴더를 삭제하시겠습니까?\n폴더 내 모든 링크도 함께 삭제됩니다.`,
-    );
-
-    if (!confirmed) return;
-
-    try {
-      await folderApi.deleteFolder(folderUuid);
-
-      // 삭제된 폴더가 현재 선택된 폴더면 기본 폴더로 이동
-      if (selectedFolder?.folderUuid === folderUuid) {
-        const foldersResponse = await folderApi.getFolders(targetTeamUuid);
-        if (foldersResponse.success && foldersResponse.data.length > 0) {
-          const firstFolder = foldersResponse.data[0];
-          setSelectedFolder(firstFolder);
-        }
-      }
-
-      // Sidebar 폴더 캐시 갱신 트리거
-      setFolderRefreshKey((prev) => prev + 1);
-    } catch (error) {
-      console.error("폴더 삭제 실패:", error);
-      alert("폴더 삭제에 실패했습니다.");
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex h-screen bg-gray-50 items-center justify-center">
@@ -192,11 +146,8 @@ const TeamPage = () => {
     <Layout
       sidebarProps={{
         onCreateTeam: () => setIsModalOpen(true),
-        onCreateFolder: handleCreateFolder,
-        onDeleteFolder: handleDeleteFolder,
         selectedFolderUuid: selectedFolder?.folderUuid,
         onFolderSelect: handleFolderSelect,
-        folderRefreshKey: folderRefreshKey,
       }}
     >
       {/* 제목 */}
@@ -292,22 +243,6 @@ const TeamPage = () => {
         onTeamCreated={(newTeam) => {
           addTeam(newTeam);
           setIsModalOpen(false);
-        }}
-      />
-
-      {/* 폴더 만들기 모달 */}
-      <CreateFolderModal
-        isOpen={isFolderModalOpen}
-        teamUuid={folderModalTeamUuid}
-        onClose={() => {
-          setIsFolderModalOpen(false);
-          setFolderModalTeamUuid(null);
-        }}
-        onFolderCreated={() => {
-          setIsFolderModalOpen(false);
-          setFolderModalTeamUuid(null);
-          // Sidebar 폴더 캐시 갱신 트리거
-          setFolderRefreshKey((prev) => prev + 1);
         }}
       />
     </Layout>
