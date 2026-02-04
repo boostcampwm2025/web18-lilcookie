@@ -84,7 +84,7 @@ export const MemberSection = ({
         }
       >
         {/* 멤버 목록 렌더링 */}
-        <div className="space-y-1">
+        <div className="space-y-1 max-h-[320px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
           {sortedMembers.map((member) => (
             <div
               key={member.userUuid}
