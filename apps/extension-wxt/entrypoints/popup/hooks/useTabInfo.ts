@@ -9,6 +9,7 @@ type UseTabInfoArgs = {
 function useTabInfo({ isLoggedIn, hasNoTeams }: UseTabInfoArgs) {
   const [tab, setTab] = useState<TabInfo | null>(null);
   const [isAiDisabled, setIsAiDisabled] = useState(true);
+  const [isReaderable, setIsReaderable] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -44,6 +45,7 @@ function useTabInfo({ isLoggedIn, hasNoTeams }: UseTabInfoArgs) {
 
       const isReaderable = (pageContentResult as any)?.pageContent?.textContent;
       setIsAiDisabled(!isReaderable || hasNoTeams);
+      setIsReaderable(!!isReaderable);
     })();
 
     return () => {
@@ -55,6 +57,7 @@ function useTabInfo({ isLoggedIn, hasNoTeams }: UseTabInfoArgs) {
     tab,
     isAiDisabled,
     setIsAiDisabled,
+    isReaderable,
   };
 }
 
