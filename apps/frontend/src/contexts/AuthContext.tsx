@@ -10,7 +10,6 @@ import type { User } from "../types";
 import {
   startAuthentikLogin,
   clearTokens,
-  getStoredAccessToken,
   getValidAccessToken,
   getUserInfo,
   getAuthentikLogoutUrl,
@@ -55,17 +54,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // 토큰이 만료되었으면 자동으로 refresh_token으로 갱신 시도
   const checkAuth = async () => {
     try {
-      // 저장된 토큰이 있는지 먼저 확인
-      const storedToken = getStoredAccessToken();
-
-      if (!storedToken) {
-        // 토큰 없음 - 로그인 필요
-        setUser(null);
-        setIsLoading(false);
-        return;
-      }
-
-      // 유효한 토큰 가져오기 (만료 시 자동 갱신)
+      // 유효한 토큰 가져오기 (access_token이 없거나 만료되었으면 refresh_token으로 갱신 시도)
       const accessToken = await getValidAccessToken();
 
       if (accessToken) {
@@ -75,7 +64,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser({
             uuid: userInfo.sub,
             email: userInfo.email || "",
-            nickname: userInfo.name || userInfo.preferred_username || "",
+            nickname: userInfo.nickname || userInfo.preferred_username || "",
           });
         } catch {
           // userinfo 조회 실패 - 토큰 삭제 후 재로그인 필요

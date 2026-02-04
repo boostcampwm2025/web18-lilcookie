@@ -9,8 +9,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useTeams } from "../contexts/TeamContext";
 import { teamApi } from "../services/api";
 import { Users, Copy, LogOut, Check, Crown, Plus, Trash2 } from "lucide-react";
-import Sidebar from "../components/layout/Sidebar";
-import Header from "../components/layout/Header";
+import Layout from "../components/layout/Layout";
 import CreateTeamModal from "../components/teams/CreateTeamModal";
 import SectionContainer from "../components/common/SectionContainer";
 import { TransferOwnershipModal } from "../components/setting/TransferOwnershipModal";
@@ -252,16 +251,11 @@ const SettingPage = () => {
   const isAdmin = currentTeam?.role === "owner";
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* 사이드바 */}
-      <Sidebar onCreateTeam={() => setIsModalOpen(true)} />
-
-      {/* 메인 영역 */}
-      <div className="flex-1 flex flex-col">
-        <Header />
-
-        {/* 컨텐츠 */}
-        <main className="flex-1 p-8 overflow-auto">
+    <Layout
+      sidebarProps={{
+        onCreateTeam: () => setIsModalOpen(true),
+      }}
+    >
           <h1 className="text-2xl font-bold text-gray-900 mb-8">팀 설정</h1>
 
           <div className="max-w-4xl space-y-8">
@@ -351,108 +345,18 @@ const SettingPage = () => {
                         <span className="text-sm text-gray-500">
                           {member.userEmail}
                         </span>
-                      </div>
+                      )}
+                      {member.userUuid === user?.uuid && (
+                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full text-xs font-medium">
+                          me
+                        </span>
+                      )}
                     </div>
-                  </div>
-                ))}
-              </div>
-            </SectionContainer>
-
-            {/* 토큰 사용량 섹션 */}
-            {tokenUsage && (
-              <SectionContainer title="AI 사용량">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">오늘 사용량</span>
-                  </div>
-                  {/* 프로그레스 바 */}
-                  <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-blue-600 rounded-full transition-all"
-                      style={{ width: `${tokenUsage.percentage}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-500">
-                      매일 자정(KST)에 초기화됩니다
-                    </span>
-                    <span className="text-sm font-medium text-blue-600">
-                      {tokenUsage.percentage}% 사용
+                      {member.userEmail}
                     </span>
                   </div>
                 </div>
-              </SectionContainer>
-            )}
-
-            {/* 웹훅 관리 섹션 */}
-            <SectionContainer
-              title="웹훅 관리"
-              badge={isAdmin ? "Owner" : undefined}
-              subtitle="팀 내 이벤트 발생 시 데이터를 전송할 URL을 관리합니다."
-            >
-              {/* 웹훅 목록 */}
-              <div className="space-y-3 mb-4">
-                {webhooks.length === 0 ? (
-                  <p className="text-sm text-gray-400 py-2">
-                    등록된 웹훅이 없습니다.
-                  </p>
-                ) : (
-                  webhooks.map((webhook) => (
-                    <div
-                      key={webhook.webhookUuid}
-                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
-                    >
-                      {/* 토글 스위치 - owner만 클릭 가능 */}
-                      {isAdmin ? (
-                        <button
-                          onClick={() => handleToggleWebhook(webhook)}
-                          className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${
-                            webhook.isActive ? "bg-blue-600" : "bg-gray-300"
-                          }`}
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                              webhook.isActive
-                                ? "translate-x-5"
-                                : "translate-x-0"
-                            }`}
-                          />
-                        </button>
-                      ) : (
-                        <div
-                          className={`relative w-11 h-6 rounded-full ${
-                            webhook.isActive ? "bg-blue-600" : "bg-gray-300"
-                          }`}
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full ${
-                              webhook.isActive
-                                ? "translate-x-5"
-                                : "translate-x-0"
-                            }`}
-                          />
-                        </div>
-                      )}
-
-                      {/* URL */}
-                      <span className="flex-1 text-sm text-gray-700 truncate">
-                        {webhook.url}
-                      </span>
-
-                      {/* 삭제 버튼 - owner만 표시 */}
-                      {isAdmin && (
-                        <button
-                          onClick={() =>
-                            handleDeleteWebhook(webhook.webhookUuid)
-                          }
-                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))
-                )}
               </div>
 
               {/* 웹훅 추가 - owner만 표시 */}
@@ -474,20 +378,43 @@ const SettingPage = () => {
                       }}
                     />
                     <button
-                      onClick={handleAddWebhook}
-                      disabled={!webhookUrl.trim() || isAddingWebhook}
-                      className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => handleToggleWebhook(webhook)}
+                      className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${
+                        webhook.isActive ? "bg-blue-600" : "bg-gray-300"
+                      }`}
                     >
-                      {isAddingWebhook ? "추가 중..." : "추가"}
+                      <span
+                        className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                          webhook.isActive ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
                     </button>
-                    <button
-                      onClick={() => {
-                        setShowWebhookInput(false);
-                        setWebhookUrl("");
-                      }}
-                      className="px-3 py-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                  ) : (
+                    <div
+                      className={`relative w-11 h-6 rounded-full ${
+                        webhook.isActive ? "bg-blue-600" : "bg-gray-300"
+                      }`}
                     >
-                      취소
+                      <span
+                        className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full ${
+                          webhook.isActive ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </div>
+                  )}
+
+                  {/* URL */}
+                  <span className="flex-1 text-sm text-gray-700 truncate">
+                    {webhook.url}
+                  </span>
+
+                  {/* 삭제 버튼 - owner만 표시 */}
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleDeleteWebhook(webhook.webhookUuid)}
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 ) : (
@@ -530,8 +457,6 @@ const SettingPage = () => {
                 </button>
               )}
             </SectionContainer>
-          </div>
-        </main>
       </div>
 
       {/* 팀 만들기 모달 */}
@@ -559,7 +484,7 @@ const SettingPage = () => {
         teamUuid={teamUuid!}
         onSuccess={handleDeleteSuccess}
       />
-    </div>
+    </Layout>
   );
 };
 

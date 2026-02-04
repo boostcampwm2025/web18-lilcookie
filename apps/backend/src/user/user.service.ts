@@ -6,7 +6,7 @@ import { User } from "./entities/user.entity";
 export class UserService {
   constructor(private readonly userRepository: UserRepository) {}
 
-    /**
+  /**
    * 사용자 조회 또는 생성 (OIDC 로그인 시 사용)
    * @param userUuid 사용자 UUID
    * @param userNickname 사용자 닉네임
