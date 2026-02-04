@@ -3,6 +3,6 @@
  */
 export interface UpsertUserInput {
   uuid: string;
-  email?: string;
+  email: string;
   nickname: string;
 }
