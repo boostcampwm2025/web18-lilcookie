@@ -64,6 +64,6 @@ n8n 설정 시 필요한 **우리 서비스의 인증 정보**입니다.
 
 이제 발급받은 Client ID와 Client Secret을 가지고 n8n에서 크레덴셜을 등록할 차례입니다.
 
-👉 **[🔗 n8n 크레덴셜 등록 가이드](https://github.com/boostcampwm2025/web18-lilcookie/wiki/n8n-Integration-Guide)** 로 이동하여 설정을 마무리하세요.
+👉 **[🔗 n8n 크레덴셜 등록 가이드](./n8n-Integration-Guide)** 로 이동하여 설정을 마무리하세요.
 
 감사합니다! 문제가 발생하면 언제든지 지원팀에 문의해 주세요.

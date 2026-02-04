@@ -145,7 +145,7 @@ API 호출이 끝났다고 성공한 것이 아닙니다. 백엔드가 보내준
 
 사용할 수 있는 API에 대한 정보는 아래 레퍼런스를 확인하세요.
 
-👉 [API Reference](https://github.com/boostcampwm2025/web18-lilcookie/wiki/API-Reference)
+👉 [API Reference](../integrations-and-api/API-Reference)
 
 ## 구성된 n8n 워크플로우 파일
 

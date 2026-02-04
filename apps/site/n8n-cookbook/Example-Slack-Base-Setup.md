@@ -76,8 +76,8 @@
 
 이제 기반 설정이 모두 끝났습니다. 이제 아래 예제 중 원하는 워크플로우를 골라 진행해 보세요!
 
-- **[🔔 [Lv.1] 링크 저장 시 슬랙 & 메일 실시간 알림](https://github.com/boostcampwm2025/web18-lilcookie/wiki/Example-Notification)**
-- **[🤖 [Lv.2] 슬랙 슬래시 명령어로 상세 저장 봇 만들기](https://github.com/boostcampwm2025/web18-lilcookie/wiki/Example-Notification)**
+- **[🔔 [Lv.1] 링크 저장 시 슬랙 & 메일 실시간 알림](./Example-Notification)**
+- **[🤖 [Lv.2] 슬랙 슬래시 명령어로 상세 저장 봇 만들기](./Example-Slack-Save-Bot)**
 
 ---
 

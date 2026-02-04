@@ -58,6 +58,6 @@
 
 연동에 성공하셨나요? 이제 실제 데이터를 주고받을 수 있는 API 목록을 확인해 보세요!
 
-👉 **[📚 API Reference](https://github.com/boostcampwm2025/web18-lilcookie/wiki/API-Reference)** 로 이동하기
+👉 **[📚 API Reference](./API-Reference)** 로 이동하기
 
 감사합니다! 문제가 발생하면 언제든지 지원팀에 문의해 주세요.

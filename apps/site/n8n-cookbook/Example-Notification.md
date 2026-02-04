@@ -132,7 +132,7 @@
 
 웹훅으로 넘어오는 더 자세한 페이로드 정보는 아래 레퍼런스를 확인하세요.
 
-👉 [API Reference: 웹훅 이벤트 페이로드](https://github.com/boostcampwm2025/web18-lilcookie/wiki/API-Reference#%EC%9B%B9%ED%9B%85-%EC%9D%B4%EB%B2%A4%ED%8A%B8-%ED%8E%98%EC%9D%B4%EB%A1%9C%EB%93%9C)
+👉 [API Reference: 웹훅 이벤트 페이로드](../integrations-and-api/API-Reference#웹훅-이벤트-페이로드)
 
 ## 구성된 n8n 워크플로우 파일
 
