@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   useParams,
   useNavigate,
@@ -37,6 +37,21 @@ const TeamPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // 이전 teamUuid를 추적하여 팀 변경 감지
+  const prevTeamUuidRef = useRef(teamUuid);
+
+  // teamUuid가 변경되면 selectedFolder 초기화 (잘못된 API 호출 방지)
+  useEffect(() => {
+    setSelectedFolder(null);
+    prevTeamUuidRef.current = teamUuid;
+  }, [teamUuid]);
+
+  // 팀이 변경 중이면 folderUuid를 undefined로 전달 (렌더링 중에 체크)
+  const isTeamChanging = prevTeamUuidRef.current !== teamUuid;
+  const folderUuidForLinks = isTeamChanging
+    ? undefined
+    : selectedFolder?.folderUuid;
+
   // useLinks 훅 사용
   const {
     links,
@@ -51,7 +66,7 @@ const TeamPage = () => {
     clearTags: handleClearTags,
   } = useLinks({
     teamUuid,
-    folderUuid: selectedFolder?.folderUuid,
+    folderUuid: folderUuidForLinks,
   });
 
   // 팀 및 폴더 정보 조회 (팀이 변경될 때만)

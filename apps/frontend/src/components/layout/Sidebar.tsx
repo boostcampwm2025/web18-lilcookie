@@ -84,7 +84,12 @@ const Sidebar = ({
     navigate(`/team/${team.teamUuid}?folderUuid=${folder.folderUuid}`, {
       state: { team, selectedFolderUuid: folder.folderUuid },
     });
-    onFolderSelect?.(folder);
+
+    // 같은 팀의 폴더를 클릭한 경우에만 즉시 반영
+    // 다른 팀의 폴더를 클릭한 경우 네비게이션 후 TeamPage에서 처리
+    if (team.teamUuid === selectedTeamUuid) {
+      onFolderSelect?.(folder);
+    }
   };
 
   const handleSettingClick = (teamUuid: string) => {
