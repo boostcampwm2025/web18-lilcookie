@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Crown, X, Check } from "lucide-react";
+import { Crown, X } from "lucide-react";
 import { teamApi } from "../../services/api";
 import type { GetTeamMembersResponseData } from "@repo/api";
+import { MemberSelectItem } from "./MemberSelectItem";
 
 interface TransferOwnershipModalProps {
   isOpen: boolean;
@@ -47,6 +48,10 @@ export const TransferOwnershipModal = ({
     onClose();
   };
 
+  const handleSelectMember = (member: GetTeamMembersResponseData) => {
+    setSelectedMember(member);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 m-0">
       <div
@@ -64,7 +69,7 @@ export const TransferOwnershipModal = ({
           </div>
           <button
             onClick={handleClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -93,27 +98,13 @@ export const TransferOwnershipModal = ({
               </p>
             ) : (
               members.map((member) => (
-                <button
+                <MemberSelectItem
                   key={member.userUuid}
-                  onClick={() => setSelectedMember(member)}
-                  className={`w-full flex items-center justify-between p-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 ${
-                    selectedMember?.userUuid === member.userUuid
-                      ? "bg-amber-50"
-                      : ""
-                  }`}
-                >
-                  <div className="flex flex-col items-start">
-                    <span className="font-medium text-gray-900">
-                      {member.userName}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {member.userEmail}
-                    </span>
-                  </div>
-                  {selectedMember?.userUuid === member.userUuid && (
-                    <Check className="w-5 h-5 text-amber-600" />
-                  )}
-                </button>
+                  member={member}
+                  isSelected={selectedMember?.userUuid === member.userUuid}
+                  onSelect={handleSelectMember}
+                  colorTheme="amber"
+                />
               ))
             )}
           </div>
