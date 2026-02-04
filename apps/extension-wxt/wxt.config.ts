@@ -32,6 +32,15 @@ export default defineConfig({
     browser_specific_settings: {
       gecko: {
         id: "lilcookie.team.stash@gmail.com",
+        data_collection_permissions: {
+          required: [
+            "personallyIdentifyingInfo",
+            "authenticationInfo",
+            "browsingActivity",
+            "websiteContent",
+            "websiteActivity",
+          ],
+        },
       },
     },
     ...(mode === "development" &&
