@@ -46,3 +46,8 @@ export const GetTeamTokenUsageResponseDataSchema = z.object({
   maxTokens: z.number(),
   percentage: z.number(),
 });
+
+/** 권한 위임 요청 */
+export const TransferOwnershipRequestSchema = z.object({
+  targetUserUuid: z.string().uuid(),
+});
