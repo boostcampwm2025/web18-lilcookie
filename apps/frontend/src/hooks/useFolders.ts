@@ -7,9 +7,7 @@ interface UseFoldersOptions {
 }
 
 // 폴더 관리를 위한 비즈니스 로직 훅
-export const useFolders = ({
-  selectedTeamUuid,
-}: UseFoldersOptions) => {
+export const useFolders = ({ selectedTeamUuid }: UseFoldersOptions) => {
   // 팀별 폴더 데이터 캐시
   const [teamFolders, setTeamFolders] = useState<Record<string, Folder[]>>({});
   // 이미 폴더를 조회한 팀 추적 (중복 API 호출 방지)
@@ -92,6 +90,30 @@ export const useFolders = ({
     [],
   );
 
+  // 폴더 이름 수정
+  const renameFolder = useCallback(
+    async (
+      teamUuid: string,
+      folderUuid: string,
+      newName: string,
+    ): Promise<void> => {
+      const response = await folderApi.updateFolder(folderUuid, {
+        folderName: newName,
+      });
+
+      if (response.success) {
+        // 캐시에서 해당 폴더 이름 업데이트
+        setTeamFolders((prev) => ({
+          ...prev,
+          [teamUuid]: (prev[teamUuid] || []).map((f) =>
+            f.folderUuid === folderUuid ? { ...f, folderName: newName } : f,
+          ),
+        }));
+      }
+    },
+    [],
+  );
+
   // 선택된 팀의 폴더 자동 조회 (URL 변경 시)
   useEffect(() => {
     if (!selectedTeamUuid) return;
@@ -133,5 +155,6 @@ export const useFolders = ({
     getFoldersByTeam,
     createFolder,
     deleteFolder,
+    renameFolder,
   };
 };
