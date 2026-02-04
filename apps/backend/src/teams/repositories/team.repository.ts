@@ -144,6 +144,25 @@ export class TeamRepository {
   }
 
   /**
+   * 소유권 이전 (트랜잭션으로 역할 교체)
+   * @param teamId 팀 pk
+   * @param fromUserId 현재 owner의 userId
+   * @param toUserId 새 owner가 될 userId
+   */
+  async transferOwnership(teamId: number, fromUserId: number, toUserId: number): Promise<void> {
+    await this.prisma.$transaction([
+      this.prisma.member.update({
+        where: { teamId_userId: { teamId, userId: toUserId } },
+        data: { role: "owner" },
+      }),
+      this.prisma.member.update({
+        where: { teamId_userId: { teamId, userId: fromUserId } },
+        data: { role: "member" },
+      }),
+    ]);
+  }
+
+  /**
    * 팀 멤버 수 조회
    * @param teamId 팀 pk
    * @returns 팀 멤버 수

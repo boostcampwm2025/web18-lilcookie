@@ -173,9 +173,8 @@ export class TeamsService {
       throw new NotFoundException("대상 사용자가 팀에 소속되어 있지 않습니다.");
     }
 
-    // 역할 교체
-    await this.teamRepository.updateMemberRole(team.teamId, targetUser.userId, TeamRole.OWNER);
-    await this.teamRepository.updateMemberRole(team.teamId, currentUserId, TeamRole.MEMBER);
+    // 역할 교체 (트랜잭션으로 원자적 처리)
+    await this.teamRepository.transferOwnership(team.teamId, currentUserId, targetUser.userId);
   }
 
   /**
