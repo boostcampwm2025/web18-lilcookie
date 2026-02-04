@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
-import { Users, Copy, Check, Crown } from "lucide-react";
+import { Users, Copy, Check, Crown, UserMinus } from "lucide-react";
 import type { GetTeamMembersResponseData } from "@repo/api";
 import SectionContainer from "../common/SectionContainer";
 import { TransferOwnershipModal } from "./TransferOwnershipModal";
+import { KickMembersModal } from "./KickMembersModal";
 
 interface MemberSectionProps {
   members: GetTeamMembersResponseData[];
@@ -23,6 +24,7 @@ export const MemberSection = ({
 }: MemberSectionProps) => {
   const [copied, setCopied] = useState(false);
   const [transferModalOpen, setTransferModalOpen] = useState(false);
+  const [kickModalOpen, setKickModalOpen] = useState(false);
 
   const sortedMembers = useMemo(() => {
     return [...members].sort((a, b) => {
@@ -52,13 +54,22 @@ export const MemberSection = ({
         headerAction={
           <div className="flex gap-2">
             {isAdmin && members.length > 1 && (
-              <button
-                onClick={() => setTransferModalOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-50 transition-colors cursor-pointer"
-              >
-                <Crown className="w-4 h-4" />
-                권한 위임
-              </button>
+              <>
+                <button
+                  onClick={() => setKickModalOpen(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                >
+                  <UserMinus className="w-4 h-4" />
+                  강퇴
+                </button>
+                <button
+                  onClick={() => setTransferModalOpen(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-50 transition-colors cursor-pointer"
+                >
+                  <Crown className="w-4 h-4" />
+                  권한 위임
+                </button>
+              </>
             )}
             <button
               onClick={handleCopyInviteLink}
@@ -124,6 +135,14 @@ export const MemberSection = ({
       <TransferOwnershipModal
         isOpen={transferModalOpen}
         onClose={() => setTransferModalOpen(false)}
+        members={sortedMembers.filter((m) => m.role !== "owner")}
+        teamUuid={teamUuid}
+        onSuccess={onTransferSuccess}
+      />
+
+      <KickMembersModal
+        isOpen={kickModalOpen}
+        onClose={() => setKickModalOpen(false)}
         members={sortedMembers.filter((m) => m.role !== "owner")}
         teamUuid={teamUuid}
         onSuccess={onTransferSuccess}

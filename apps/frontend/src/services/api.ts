@@ -346,6 +346,16 @@ export const teamApi = {
     });
   },
 
+  // DELETE /teams/:teamUuid/members - 팀원 강퇴
+  kickMembers: async (
+    teamUuid: string,
+    targetUserUuids: string[],
+  ): Promise<void> => {
+    await api.delete(`teams/${teamUuid}/members`, {
+      data: { targetUserUuids },
+    });
+  },
+
   // DELETE /teams/:teamUuid/delete - 팀 삭제
   deleteTeam: async (teamUuid: string): Promise<void> => {
     await api.delete(`teams/${teamUuid}/delete`);
