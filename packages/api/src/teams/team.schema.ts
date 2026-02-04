@@ -51,3 +51,8 @@ export const GetTeamTokenUsageResponseDataSchema = z.object({
 export const TransferOwnershipRequestSchema = z.object({
   targetUserUuid: z.string().uuid(),
 });
+
+/** 팀원 강퇴 요청 */
+export const KickMembersRequestSchema = z.object({
+  targetUserUuids: z.array(z.string().uuid()).min(1),
+});
