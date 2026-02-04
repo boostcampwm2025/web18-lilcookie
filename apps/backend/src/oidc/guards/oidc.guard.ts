@@ -40,6 +40,11 @@ export class OidcGuard implements CanActivate {
         throw new UnauthorizedException("OIDC 토큰에 sub(사용자 고유 ID)가 필요합니다.");
       }
 
+      // Email is required from OIDC token (Authentik is source of truth)
+      if (!payload.email) {
+        throw new UnauthorizedException("OIDC 토큰에 email이 필요합니다.");
+      }
+
       const user = await this.userService.findOrCreate(uuid, preferred_username, payload.email);
 
       /**

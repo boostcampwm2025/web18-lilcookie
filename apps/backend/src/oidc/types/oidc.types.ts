@@ -15,7 +15,7 @@ export const OidcAccessTokenPayloadSchema = z.object({
   amr: z.array(z.string()).optional(),
   sid: z.string().optional(),
   jti: z.string().optional(),
-  email: z.string().optional(),
+  email: z.string(), // Email is required - Authentik is source of truth
   email_verified: z.boolean().optional(),
   name: z.string().optional(),
   given_name: z.string().optional(),
