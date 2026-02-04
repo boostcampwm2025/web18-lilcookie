@@ -30,9 +30,9 @@ export class OidcGuard implements CanActivate {
       // 토큰 검증 및 페이로드 추출 (issuer 기반 동적 검증)
       const payload = await this.oidcService.validateTokenWithIssuer(token);
 
-      const preferred_username = payload.preferred_username;
-      if (!preferred_username) {
-        throw new UnauthorizedException("OIDC 토큰에 preferred_username이 필요합니다.");
+      const nickname = payload.nickname;
+      if (!nickname) {
+        throw new UnauthorizedException("OIDC 토큰에 nickname이 필요합니다.");
       }
 
       const uuid = payload.sub;
@@ -44,8 +44,7 @@ export class OidcGuard implements CanActivate {
       if (!payload.email) {
         throw new UnauthorizedException("OIDC 토큰에 email이 필요합니다.");
       }
-
-      const user = await this.userService.findOrCreate(uuid, preferred_username, payload.email);
+      const user = await this.userService.findOrCreate(uuid, nickname, payload.email);
 
       /**
        * 요청 객체에 사용자 정보 추가

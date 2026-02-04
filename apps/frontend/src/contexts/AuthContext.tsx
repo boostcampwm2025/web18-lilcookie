@@ -75,7 +75,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser({
             uuid: userInfo.sub,
             email: userInfo.email || "",
-            nickname: userInfo.name || userInfo.preferred_username || "",
+            nickname: userInfo.nickname || userInfo.preferred_username || "",
           });
         } catch {
           // userinfo 조회 실패 - 토큰 삭제 후 재로그인 필요
