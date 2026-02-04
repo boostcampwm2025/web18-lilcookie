@@ -117,7 +117,10 @@ const Sidebar = ({
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
       {/* 로고 */}
       <div className="h-14 px-4 border-b border-gray-200 flex items-center">
-        <div className="flex items-center gap-2">
+        <div
+          className="flex items-center gap-2 cursor-pointer"
+          onClick={() => navigate("/my-teams")}
+        >
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">TS</span>
           </div>
