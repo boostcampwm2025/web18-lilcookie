@@ -205,4 +205,52 @@ export class TeamsService {
       throw new InternalServerErrorException("팀 삭제 중 오류가 발생했습니다.");
     }
   }
+
+  /**
+   * 팀원 강퇴
+   * @param teamUuid 팀 UUID
+   * @param currentUserId 요청한 사용자 ID (owner)
+   * @param targetUserUuids 강퇴할 사용자 UUID 배열
+   */
+  async kickMembers(teamUuid: string, currentUserId: number, targetUserUuids: string[]): Promise<void> {
+    const team = await this.teamRepository.findByUuid(teamUuid);
+    if (!team) {
+      throw new NotFoundException("해당 팀을 찾을 수 없습니다.");
+    }
+
+    // 현재 사용자가 owner인지 확인
+    const currentMember = await this.teamRepository.findMember(team.teamId, currentUserId);
+    if (!currentMember || currentMember.role !== TeamRole.OWNER) {
+      throw new ForbiddenException("팀 소유자만 팀원을 강퇴할 수 있습니다.");
+    }
+
+    // 대상 사용자들 조회 및 강퇴 처리
+    for (const targetUserUuid of targetUserUuids) {
+      const targetUser = await this.userRepository.findByUuid(targetUserUuid);
+      if (!targetUser) {
+        throw new NotFoundException("대상 사용자를 찾을 수 없습니다.");
+      }
+
+      // 자기 자신을 강퇴할 수 없음
+      if (currentUserId === targetUser.userId) {
+        throw new BadRequestException("자기 자신을 강퇴할 수 없습니다.");
+      }
+
+      // 대상이 팀 멤버인지 확인
+      const targetMember = await this.teamRepository.findMember(team.teamId, targetUser.userId);
+      if (!targetMember) {
+        throw new NotFoundException("대상 사용자가 팀에 소속되어 있지 않습니다.");
+      }
+
+      // owner는 강퇴 불가
+      if (targetMember.role === TeamRole.OWNER) {
+        throw new ForbiddenException("팀 소유자는 강퇴할 수 없습니다.");
+      }
+
+      const removed = await this.teamRepository.removeMember(team.teamId, targetUser.userId);
+      if (!removed) {
+        throw new InternalServerErrorException("팀원 강퇴 중 오류가 발생했습니다.");
+      }
+    }
+  }
 }

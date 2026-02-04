@@ -23,7 +23,7 @@ import type { AuthenticatedUser } from "../oidc/types/oidc.types";
 import { ResponseBuilder } from "../common/builders/response.builder";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { TokenUsageService } from "./token-usage.service";
-import type { TransferOwnershipRequest } from "@repo/api";
+import type { TransferOwnershipRequest, KickMembersRequest } from "@repo/api";
 
 @Controller("teams")
 export class TeamsController {
@@ -170,6 +170,28 @@ export class TeamsController {
     return ResponseBuilder.success<Record<string, never>>()
       .status(HttpStatus.OK)
       .message("팀 소유권이 성공적으로 위임되었습니다.")
+      .data({})
+      .build();
+  }
+
+  /**
+   * 팀원 강퇴
+   * DELETE /teams/:teamUuid/members
+   */
+  @Delete(":teamUuid/members")
+  @UseGuards(OidcGuard)
+  async kickMembers(
+    @Param("teamUuid", ParseUUIDPipe) teamUuid: string,
+    @Body() dto: KickMembersRequest,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    this.logger.log(`DELETE /teams/${teamUuid}/members - 팀원 강퇴 요청`);
+
+    await this.teamsService.kickMembers(teamUuid, user.userId, dto.targetUserUuids);
+
+    return ResponseBuilder.success<Record<string, never>>()
+      .status(HttpStatus.OK)
+      .message("팀원이 성공적으로 강퇴되었습니다.")
       .data({})
       .build();
   }
