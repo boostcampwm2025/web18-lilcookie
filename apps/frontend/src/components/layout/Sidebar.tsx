@@ -5,27 +5,18 @@ import type { Team, Folder as FolderType } from "../../types";
 import { useTeams } from "../../contexts/TeamContext";
 import { useFolders } from "../../hooks";
 import TeamItem from "./sidebar/TeamItem";
+import CreateFolderModal from "../folders/CreateFolderModal";
 
 interface SidebarProps {
   onCreateTeam?: () => void;
-  onCreateFolder?: (teamUuid: string) => void;
-  onDeleteFolder?: (
-    teamUuid: string,
-    folderUuid: string,
-    folderName: string,
-  ) => void;
   selectedFolderUuid?: string | null;
   onFolderSelect?: (folder: FolderType) => void;
-  folderRefreshKey?: number;
 }
 
 const Sidebar = ({
   onCreateTeam,
-  onCreateFolder,
-  onDeleteFolder,
   selectedFolderUuid,
   onFolderSelect,
-  folderRefreshKey,
 }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,11 +26,17 @@ const Sidebar = ({
   const isMyTeamsActive = location.pathname === "/my-teams";
   const isSettingPage = location.pathname.endsWith("/setting");
 
+  // 모달 상태
+  const [folderModalOpen, setFolderModalOpen] = useState(false);
+  const [folderModalTeamUuid, setFolderModalTeamUuid] = useState<string | null>(
+    null,
+  );
+
   // useFolders 훅 사용
-  const { teamFolders, fetchFoldersIfNeeded } = useFolders({
-    selectedTeamUuid,
-    folderRefreshKey,
-  });
+  const { teamFolders, fetchFoldersIfNeeded, createFolder, deleteFolder } =
+    useFolders({
+      selectedTeamUuid,
+    });
 
   // 수동으로 펼침/접힘 토글한 팀 상태
   const [manualExpandedTeams, setManualExpandedTeams] = useState<
@@ -90,25 +87,22 @@ const Sidebar = ({
   };
 
   const handleCreateFolderClick = (teamUuid: string) => {
-    if (teamUuid !== selectedTeamUuid) {
-      const targetTeam = teams.find((t) => t.teamUuid === teamUuid);
-      const teamName = targetTeam?.teamName || "해당";
-      alert(`${teamName} 팀 페이지에서 폴더를 생성할 수 있습니다.`);
-      return;
-    }
-    onCreateFolder?.(teamUuid);
+    setFolderModalTeamUuid(teamUuid);
+    setFolderModalOpen(true);
   };
 
-  const handleDeleteFolderClick = (
+  const handleDeleteFolderClick = async (
     team: Team,
     folderUuid: string,
     folderName: string,
   ) => {
-    if (team.teamUuid !== selectedTeamUuid) {
-      alert(`${team.teamName} 팀 페이지에서 폴더를 삭제할 수 있습니다.`);
+    if (
+      !confirm(
+        `"${folderName}" 폴더를 삭제하시겠습니까?\n폴더 내 모든 링크도 함께 삭제됩니다.`,
+      )
+    )
       return;
-    }
-    onDeleteFolder?.(team.teamUuid, folderUuid, folderName);
+    await deleteFolder(team.teamUuid, folderUuid);
   };
 
   return (
@@ -184,6 +178,15 @@ const Sidebar = ({
           <span>+ 팀 만들기</span>
         </button>
       </div>
+
+      {/* 폴더 생성 모달 */}
+      <CreateFolderModal
+        isOpen={folderModalOpen}
+        teamUuid={folderModalTeamUuid}
+        onClose={() => setFolderModalOpen(false)}
+        onFolderCreated={() => setFolderModalOpen(false)}
+        createFolder={createFolder}
+      />
     </aside>
   );
 };
