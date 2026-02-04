@@ -39,35 +39,30 @@ const CreateFolderModal = ({
       return;
     }
 
-    try {
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
 
-      // createFolder prop이 있으면 사용 (useFolders 훅의 캐시 업데이트 포함)
+    try {
       if (createFolder) {
         const folder = await createFolder(teamUuid!, folderName.trim());
         onFolderCreated(folder);
-        setFolderName("");
-        onClose();
       } else {
-        // 기존 로직 (하위 호환성)
         const response = await folderApi.createFolder({
           teamUuid: teamUuid!,
           folderName: folderName.trim(),
         });
-
-        if (response.success) {
-          onFolderCreated(response.data);
-          setFolderName("");
-          onClose();
-        } else {
-          setError(response.message || "폴더 생성에 실패했습니다.");
-        }
+        if (response.success) onFolderCreated(response.data);
+        else throw new Error(response.message);
       }
-    } catch {
-      setError("폴더 생성 중 오류가 발생했습니다.");
+      onClose();
+    } catch (err: any) {
+      const message =
+        err.response?.data?.message ||
+        err.message ||
+        "폴더 생성에 실패했습니다.";
+      setError(message);
     } finally {
-      setLoading(false);
+      setLoading(false); // 추가
     }
   };
 
