@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Folder, Trash2 } from "lucide-react";
 import type { Folder as FolderType } from "../../../types";
 
@@ -18,6 +18,14 @@ const FolderItem = ({
   onDelete,
 }: FolderItemProps) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const nameRef = useRef<HTMLSpanElement>(null);
+
+  const handleNameMouseEnter = () => {
+    if (nameRef.current) {
+      setShowTooltip(nameRef.current.scrollWidth > nameRef.current.clientWidth);
+    }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -47,7 +55,10 @@ const FolderItem = ({
     >
       <Folder className="w-4 h-4 shrink-0" />
       <span
+        ref={nameRef}
         className={`text-sm flex-1 truncate ${isSelected ? "font-medium" : ""}`}
+        title={showTooltip ? folder.folderName : undefined}
+        onMouseEnter={handleNameMouseEnter}
       >
         {folder.folderName}
       </span>

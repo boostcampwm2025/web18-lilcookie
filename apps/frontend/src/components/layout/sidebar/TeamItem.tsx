@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Users, ChevronRight, FolderPlus, Settings } from "lucide-react";
 import type { Team, Folder as FolderType } from "../../../types";
 import FolderItem from "./FolderItem";
@@ -33,6 +33,14 @@ const TeamItem = ({
   onSettingClick,
 }: TeamItemProps) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const nameRef = useRef<HTMLSpanElement>(null);
+
+  const handleNameMouseEnter = () => {
+    if (nameRef.current) {
+      setShowTooltip(nameRef.current.scrollWidth > nameRef.current.clientWidth);
+    }
+  };
 
   // 선택된 폴더가 현재 폴더 목록에 있는지 확인
   const selectedFolderInList =
@@ -81,7 +89,12 @@ const TeamItem = ({
         <Users className="w-4 h-4 shrink-0" />
 
         {/* 팀 이름 */}
-        <span className="text-sm font-medium flex-1 truncate">
+        <span
+          ref={nameRef}
+          className="text-sm font-medium flex-1 truncate"
+          title={showTooltip ? team.teamName : undefined}
+          onMouseEnter={handleNameMouseEnter}
+        >
           {team.teamName}
         </span>
 
