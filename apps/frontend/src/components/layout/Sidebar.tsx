@@ -78,13 +78,11 @@ const Sidebar = ({
   const handleFolderClick = (folder: FolderType, team: Team) => {
     if (selectedFolderUuid === folder.folderUuid && !isSettingPage) return;
 
-    if (selectedTeamUuid === team.teamUuid && !isSettingPage) {
-      onFolderSelect?.(folder);
-    } else {
-      navigate(`/team/${team.teamUuid}`, {
-        state: { team, selectedFolderUuid: folder.folderUuid },
-      });
-    }
+    // URL에 폴더 UUID를 쿼리 파라미터로 추가하여 새로고침해도 유지되도록 함
+    navigate(`/team/${team.teamUuid}?folderUuid=${folder.folderUuid}`, {
+      state: { team, selectedFolderUuid: folder.folderUuid },
+    });
+    onFolderSelect?.(folder);
   };
 
   const handleSettingClick = (teamUuid: string) => {
