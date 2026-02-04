@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Trash2 } from "lucide-react";
 import { teamApi } from "../../services/api";
+import { useTeams } from "../../contexts/TeamContext";
 import SectionContainer from "../common/SectionContainer";
 import { DeleteTeamModal } from "./DeleteTeamModal";
 
@@ -23,6 +24,7 @@ export const TeamLeaveSection = ({
   onError,
 }: TeamLeaveSectionProps) => {
   const navigate = useNavigate();
+  const { refreshTeams } = useTeams();
   const [leaving, setLeaving] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
@@ -32,6 +34,7 @@ export const TeamLeaveSection = ({
     try {
       setLeaving(true);
       await teamApi.leaveTeam(teamUuid!);
+      await refreshTeams();
       navigate("/my-teams");
     } catch {
       onError?.("팀 탈퇴에 실패했습니다.");

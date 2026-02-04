@@ -3,11 +3,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Users, CheckCircle } from "lucide-react";
 import { teamApi } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
+import { useTeams } from "../contexts/TeamContext";
 
 const InvitePage = () => {
   const { teamUuid } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { refreshTeams } = useTeams();
 
   const [teamName, setTeamName] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -59,6 +61,7 @@ const InvitePage = () => {
       setJoining(true);
       const response = await teamApi.joinTeam(teamUuid!);
       if (response.success) {
+        await refreshTeams();
         navigate(`/team/${teamUuid}`);
       } else {
         setError(response.message || "팀 가입에 실패했습니다.");
