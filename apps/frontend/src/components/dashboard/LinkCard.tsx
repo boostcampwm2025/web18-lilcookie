@@ -67,7 +67,7 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
 
         {/* 요약 */}
         {link.summary && (
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2 leading-relaxed">
+          <p className="text-sm text-gray-600 mb-3 line-clamp-8 leading-relaxed">
             {link.summary}
           </p>
         )}
@@ -92,14 +92,14 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
         )}
 
         {/* 작성자 정보 및 삭제 버튼 */}
-        <div className="flex items-center justify-between mt-auto">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-linear-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+        <div className="flex items-center justify-between mt-auto gap-2">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="w-6 h-6 bg-linear-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shrink-0">
               <span className="text-white text-xs font-bold">
                 {link.createdBy.userName.charAt(0).toUpperCase()}
               </span>
             </div>
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-gray-600 truncate">
               {link.createdBy.userName}
             </span>
           </div>
@@ -112,7 +112,7 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
                 e.stopPropagation();
                 onDelete(link.linkUuid);
               }}
-              className="p-2 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
+              className="p-2 hover:bg-red-50 rounded-full transition-colors cursor-pointer shrink-0"
               title="링크 삭제"
             >
               <Trash2 className="w-4 h-4 text-gray-400 hover:text-red-500" />

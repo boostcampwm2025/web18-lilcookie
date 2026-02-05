@@ -40,14 +40,15 @@ export class UserRepository {
     });
 
     if (existingUser) {
-      const updated = await this.prisma.user.update({
-        where: { uuid: data.uuid },
-        data: {
-          email: data.email,
-          nickname: data.nickname,
-        },
-      });
-      return UserMapper.fromPrisma(updated);
+      // 변경된 경우에만 업데이트
+      if (existingUser.email !== data.email || existingUser.nickname !== data.nickname) {
+        const updated = await this.prisma.user.update({
+          where: { uuid: data.uuid },
+          data: { email: data.email, nickname: data.nickname },
+        });
+        return UserMapper.fromPrisma(updated);
+      }
+      return UserMapper.fromPrisma(existingUser);
     }
 
     const created = await this.prisma.user.create({

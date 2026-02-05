@@ -1,19 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   useParams,
   useNavigate,
   useLocation,
   useSearchParams,
 } from "react-router-dom";
-import { LogOut, Link2, X, Search } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
+import { Link2, X, Search } from "lucide-react";
 import { useTeams } from "../contexts/TeamContext";
 import { teamApi, folderApi } from "../services/api";
 import { useLinks } from "../hooks";
 import type { Team, Folder as FolderType } from "../types";
-import Sidebar from "../components/layout/Sidebar";
+import Layout from "../components/layout/Layout";
 import CreateTeamModal from "../components/teams/CreateTeamModal";
-import CreateFolderModal from "../components/folders/CreateFolderModal";
 import LinkGrid from "../components/dashboard/LinkGrid";
 
 const TeamPage = () => {
@@ -21,7 +19,6 @@ const TeamPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { user, logout } = useAuth();
   const { addTeam } = useTeams();
 
   // navigate state로 전달받은 팀 정보 및 폴더 UUID
@@ -39,13 +36,21 @@ const TeamPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
-  const [folderModalTeamUuid, setFolderModalTeamUuid] = useState<string | null>(
-    null,
-  );
 
-  // Sidebar 폴더 캐시 갱신 트리거
-  const [folderRefreshKey, setFolderRefreshKey] = useState(0);
+  // 이전 teamUuid를 추적하여 팀 변경 감지
+  const prevTeamUuidRef = useRef(teamUuid);
+
+  // teamUuid가 변경되면 selectedFolder 초기화 (잘못된 API 호출 방지)
+  useEffect(() => {
+    setSelectedFolder(null);
+    prevTeamUuidRef.current = teamUuid;
+  }, [teamUuid]);
+
+  // 팀이 변경 중이면 folderUuid를 undefined로 전달 (렌더링 중에 체크)
+  const isTeamChanging = prevTeamUuidRef.current !== teamUuid;
+  const folderUuidForLinks = isTeamChanging
+    ? undefined
+    : selectedFolder?.folderUuid;
 
   // useLinks 훅 사용
   const {
@@ -61,7 +66,7 @@ const TeamPage = () => {
     clearTags: handleClearTags,
   } = useLinks({
     teamUuid,
-    folderUuid: selectedFolder?.folderUuid,
+    folderUuid: folderUuidForLinks,
   });
 
   // 팀 및 폴더 정보 조회 (팀이 변경될 때만)
@@ -128,49 +133,6 @@ const TeamPage = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
-
-  // 폴더 생성 모달 열기
-  const handleCreateFolder = (targetTeamUuid: string) => {
-    setFolderModalTeamUuid(targetTeamUuid);
-    setIsFolderModalOpen(true);
-  };
-
-  // 폴더 삭제
-  const handleDeleteFolder = async (
-    targetTeamUuid: string,
-    folderUuid: string,
-    folderName: string,
-  ) => {
-    const confirmed = window.confirm(
-      `"${folderName}" 폴더를 삭제하시겠습니까?\n폴더 내 모든 링크도 함께 삭제됩니다.`,
-    );
-
-    if (!confirmed) return;
-
-    try {
-      await folderApi.deleteFolder(folderUuid);
-
-      // 삭제된 폴더가 현재 선택된 폴더면 기본 폴더로 이동
-      if (selectedFolder?.folderUuid === folderUuid) {
-        const foldersResponse = await folderApi.getFolders(targetTeamUuid);
-        if (foldersResponse.success && foldersResponse.data.length > 0) {
-          const firstFolder = foldersResponse.data[0];
-          setSelectedFolder(firstFolder);
-        }
-      }
-
-      // Sidebar 폴더 캐시 갱신 트리거
-      setFolderRefreshKey((prev) => prev + 1);
-    } catch (error) {
-      console.error("폴더 삭제 실패:", error);
-      alert("폴더 삭제에 실패했습니다.");
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex h-screen bg-gray-50 items-center justify-center">
@@ -196,127 +158,98 @@ const TeamPage = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* 사이드바 */}
-      <Sidebar
-        onCreateTeam={() => setIsModalOpen(true)}
-        onCreateFolder={handleCreateFolder}
-        onDeleteFolder={handleDeleteFolder}
-        selectedFolderUuid={selectedFolder?.folderUuid}
-        onFolderSelect={handleFolderSelect}
-        folderRefreshKey={folderRefreshKey}
-      />
+    <Layout
+      sidebarProps={{
+        onCreateTeam: () => setIsModalOpen(true),
+        selectedFolderUuid: selectedFolder?.folderUuid,
+        onFolderSelect: handleFolderSelect,
+      }}
+    >
+      {/* 제목 */}
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">
+        {currentTeam?.teamName} &gt; {selectedFolder?.folderName || "폴더 없음"}
+      </h1>
+      <p className="text-sm text-gray-500 mb-4">
+        {filteredLinks.length}개의 링크
+        {searchQuery && ` (전체 ${links.length}개 중)`}
+      </p>
 
-      {/* 메인 영역 */}
-      <div className="flex-1 flex flex-col">
-        {/* 헤더 */}
-        <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-end">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-700">
-              {user?.nickname || user?.email?.split("@")[0]}
-            </span>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="text-sm">로그아웃</span>
-            </button>
-          </div>
-        </header>
-
-        {/* 컨텐츠 */}
-        <main className="flex-1 p-8 overflow-auto">
-          {/* 제목 */}
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            {currentTeam?.teamName} &gt;{" "}
-            {selectedFolder?.folderName || "폴더 없음"}
-          </h1>
-          <p className="text-sm text-gray-500 mb-4">
-            {filteredLinks.length}개의 링크
-            {searchQuery && ` (전체 ${links.length}개 중)`}
-          </p>
-
-          {/* 검색 바 */}
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="제목, 요약, 태그로 검색..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
-          {/* 선택된 태그 필터 */}
-          {selectedTags.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 mb-6">
-              <span className="text-sm text-gray-500">필터:</span>
-              {selectedTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-1 text-sm px-3 py-1 bg-blue-100 text-blue-700 rounded-full"
-                >
-                  #{tag}
-                  <button
-                    onClick={() => handleRemoveTag(tag)}
-                    className="hover:bg-blue-200 rounded-full p-0.5 transition-colors cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
-              <button
-                onClick={handleClearTags}
-                className="text-sm text-gray-500 hover:text-gray-700 underline cursor-pointer"
-              >
-                모두 지우기
-              </button>
-            </div>
-          )}
-
-          {/* 링크 카드 영역 */}
-          {filteredLinks.length === 0 && !linksLoading ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-12">
-              <div className="flex flex-col items-center justify-center text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                  {searchQuery ? (
-                    <Search className="w-8 h-8 text-gray-400" />
-                  ) : (
-                    <Link2 className="w-8 h-8 text-gray-400" />
-                  )}
-                </div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                  {searchQuery
-                    ? "검색 결과가 없습니다"
-                    : "아직 링크가 없습니다"}
-                </h2>
-                <p className="text-sm text-gray-500">
-                  {searchQuery
-                    ? "다른 검색어로 시도해보세요"
-                    : "익스텐션을 통해 링크를 추가해보세요"}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <LinkGrid
-              links={filteredLinks}
-              loading={linksLoading}
-              onDeleteLink={deleteLink}
-              onTagClick={handleTagClick}
-            />
-          )}
-        </main>
+      {/* 검색 바 */}
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="제목, 요약, 태그로 검색..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
+
+      {/* 선택된 태그 필터 */}
+      {selectedTags.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-6">
+          <span className="text-sm text-gray-500">필터:</span>
+          {selectedTags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1 text-sm px-3 py-1 bg-blue-100 text-blue-700 rounded-full"
+            >
+              #{tag}
+              <button
+                onClick={() => handleRemoveTag(tag)}
+                className="hover:bg-blue-200 rounded-full p-0.5 transition-colors cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+          <button
+            onClick={handleClearTags}
+            className="text-sm text-gray-500 hover:text-gray-700 underline cursor-pointer"
+          >
+            모두 지우기
+          </button>
+        </div>
+      )}
+
+      {/* 링크 카드 영역 */}
+      {filteredLinks.length === 0 && !linksLoading ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-12">
+          <div className="flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              {searchQuery ? (
+                <Search className="w-8 h-8 text-gray-400" />
+              ) : (
+                <Link2 className="w-8 h-8 text-gray-400" />
+              )}
+            </div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">
+              {searchQuery ? "검색 결과가 없습니다" : "아직 링크가 없습니다"}
+            </h2>
+            <p className="text-sm text-gray-500">
+              {searchQuery
+                ? "다른 검색어로 시도해보세요"
+                : "익스텐션을 통해 링크를 추가해보세요"}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <LinkGrid
+          links={filteredLinks}
+          loading={linksLoading}
+          onDeleteLink={deleteLink}
+          onTagClick={handleTagClick}
+        />
+      )}
 
       {/* 팀 만들기 모달 */}
       <CreateTeamModal
@@ -327,23 +260,7 @@ const TeamPage = () => {
           setIsModalOpen(false);
         }}
       />
-
-      {/* 폴더 만들기 모달 */}
-      <CreateFolderModal
-        isOpen={isFolderModalOpen}
-        teamUuid={folderModalTeamUuid}
-        onClose={() => {
-          setIsFolderModalOpen(false);
-          setFolderModalTeamUuid(null);
-        }}
-        onFolderCreated={() => {
-          setIsFolderModalOpen(false);
-          setFolderModalTeamUuid(null);
-          // Sidebar 폴더 캐시 갱신 트리거
-          setFolderRefreshKey((prev) => prev + 1);
-        }}
-      />
-    </div>
+    </Layout>
   );
 };
 
