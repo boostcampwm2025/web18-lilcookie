@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Trash2, X } from "lucide-react";
 import { teamApi } from "../../services/api";
+import { useEscapeKey } from "../../hooks";
 
 interface DeleteTeamModalProps {
   isOpen: boolean;
@@ -21,6 +22,14 @@ export const DeleteTeamModal = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleClose = useCallback(() => {
+    setInputValue("");
+    setError(null);
+    onClose();
+  }, [onClose]);
+
+  useEscapeKey(isOpen, handleClose);
 
   if (!isOpen) return null;
 
@@ -44,7 +53,7 @@ export const DeleteTeamModal = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 m-0">
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={handleClose}
       />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md">
         {/* Header */}
@@ -56,7 +65,7 @@ export const DeleteTeamModal = ({
             <h2 className="text-lg font-semibold text-gray-900">팀 삭제</h2>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <X className="w-4 h-4" />
@@ -102,7 +111,7 @@ export const DeleteTeamModal = ({
 
           <div className="flex gap-2">
             <button
-              onClick={onClose}
+              onClick={handleClose}
               disabled={loading}
               className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
             >

@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { X, Users } from "lucide-react";
 import { teamApi } from "../../services/api";
 import type { Team } from "../../types";
+import { useEscapeKey } from "../../hooks";
 
 // TODO: 백엔드 연동 시 제거
 const USE_MOCK_DATA = false;
@@ -21,6 +22,14 @@ const CreateTeamModal = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleClose = useCallback(() => {
+    setTeamName("");
+    setError(null);
+    onClose();
+  }, [onClose]);
+
+  useEscapeKey(isOpen, handleClose);
 
   useEffect(() => {
     if (isOpen) {
@@ -68,12 +77,6 @@ const CreateTeamModal = ({
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleClose = () => {
-    setTeamName("");
-    setError(null);
-    onClose();
   };
 
   return (

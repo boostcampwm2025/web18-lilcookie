@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { X, FolderPlus } from "lucide-react";
 import { folderApi } from "../../services/api";
 import type { Folder } from "../../types";
+import { useEscapeKey } from "../../hooks";
 
 interface CreateFolderModalProps {
   isOpen: boolean;
@@ -23,11 +24,19 @@ const CreateFolderModal = ({
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const handleClose = useCallback(() => {
+    setFolderName("");
+    setError(null);
+    onClose();
+  }, [onClose]);
+
   useEffect(() => {
     if (isOpen) {
       inputRef.current?.focus();
     }
   }, [isOpen]);
+
+  useEscapeKey(isOpen, handleClose);
 
   if (!isOpen || !teamUuid) return null;
 
@@ -64,12 +73,6 @@ const CreateFolderModal = ({
     } finally {
       setLoading(false); // 추가
     }
-  };
-
-  const handleClose = () => {
-    setFolderName("");
-    setError(null);
-    onClose();
   };
 
   return (
