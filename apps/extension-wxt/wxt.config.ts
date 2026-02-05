@@ -11,7 +11,7 @@ export default defineConfig({
   },
   manifest: ({ mode }) => ({
     name: "TeamStash",
-    version: "1.1.1",
+    version: "1.1.3",
     description: "URL을 간편히 저장하고 팀과 공유하는 확장프로그램",
     permissions: [
       "activeTab",
