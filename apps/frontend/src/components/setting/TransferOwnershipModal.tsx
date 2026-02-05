@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Crown, X } from "lucide-react";
 import { teamApi } from "../../services/api";
 import type { GetTeamMembersResponseData } from "@repo/api";
 import { MemberSelectItem } from "./MemberSelectItem";
+import { useEscapeKey } from "../../hooks";
 
 interface TransferOwnershipModalProps {
   isOpen: boolean;
@@ -24,6 +25,14 @@ export const TransferOwnershipModal = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const handleClose = useCallback(() => {
+    setSelectedMember(null);
+    setError(null);
+    onClose();
+  }, [onClose]);
+
+  useEscapeKey(isOpen, handleClose);
+
   if (!isOpen) return null;
 
   const handleTransfer = async () => {
@@ -40,12 +49,6 @@ export const TransferOwnershipModal = ({
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleClose = () => {
-    setSelectedMember(null);
-    setError(null);
-    onClose();
   };
 
   const handleSelectMember = (member: GetTeamMembersResponseData) => {

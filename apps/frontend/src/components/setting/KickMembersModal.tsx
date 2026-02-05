@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { UserMinus, X } from "lucide-react";
 import type { GetTeamMembersResponseData } from "@repo/api";
 import { MemberSelectItem } from "./MemberSelectItem";
 import { teamApi } from "../../services/api";
+import { useEscapeKey } from "../../hooks";
 
 interface KickMembersModalProps {
   isOpen: boolean;
@@ -24,6 +25,14 @@ export const KickMembersModal = ({
   >([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleClose = useCallback(() => {
+    setSelectedMembers([]);
+    setError(null);
+    onClose();
+  }, [onClose]);
+
+  useEscapeKey(isOpen, handleClose);
 
   if (!isOpen) return null;
 
@@ -60,12 +69,6 @@ export const KickMembersModal = ({
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleClose = () => {
-    setSelectedMembers([]);
-    setError(null);
-    onClose();
   };
 
   const getConfirmMessage = () => {
