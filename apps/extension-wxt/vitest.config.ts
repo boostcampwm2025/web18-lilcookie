@@ -5,6 +5,8 @@ export default defineConfig({
   test: {
     mockReset: true,
     restoreMocks: true,
+    environment: "happy-dom",
+    setupFiles: ["./test/setup.ts"],
   },
   plugins: [WxtVitest()],
 });

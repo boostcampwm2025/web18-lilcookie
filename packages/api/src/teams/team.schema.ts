@@ -18,23 +18,24 @@ export const PreviewTeamRespondDataSchema = z.object({
 
 /** 팀 가입 응답 data */
 export const JoinTeamResponseDataSchema = z.object({
-  teamUuid: z.string().uuid(),
+  teamUuid: z.uuid(),
   teamName: z.string(),
-  joinedAt: z.string().datetime(),
+  joinedAt: z.iso.datetime(),
   role: RoleSchema,
 });
 
 /** 팀 멤버 조회 응답 */
 export const GetTeamMembersResponsedDataSchema = z.object({
-  userUuid: z.string().uuid(),
+  userUuid: z.uuid(),
   userName: z.string(),
+  userEmail: z.string().nullable(),
   role: RoleSchema,
-  joinedAt: z.string().datetime(),
+  joinedAt: z.iso.datetime(),
 });
 
 /** 웹훅 공통 응답 data */
 export const GetTeamWebhooksResponseDataSchema = z.object({
-  webhookUuid: z.string().uuid(),
+  webhookUuid: z.uuid(),
   url: z.string(),
   isActive: z.boolean(),
 });
@@ -44,4 +45,14 @@ export const GetTeamTokenUsageResponseDataSchema = z.object({
   usedTokens: z.number(),
   maxTokens: z.number(),
   percentage: z.number(),
+});
+
+/** 권한 위임 요청 */
+export const TransferOwnershipRequestSchema = z.object({
+  targetUserUuid: z.string().uuid(),
+});
+
+/** 팀원 강퇴 요청 */
+export const KickMembersRequestSchema = z.object({
+  targetUserUuids: z.array(z.string().uuid()).min(1),
 });

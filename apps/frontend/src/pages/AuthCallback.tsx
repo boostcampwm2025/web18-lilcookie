@@ -50,7 +50,7 @@ const AuthCallback = () => {
         setOAuthUser({
           sub: userInfo.sub,
           email: userInfo.email || "",
-          nickname: userInfo.name || userInfo.preferred_username || "",
+          nickname: userInfo.nickname || userInfo.preferred_username || "",
         });
 
         // 로그인 성공 후 세션스토리지에 저장된 리다이렉트 url있으면 그쪽으로, 아니면 팀 목록 페이지로 이동

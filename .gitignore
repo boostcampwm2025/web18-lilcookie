@@ -262,3 +262,6 @@ package-lock.json
 
 # Turbo cache
 .turbo
+
+.agents
+.opencode

@@ -4,6 +4,7 @@ import {
   NotFoundException,
   ForbiddenException,
   InternalServerErrorException,
+  BadRequestException,
 } from "@nestjs/common";
 import { TeamRepository } from "./repositories/team.repository";
 import { FolderRepository } from "../folders/repositories/folder.repository";
@@ -11,12 +12,14 @@ import { TeamRole } from "./constants/team-role.constants";
 import { DEFAULT_FOLDER_NAME } from "../folders/constants/folder.constants";
 import { TeamResponseDto, TeamPreviewResponseDto, TeamJoinResponseDto } from "./dto/team.response.dto";
 import { TeamMemberResponseDto } from "./dto/team-member.response.dto";
+import { UserRepository } from "src/user/user.repository";
 
 @Injectable()
 export class TeamsService {
   constructor(
     private readonly teamRepository: TeamRepository,
     private readonly folderRepository: FolderRepository,
+    private readonly userRepository: UserRepository,
   ) {}
 
   /**
@@ -132,5 +135,122 @@ export class TeamsService {
 
     const members = await this.teamRepository.findMembersByTeamId(team.teamId);
     return members.map(({ member, user }) => TeamMemberResponseDto.from(member, user));
+  }
+
+  /**
+   * 팀 소유권 위임
+   * @param teamUuid 팀UUID
+   * @param currentUserId 요청한 사용자ID
+   * @param targetUserUuid 권한 위임받을 사용자UUID
+   * @returns
+   */
+  async transferOwnership(teamUuid: string, currentUserId: number, targetUserUuid: string): Promise<void> {
+    const team = await this.teamRepository.findByUuid(teamUuid);
+    if (!team) {
+      throw new NotFoundException("해당 팀을 찾을 수 없습니다.");
+    }
+
+    // 현재 사용자가 owner인지 확인
+    const currentMember = await this.teamRepository.findMember(team.teamId, currentUserId);
+    if (!currentMember || currentMember.role !== TeamRole.OWNER) {
+      throw new ForbiddenException("팀 소유자만 권한을 위임할 수 있습니다.");
+    }
+
+    // 대상 사용자 조회
+    const targetUser = await this.userRepository.findByUuid(targetUserUuid);
+    if (!targetUser) {
+      throw new NotFoundException("대상 사용자를 찾을 수 없습니다.");
+    }
+
+    // 자기 자신에게 위임 불가
+    if (currentUserId === targetUser.userId) {
+      throw new BadRequestException("자기 자신에게 권한을 위임할 수 없습니다.");
+    }
+
+    // 대상이 팀 멤버인지 확인
+    const targetMember = await this.teamRepository.findMember(team.teamId, targetUser.userId);
+    if (!targetMember) {
+      throw new NotFoundException("대상 사용자가 팀에 소속되어 있지 않습니다.");
+    }
+
+    // 역할 교체 (트랜잭션으로 원자적 처리)
+    await this.teamRepository.transferOwnership(team.teamId, currentUserId, targetUser.userId);
+  }
+
+  /**
+   * 팀 삭제 (owner가 혼자일 때만)
+   */
+  async deleteTeam(teamUuid: string, userId: number): Promise<void> {
+    const team = await this.teamRepository.findByUuid(teamUuid);
+    if (!team) {
+      throw new NotFoundException("해당 팀을 찾을 수 없습니다.");
+    }
+
+    // owner 권한 확인
+    const member = await this.teamRepository.findMember(team.teamId, userId);
+    if (!member || member.role !== TeamRole.OWNER) {
+      throw new ForbiddenException("팀 소유자만 팀을 삭제할 수 있습니다.");
+    }
+
+    // 팀에 혼자인지 확인
+    const memberCount = await this.teamRepository.countMembers(team.teamId);
+    if (memberCount > 1) {
+      throw new ForbiddenException(
+        "다른 팀원이 있을 때는 팀을 삭제할 수 없습니다. 먼저 권한을 위임하거나 팀원이 탈퇴해야 합니다.",
+      );
+    }
+
+    const deleted = await this.teamRepository.deleteTeam(team.teamId);
+    if (!deleted) {
+      throw new InternalServerErrorException("팀 삭제 중 오류가 발생했습니다.");
+    }
+  }
+
+  /**
+   * 팀원 강퇴
+   * @param teamUuid 팀 UUID
+   * @param currentUserId 요청한 사용자 ID (owner)
+   * @param targetUserUuids 강퇴할 사용자 UUID 배열
+   */
+  async kickMembers(teamUuid: string, currentUserId: number, targetUserUuids: string[]): Promise<void> {
+    const team = await this.teamRepository.findByUuid(teamUuid);
+    if (!team) {
+      throw new NotFoundException("해당 팀을 찾을 수 없습니다.");
+    }
+
+    // 현재 사용자가 owner인지 확인
+    const currentMember = await this.teamRepository.findMember(team.teamId, currentUserId);
+    if (!currentMember || currentMember.role !== TeamRole.OWNER) {
+      throw new ForbiddenException("팀 소유자만 팀원을 강퇴할 수 있습니다.");
+    }
+
+    // 대상 사용자들 조회 및 강퇴 처리
+    for (const targetUserUuid of targetUserUuids) {
+      const targetUser = await this.userRepository.findByUuid(targetUserUuid);
+      if (!targetUser) {
+        throw new NotFoundException("대상 사용자를 찾을 수 없습니다.");
+      }
+
+      // 자기 자신을 강퇴할 수 없음
+      if (currentUserId === targetUser.userId) {
+        throw new BadRequestException("자기 자신을 강퇴할 수 없습니다.");
+      }
+
+      // 대상이 팀 멤버인지 확인
+      const targetMember = await this.teamRepository.findMember(team.teamId, targetUser.userId);
+      if (!targetMember) {
+        throw new NotFoundException("대상 사용자가 팀에 소속되어 있지 않습니다.");
+      }
+
+      // owner는 강퇴 불가
+      if (targetMember.role === TeamRole.OWNER) {
+        throw new ForbiddenException("팀 소유자는 강퇴할 수 없습니다.");
+      }
+
+      const removed = await this.teamRepository.removeMember(team.teamId, targetUser.userId);
+      if (!removed) {
+        throw new InternalServerErrorException("팀원 강퇴 중 오류가 발생했습니다.");
+      }
+    }
   }
 }

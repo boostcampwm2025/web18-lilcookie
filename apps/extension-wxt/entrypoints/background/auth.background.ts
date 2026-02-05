@@ -1,3 +1,4 @@
+import { browser } from "wxt/browser";
 import axios from "axios";
 import axiosRetry from "axios-retry";
 import { AUTHENTIK_CONFIG } from "../../config/authentik";
@@ -150,7 +151,7 @@ async function buildUserInfo(accessToken: string): Promise<UserInfo | null> {
     console.error("Failed to fetch teams:", error);
   }
 
-  const storage = await chrome.storage.local.get("selected_team_uuid");
+  const storage = await browser.storage.local.get("selected_team_uuid");
   const parsed = StoredSelectedTeamSchema.safeParse(storage);
   const storedTeamUuid = parsed.success
     ? parsed.data.selected_team_uuid
@@ -189,7 +190,7 @@ export async function login(): Promise<{ success: boolean; error?: string }> {
 
     const authUrl = `${AUTHENTIK_CONFIG.authorizeUrl}?${params.toString()}`;
 
-    const responseUrl = await chrome.identity.launchWebAuthFlow({
+    const responseUrl = await browser.identity.launchWebAuthFlow({
       url: authUrl,
       interactive: true,
     });
@@ -213,7 +214,7 @@ export async function login(): Promise<{ success: boolean; error?: string }> {
 
     const tokens = await exchangeCodeForToken(code);
 
-    await chrome.storage.local.set({ auth_tokens: tokens });
+    await browser.storage.local.set({ auth_tokens: tokens });
     await clearStoredOAuthParams();
 
     return { success: true };
@@ -227,28 +228,28 @@ export async function login(): Promise<{ success: boolean; error?: string }> {
 }
 
 export async function logout(): Promise<void> {
-  await chrome.storage.local.remove([
+  await browser.storage.local.remove([
     "auth_tokens",
     "selected_team_uuid",
     "selected_folder_uuid",
   ]);
 
-  const tab = await chrome.tabs.create({
+  const tab = await browser.tabs.create({
     url: AUTHENTIK_CONFIG.logoutUrl,
     active: false,
   });
 
   setTimeout(() => {
-    if (tab.id) chrome.tabs.remove(tab.id);
+    if (tab.id) browser.tabs.remove(tab.id);
   }, 2000);
 }
 
 export async function selectTeam(teamUuid: string): Promise<void> {
-  await chrome.storage.local.set({ selected_team_uuid: teamUuid });
+  await browser.storage.local.set({ selected_team_uuid: teamUuid });
 }
 
 export async function getAuthState(): Promise<AuthState> {
-  const storage = await chrome.storage.local.get("auth_tokens");
+  const storage = await browser.storage.local.get("auth_tokens");
   const parsed = StoredAuthTokensSchema.safeParse(storage);
 
   if (!parsed.success || !parsed.data.auth_tokens) {
@@ -262,7 +263,7 @@ export async function getAuthState(): Promise<AuthState> {
       const newTokens = await refreshAccessToken(auth_tokens.refresh_token);
 
       if (newTokens) {
-        await chrome.storage.local.set({ auth_tokens: newTokens });
+        await browser.storage.local.set({ auth_tokens: newTokens });
         const userInfo = await buildUserInfo(newTokens.access_token);
         if (!userInfo) {
           return { isLoggedIn: false };

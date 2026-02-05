@@ -9,7 +9,10 @@ hero:
   actions:
     - theme: brand
       text: Chrome Extension 설치
-      link: https://github.com/boostcampwm2025/web18-lilcookie/releases/tag/v1.1.0
+      link: https://github.com/boostcampwm2025/web18-lilcookie/releases
+    - theme: brand
+      text: Firefox Addon 설치
+      link: https://addons.mozilla.org/ko/firefox/addon/teamstash/
     - theme: alt
       text: 대시보드 시작하기
       link: https://app.teamstash.eupthere.uk

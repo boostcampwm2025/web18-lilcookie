@@ -41,6 +41,11 @@ export class FoldersService {
       throw new ConflictException("해당 폴더는 기본 폴더 이름으로, 사용할 수 없습니다.");
     }
 
+    const exists = await this.folderRepository.existsByTeamIdAndName(team.teamId, folderName);
+    if (exists) {
+      throw new ConflictException("같은 이름의 폴더가 이미 존재합니다.");
+    }
+
     const result = await this.folderRepository.create({
       teamId: team.teamId,
       folderName,

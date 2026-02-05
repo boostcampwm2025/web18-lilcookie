@@ -11,6 +11,7 @@ export class UserMapper {
     return new User({
       userId: prismaUser.id,
       userUuid: prismaUser.uuid,
+      userEmail: prismaUser.email,
       userNickname: prismaUser.nickname,
       createdAt: prismaUser.createdAt,
     });

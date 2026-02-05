@@ -58,9 +58,12 @@ variable "app_redirect_uri" {
   default = "https://app.localhost/auth/callback"
 }
 
-# Chrome Extension ID 설정 변수
-variable "chrome_extension_id" {
-  type = string
+# OAuth Redirect URI 허용 목록
+variable "allowed_redirect_uris" {
+  type = list(object({
+    matching_mode = string
+    url           = string
+  }))
 }
 
 # Post-logout redirect allowed hosts (for open redirect protection)
