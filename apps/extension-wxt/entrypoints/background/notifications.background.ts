@@ -25,7 +25,7 @@ export function setupNotificationHandlers() {
       const authState = await getAuthState();
       if (authState.isLoggedIn && authState.userInfo?.selectedTeamUuid) {
         chrome.tabs.create({
-          url: `${FE_BASE_URL}/${authState.userInfo.selectedTeamUuid.toLowerCase()}`,
+          url: `${FE_BASE_URL}/my-teams`,
         });
       }
       chrome.notifications.clear(notificationId);
