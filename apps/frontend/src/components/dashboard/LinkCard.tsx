@@ -67,7 +67,7 @@ const LinkCard = ({ link, onDelete, onTagClick }: LinkCardProps) => {
 
         {/* 요약 */}
         {link.summary && (
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2 leading-relaxed">
+          <p className="text-sm text-gray-600 mb-3 line-clamp-8 leading-relaxed">
             {link.summary}
           </p>
         )}
