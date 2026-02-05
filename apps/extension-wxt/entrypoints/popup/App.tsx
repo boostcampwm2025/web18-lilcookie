@@ -30,7 +30,7 @@ function App() {
     onError: showToast,
   });
   const hasNoTeams = (authState?.userInfo?.teams ?? []).length === 0;
-  const { tab, isAiDisabled, setIsAiDisabled } = useTabInfo({
+  const { tab, isAiDisabled, setIsAiDisabled, isReaderable } = useTabInfo({
     isLoggedIn,
     hasNoTeams,
   });
@@ -170,6 +170,7 @@ function App() {
           maxCharacterCount={MAX_CHARACTER_COUNT}
           isAiLoading={isAiLoading}
           isAiDisabled={isAiDisabled}
+          isReaderable={isReaderable}
           isAiCompleted={isAiCompleted}
           isAiFailed={isAiFailed}
           isSaveSuccess={isSaveSuccess}

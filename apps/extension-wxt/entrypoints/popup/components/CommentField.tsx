@@ -6,6 +6,7 @@ type CommentFieldProps = {
   maxCharacterCount: number;
   isAiLoading: boolean;
   isAiDisabled: boolean;
+  isReaderable: boolean;
   isAiCompleted: boolean;
   isAiFailed: boolean;
   isSaveSuccess: boolean;
@@ -21,6 +22,7 @@ function CommentField({
   maxCharacterCount,
   isAiLoading,
   isAiDisabled,
+  isReaderable,
   isAiCompleted,
   isAiFailed,
   isSaveSuccess,
@@ -45,7 +47,7 @@ function CommentField({
             onClick={onAiClick}
             disabled={isAiDisabled || isAiCompleted}
             title={
-              isAiDisabled ? "이 페이지는 요약할 수 없습니다" : "AI로 요약 생성"
+              isReaderable ? "AI로 요약 생성" : "이 페이지는 요약할 수 없습니다"
             }
           >
             <AiSparkleIcon />
@@ -55,7 +57,7 @@ function CommentField({
                 ? "AI 생성 완료"
                 : "AI 생성"}
           </button>
-          {isAiDisabled && (
+          {!isReaderable && (
             <div className="ai-info">
               <button
                 type="button"
