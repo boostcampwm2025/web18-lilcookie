@@ -6,6 +6,7 @@ import Layout from "../components/layout/Layout";
 import SectionContainer from "../components/common/SectionContainer";
 import CreateTeamModal from "../components/teams/CreateTeamModal";
 import { useState } from "react";
+import { AUTHENTIK_CONFIG } from "../config/authentik";
 
 const MyPage = () => {
   const navigate = useNavigate();
@@ -16,8 +17,7 @@ const MyPage = () => {
   const handleWithdraw = () => {
     if (!confirm("정말 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다."))
       return;
-    // TODO: 유저 탈퇴 API 연결
-    alert("탈퇴 기능은 아직 준비 중입니다.");
+    window.location.href = AUTHENTIK_CONFIG.unenrollUrl;
   };
 
   if (loading) {
