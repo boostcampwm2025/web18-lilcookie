@@ -4,6 +4,8 @@
 
 [대시보드](https://app.teamstash.eupthere.uk)
 
+[파이어폭스 애드온](https://addons.mozilla.org/ko/firefox/addon/teamstash/?utm_content=addons-manager-reviews-link&utm_medium=firefox-browser&utm_source=firefox-browser)
+
 Teamstash는 팀의 북마크를 한 곳에 모으고, 각종 협업 도구에 연결하는 저장소입니다. Webhook 알림, OAuth2.0 자원 인가, OIDC1.0 인증을 지원합니다. n8n에 연결하여 워크플로우를 구성할 수 있습니다.
 
 https://github.com/user-attachments/assets/c3df09bc-d69c-4263-80c4-af6e89b5e62d
