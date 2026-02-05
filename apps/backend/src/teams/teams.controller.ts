@@ -11,6 +11,7 @@ import {
   ParseUUIDPipe,
   Inject,
   type LoggerService,
+  Patch,
 } from "@nestjs/common";
 import { TeamsService } from "./teams.service";
 import { CreateTeamRequestDto } from "./dto/create-team.request.dto";
@@ -22,6 +23,7 @@ import type { AuthenticatedUser } from "../oidc/types/oidc.types";
 import { ResponseBuilder } from "../common/builders/response.builder";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { TokenUsageService } from "./token-usage.service";
+import type { TransferOwnershipRequest, KickMembersRequest } from "@repo/api";
 
 @Controller("teams")
 export class TeamsController {
@@ -148,5 +150,67 @@ export class TeamsController {
     const usage = await this.tokenUsageService.getUsage(teamUuid);
 
     return ResponseBuilder.success().status(HttpStatus.OK).message("토큰 사용량을 조회했습니다").data(usage).build();
+  }
+
+  /**
+   * owner 권한 위임
+   * PATCH /teams/:teamUuid/transfer-ownership
+   */
+  @Patch(":teamUuid/transfer-ownership")
+  @UseGuards(OidcGuard)
+  async transferOwnership(
+    @Param("teamUuid", ParseUUIDPipe) teamUuid: string,
+    @Body() dto: TransferOwnershipRequest,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    this.logger.log(`PATCH /teams/${teamUuid}/transfer-ownership`);
+
+    await this.teamsService.transferOwnership(teamUuid, user.userId, dto.targetUserUuid);
+
+    return ResponseBuilder.success<Record<string, never>>()
+      .status(HttpStatus.OK)
+      .message("팀 소유권이 성공적으로 위임되었습니다.")
+      .data({})
+      .build();
+  }
+
+  /**
+   * 팀원 강퇴
+   * DELETE /teams/:teamUuid/members
+   */
+  @Delete(":teamUuid/members")
+  @UseGuards(OidcGuard)
+  async kickMembers(
+    @Param("teamUuid", ParseUUIDPipe) teamUuid: string,
+    @Body() dto: KickMembersRequest,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    this.logger.log(`DELETE /teams/${teamUuid}/members - 팀원 강퇴 요청`);
+
+    await this.teamsService.kickMembers(teamUuid, user.userId, dto.targetUserUuids);
+
+    return ResponseBuilder.success<Record<string, never>>()
+      .status(HttpStatus.OK)
+      .message("팀원이 성공적으로 강퇴되었습니다.")
+      .data({})
+      .build();
+  }
+
+  /**
+   * 팀 삭제
+   * DELETE /teams/:teamUuid/delete
+   */
+  @Delete(":teamUuid/delete")
+  @UseGuards(OidcGuard)
+  async deleteTeam(@Param("teamUuid", ParseUUIDPipe) teamUuid: string, @CurrentUser() user: AuthenticatedUser) {
+    this.logger.log(`DELETE /teams/${teamUuid}/delete`);
+
+    await this.teamsService.deleteTeam(teamUuid, user.userId);
+
+    return ResponseBuilder.success<Record<string, never>>()
+      .status(HttpStatus.NO_CONTENT)
+      .message("팀이 성공적으로 삭제되었습니다.")
+      .data({})
+      .build();
   }
 }

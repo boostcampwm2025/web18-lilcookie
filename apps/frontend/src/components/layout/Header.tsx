@@ -4,9 +4,10 @@ import { useNavigate } from "react-router-dom";
 
 interface HeaderProps {
   showMyPageLink?: boolean;
+  extraButtons?: React.ReactNode;
 }
 
-const Header = ({ showMyPageLink = true }: HeaderProps) => {
+const Header = ({ showMyPageLink = true, extraButtons }: HeaderProps) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -30,6 +31,7 @@ const Header = ({ showMyPageLink = true }: HeaderProps) => {
             {user?.nickname || user?.email?.split("@")[0]}
           </span>
         )}
+        {extraButtons}
         <button
           onClick={handleLogout}
           className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"

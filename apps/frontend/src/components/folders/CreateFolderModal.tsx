@@ -1,13 +1,15 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { X, FolderPlus } from "lucide-react";
 import { folderApi } from "../../services/api";
 import type { Folder } from "../../types";
+import { useEscapeKey } from "../../hooks";
 
 interface CreateFolderModalProps {
   isOpen: boolean;
   teamUuid: string | null;
   onClose: () => void;
   onFolderCreated: (folder: Folder) => void;
+  createFolder?: (teamUuid: string, folderName: string) => Promise<Folder>;
 }
 
 const CreateFolderModal = ({
@@ -15,17 +17,26 @@ const CreateFolderModal = ({
   teamUuid,
   onClose,
   onFolderCreated,
+  createFolder,
 }: CreateFolderModalProps) => {
   const [folderName, setFolderName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const handleClose = useCallback(() => {
+    setFolderName("");
+    setError(null);
+    onClose();
+  }, [onClose]);
+
   useEffect(() => {
     if (isOpen) {
       inputRef.current?.focus();
     }
   }, [isOpen]);
+
+  useEscapeKey(isOpen, handleClose);
 
   if (!isOpen || !teamUuid) return null;
 
@@ -37,33 +48,31 @@ const CreateFolderModal = ({
       return;
     }
 
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await folderApi.createFolder({
-        teamUuid,
-        folderName: folderName.trim(),
-      });
-
-      if (response.success) {
-        onFolderCreated(response.data);
-        setFolderName("");
-        onClose();
-      } else {
-        setError(response.message || "폴더 생성에 실패했습니다.");
-      }
-    } catch {
-      setError("폴더 생성 중 오류가 발생했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleClose = () => {
-    setFolderName("");
+    setLoading(true);
     setError(null);
-    onClose();
+
+    try {
+      if (createFolder) {
+        const folder = await createFolder(teamUuid!, folderName.trim());
+        onFolderCreated(folder);
+      } else {
+        const response = await folderApi.createFolder({
+          teamUuid: teamUuid!,
+          folderName: folderName.trim(),
+        });
+        if (response.success) onFolderCreated(response.data);
+        else throw new Error(response.message);
+      }
+      onClose();
+    } catch (err: any) {
+      const message =
+        err.response?.data?.message ||
+        err.message ||
+        "폴더 생성에 실패했습니다.";
+      setError(message);
+    } finally {
+      setLoading(false); // 추가
+    }
   };
 
   return (

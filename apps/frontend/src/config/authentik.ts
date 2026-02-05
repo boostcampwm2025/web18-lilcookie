@@ -20,4 +20,7 @@ export const AUTHENTIK_CONFIG = {
 
   // 로그아웃 엔드포인트 (Authentik 세션도 함께 종료)
   logoutUrl: `${AUTHENTIK_URL}/application/o/teamstash/end-session/`,
+
+  // 회원 탈퇴 엔드포인트
+  unenrollUrl: `${AUTHENTIK_URL}/if/flow/teamstash-unenrollment-flow/`,
 };

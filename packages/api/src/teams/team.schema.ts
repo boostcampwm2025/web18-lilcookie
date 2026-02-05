@@ -46,3 +46,13 @@ export const GetTeamTokenUsageResponseDataSchema = z.object({
   maxTokens: z.number(),
   percentage: z.number(),
 });
+
+/** 권한 위임 요청 */
+export const TransferOwnershipRequestSchema = z.object({
+  targetUserUuid: z.string().uuid(),
+});
+
+/** 팀원 강퇴 요청 */
+export const KickMembersRequestSchema = z.object({
+  targetUserUuids: z.array(z.string().uuid()).min(1),
+});

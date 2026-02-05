@@ -389,18 +389,65 @@ const OAuthApps = () => {
               </div>
 
               <div className="mt-6 pt-4 border-t border-gray-100">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Authentik 엔드포인트</h4>
-                <div className="space-y-2 text-xs text-gray-600">
-                  <div className="flex items-center gap-2">
-                    <ExternalLink className="w-3 h-3" />
-                    <span>Authorization URL:</span>
-                    <code className="bg-gray-100 px-1.5 py-0.5 rounded">/application/o/authorize/</code>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">OAuth 엔드포인트</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Authorization URL
+                    </label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <code className="flex-1 px-3 py-2 bg-gray-50 rounded-lg text-xs font-mono text-gray-700 break-all">
+                        https://auth.teamstash.eupthere.uk/application/o/authorize/
+                      </code>
+                      <button
+                        onClick={() =>
+                          handleCopy("https://auth.teamstash.eupthere.uk/application/o/authorize/", "auth-url")
+                        }
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer shrink-0"
+                      >
+                        {copiedField === "auth-url" ? (
+                          <Check className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <ExternalLink className="w-3 h-3" />
-                    <span>Token URL:</span>
-                    <code className="bg-gray-100 px-1.5 py-0.5 rounded">/application/o/token/</code>
+
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Access Token URL
+                    </label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <code className="flex-1 px-3 py-2 bg-gray-50 rounded-lg text-xs font-mono text-gray-700 break-all">
+                        https://auth.teamstash.eupthere.uk/application/o/token/
+                      </code>
+                      <button
+                        onClick={() =>
+                          handleCopy("https://auth.teamstash.eupthere.uk/application/o/token/", "token-url")
+                        }
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer shrink-0"
+                      >
+                        {copiedField === "token-url" ? (
+                          <Check className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
+                </div>
+
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <a
+                    href="https://docs.teamstash.eupthere.uk/integrations-and-api/n8n-Integration-Guide.html"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between text-sm text-blue-700 hover:text-blue-800 transition-colors"
+                  >
+                    <span>🔗 연동 가이드 보기</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
                 </div>
               </div>
 

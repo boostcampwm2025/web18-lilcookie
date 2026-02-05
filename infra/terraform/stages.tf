@@ -109,6 +109,13 @@ resource "authentik_stage_prompt" "teamstash_recovery_prompt" {
   ]
 }
 
+resource "authentik_stage_prompt" "teamstash_unenrollment_prompt" {
+  name = "teamstash-unenrollment-prompt"
+  fields = [
+    authentik_stage_prompt_field.teamstash_unenrollment_confirm_field.id,
+  ]
+}
+
 # --- Redirect Stages ---
 resource "authentik_stage_redirect" "post_logout_dummy_redirect" {
   name          = "post-logout-dummy-redirect"
@@ -125,6 +132,11 @@ resource "authentik_stage_user_logout" "post_logout_logout_stage" {
 resource "authentik_stage_user_login" "teamstash_authentication_login" {
   name             = "teamstash-authentication-login"
   session_duration = "seconds=0"
+}
+
+# --- User Delete Stages ---
+resource "authentik_stage_user_delete" "teamstash_unenrollment_user_delete" {
+  name = "teamstash-unenrollment-user-delete"
 }
 
 # --- User Write Stages ---

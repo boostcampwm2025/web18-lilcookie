@@ -127,4 +127,68 @@ export class TeamRepository {
     });
     return member ? MemberMapper.fromPrisma(member) : null;
   }
+
+  /**
+   * 멤버 역할 업데이트
+   * @param teamId 팀 pk
+   * @param userId 유저 pk
+   * @param role 멤버 역할
+   * @returns 멤버 엔티티
+   */
+  async updateMemberRole(teamId: number, userId: number, role: string): Promise<Member> {
+    const updated = await this.prisma.member.update({
+      where: { teamId_userId: { teamId, userId } },
+      data: { role },
+    });
+    return MemberMapper.fromPrisma(updated);
+  }
+
+  /**
+   * 소유권 이전 (트랜잭션으로 역할 교체)
+   * @param teamId 팀 pk
+   * @param fromUserId 현재 owner의 userId
+   * @param toUserId 새 owner가 될 userId
+   */
+  async transferOwnership(teamId: number, fromUserId: number, toUserId: number): Promise<void> {
+    await this.prisma.$transaction([
+      this.prisma.member.update({
+        where: { teamId_userId: { teamId, userId: toUserId } },
+        data: { role: "owner" },
+      }),
+      this.prisma.member.update({
+        where: { teamId_userId: { teamId, userId: fromUserId } },
+        data: { role: "member" },
+      }),
+    ]);
+  }
+
+  /**
+   * 팀 멤버 수 조회
+   * @param teamId 팀 pk
+   * @returns 팀 멤버 수
+   */
+  async countMembers(teamId: number): Promise<number> {
+    return this.prisma.member.count({
+      where: { teamId },
+    });
+  }
+
+  /**
+   * 팀 삭제
+   * @param teamId 팀 pk
+   * @returns 팀 삭제 여부 (boolean)
+   */
+  async deleteTeam(teamId: number): Promise<boolean> {
+    try {
+      await this.prisma.team.delete({
+        where: { id: teamId },
+      });
+      return true;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+        return false;
+      }
+      throw error;
+    }
+  }
 }

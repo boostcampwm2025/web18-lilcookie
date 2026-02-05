@@ -33,3 +33,13 @@ resource "authentik_stage_prompt_field" "teamstash_password_repeat_field" {
   required    = true
   order       = 301
 }
+
+resource "authentik_stage_prompt_field" "teamstash_unenrollment_confirm_field" {
+  name        = "teamstash-unenrollment-confirm"
+  field_key   = "confirm_delete"
+  label       = "Type DELETE to confirm"
+  placeholder = "DELETE"
+  type        = "text"
+  required    = true
+  order       = 400
+}

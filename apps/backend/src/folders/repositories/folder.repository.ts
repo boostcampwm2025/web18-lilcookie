@@ -43,6 +43,22 @@ export class FolderRepository {
   }
 
   /**
+   * 폴더 이름 중복 체크
+   * @param teamId 팀 pk
+   * @param folderName 폴더 이름
+   * @returns 해당 이름의 폴더 존재 여부
+   */
+  async existsByTeamIdAndName(teamId: number, folderName: string): Promise<boolean> {
+    const folder = await this.prisma.folder.findFirst({
+      where: {
+        teamId,
+        name: folderName,
+      },
+    });
+    return folder !== null;
+  }
+
+  /**
    * 특정 팀의 모든 폴더 조회
    * @param teamId 팀 ID
    * @returns 폴더와 해당 폴더를 생성한 사용자 정보 배열
