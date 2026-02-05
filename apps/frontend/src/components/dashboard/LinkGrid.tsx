@@ -15,8 +15,8 @@ const LinkGrid = ({
   onDeleteLink,
   onTagClick,
 }: LinkGridProps) => {
-  // 로딩 중
-  if (loading) {
+  // 로딩 중 + 기존 데이터 없을 때만 스켈레톤 표시
+  if (loading && links.length === 0) {
     return (
       <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
         {[1, 2, 3, 4, 5, 6].map((i) => (
