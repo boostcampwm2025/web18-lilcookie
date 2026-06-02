@@ -1,0 +1,22 @@
+{
+    email lucy4907@naver.com
+}
+
+# 프론트엔드 (SPA)
+teamstash.app {
+    reverse_proxy teamstash-frontend:80
+}
+
+# 백엔드 API (path rewrite: /<path> → /api/<path>)
+api.teamstash.app {
+    @all {
+        path_regexp all ^/(.*)$
+    }
+    rewrite @all /api/{re.all.1}
+    reverse_proxy teamstash-backend:3000
+}
+
+# Authentik (OAuth/OIDC provider)
+auth.teamstash.app {
+    reverse_proxy teamstash-authentik-server:9000
+}

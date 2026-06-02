@@ -1,0 +1,36 @@
+name: Deploy to NCP
+
+on:
+  push:
+    branches:
+      - chore/ci-cd-pipeline
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-ncp
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build and deploy to NCP
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH deploy to NCP
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.NCP_HOST }}
+          username: ${{ secrets.NCP_USER }}
+          password: ${{ secrets.NCP_PASSWORD }}
+          port: 22
+          script_stop: true
+          script: |
+            set -e
+            cd /opt/teamstash
+            git fetch origin chore/ci-cd-pipeline
+            git checkout chore/ci-cd-pipeline 2>/dev/null || git switch -c chore/ci-cd-pipeline origin/chore/ci-cd-pipeline
+            git reset --hard origin/chore/ci-cd-pipeline
+            cd infra/docker
+            docker compose up -d --build --remove-orphans
+            sleep 20
+            docker exec teamstash-backend sh -c "cd /app/apps/backend && ./node_modules/.bin/prisma migrate deploy" || true
+            echo "Deploy complete"

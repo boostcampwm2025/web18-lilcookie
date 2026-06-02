@@ -1,0 +1,19 @@
+services:
+  caddy:
+    container_name: teamstash-caddy
+    image: caddy:2.11
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ../caddy/caddy-conf/Caddyfile.prod:/etc/caddy/Caddyfile
+      - ../caddy/data:/data
+      - ../caddy/config:/config
+    networks:
+      - caddy-network
+
+networks:
+  caddy-network:
+    external: true
