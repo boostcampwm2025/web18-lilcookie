@@ -29,8 +29,11 @@ jobs:
             git fetch origin chore/ci-cd-pipeline
             git checkout chore/ci-cd-pipeline 2>/dev/null || git switch -c chore/ci-cd-pipeline origin/chore/ci-cd-pipeline
             git reset --hard origin/chore/ci-cd-pipeline
+
+            # Caddy가 별도 compose project라서 보존
             cd infra/docker
-            docker compose up -d --build --remove-orphans
+            docker compose -f compose.caddy.yaml up -d
+            docker compose up -d --build
             sleep 20
             docker exec teamstash-backend sh -c "cd /app/apps/backend && ./node_modules/.bin/prisma migrate deploy" || true
             echo "Deploy complete"
