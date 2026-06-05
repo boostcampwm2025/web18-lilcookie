@@ -397,11 +397,11 @@ const OAuthApps = () => {
                     </label>
                     <div className="flex items-center gap-2 mt-1">
                       <code className="flex-1 px-3 py-2 bg-gray-50 rounded-lg text-xs font-mono text-gray-700 break-all">
-                        https://auth.teamstash.eupthere.uk/application/o/authorize/
+                        {`${import.meta.env.VITE_AUTHENTIK_URL}/application/o/authorize/`}
                       </code>
                       <button
                         onClick={() =>
-                          handleCopy("https://auth.teamstash.eupthere.uk/application/o/authorize/", "auth-url")
+                          handleCopy(`${import.meta.env.VITE_AUTHENTIK_URL}/application/o/authorize/`, "auth-url")
                         }
                         className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer shrink-0"
                       >
@@ -420,11 +420,11 @@ const OAuthApps = () => {
                     </label>
                     <div className="flex items-center gap-2 mt-1">
                       <code className="flex-1 px-3 py-2 bg-gray-50 rounded-lg text-xs font-mono text-gray-700 break-all">
-                        https://auth.teamstash.eupthere.uk/application/o/token/
+                        {`${import.meta.env.VITE_AUTHENTIK_URL}/application/o/token/`}
                       </code>
                       <button
                         onClick={() =>
-                          handleCopy("https://auth.teamstash.eupthere.uk/application/o/token/", "token-url")
+                          handleCopy(`${import.meta.env.VITE_AUTHENTIK_URL}/application/o/token/`, "token-url")
                         }
                         className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer shrink-0"
                       >
