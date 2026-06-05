@@ -440,7 +440,7 @@ const OAuthApps = () => {
 
                 <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                   <a
-                    href="https://docs.teamstash.eupthere.uk/integrations-and-api/n8n-Integration-Guide.html"
+                    href="https://github.com/boostcampwm2025/web18-lilcookie/blob/main/apps/site/n8n-cookbook/Example-Notification.md"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-between text-sm text-blue-700 hover:text-blue-800 transition-colors"
