@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import TeamPage from "./pages/TeamPage";
@@ -11,11 +13,23 @@ import SettingPage from "./pages/SettingPage";
 import MyPage from "./pages/MyPage";
 import { TeamsProvider } from "./contexts/TeamContext";
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5분 동안 fresh로 유지 (재방문 시 캐시 즉시 표시)
+      gcTime: 10 * 60 * 1000, // 10분 후 미사용 캐시 제거
+      refetchOnWindowFocus: false, // 윈도우 포커스 시 자동 refetch 비활성화
+      retry: 1, // 실패 시 1회만 재시도
+    },
+  },
+});
+
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <TeamsProvider>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AuthProvider>
+          <TeamsProvider>
           <Routes>
             {/* 루트 경로 - 내 팀 페이지로 리다이렉트 */}
             <Route path="/" element={<Navigate to="/my-teams" replace />} />
@@ -87,6 +101,8 @@ function App() {
         </TeamsProvider>
       </AuthProvider>
     </BrowserRouter>
+    <ReactQueryDevtools initialIsOpen={false} />
+  </QueryClientProvider>
   );
 }
 
