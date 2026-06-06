@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { Users } from "lucide-react";
 import type { Team, Folder as FolderType } from "../../types";
@@ -47,6 +47,17 @@ const Sidebar = ({
   // 수동으로 펼침/접힘 토글한 팀 상태 (localStorage 영속)
   const manualExpandedTeams = useSidebarStore((s) => s.manualExpandedTeams);
   const setTeamExpanded = useSidebarStore((s) => s.setTeamExpanded);
+
+  // 영속된 펼침 상태에 맞춰 진입 시 폴더 미리 fetch
+  // (이전엔 useState라 빈 상태로 시작했지만, store 영속으로 펼쳐진 팀이 살아 있을 수 있음)
+  useEffect(() => {
+    if (loading) return;
+    Object.entries(manualExpandedTeams).forEach(([teamUuid, expanded]) => {
+      if (expanded) {
+        fetchFoldersIfNeeded(teamUuid);
+      }
+    });
+  }, [loading, manualExpandedTeams, fetchFoldersIfNeeded]);
 
   // 팀이 펼쳐져 있는지 계산 (수동 상태 우선, 없으면 선택된 팀만 펼침)
   const isTeamExpanded = (teamUuid: string): boolean => {
