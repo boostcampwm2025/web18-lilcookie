@@ -4,6 +4,7 @@ import { Users } from "lucide-react";
 import type { Team, Folder as FolderType } from "../../types";
 import { useTeams } from "../../contexts/TeamContext";
 import { useFolders } from "../../hooks";
+import { useSidebarStore } from "../../stores/sidebar.store";
 import TeamItem from "./sidebar/TeamItem";
 import CreateFolderModal from "../folders/CreateFolderModal";
 
@@ -43,10 +44,9 @@ const Sidebar = ({
     selectedTeamUuid,
   });
 
-  // 수동으로 펼침/접힘 토글한 팀 상태
-  const [manualExpandedTeams, setManualExpandedTeams] = useState<
-    Record<string, boolean>
-  >({});
+  // 수동으로 펼침/접힘 토글한 팀 상태 (localStorage 영속)
+  const manualExpandedTeams = useSidebarStore((s) => s.manualExpandedTeams);
+  const setTeamExpanded = useSidebarStore((s) => s.setTeamExpanded);
 
   // 팀이 펼쳐져 있는지 계산 (수동 상태 우선, 없으면 선택된 팀만 펼침)
   const isTeamExpanded = (teamUuid: string): boolean => {
@@ -63,10 +63,7 @@ const Sidebar = ({
     const currentlyExpanded = isTeamExpanded(teamUuid);
     const willExpand = !currentlyExpanded;
 
-    setManualExpandedTeams((prev) => ({
-      ...prev,
-      [teamUuid]: willExpand,
-    }));
+    setTeamExpanded(teamUuid, willExpand);
 
     if (willExpand) {
       await fetchFoldersIfNeeded(teamUuid);
