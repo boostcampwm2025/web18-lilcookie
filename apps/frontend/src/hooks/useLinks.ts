@@ -1,5 +1,10 @@
 import { useState, useCallback, useMemo } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { linkApi } from "../services/api";
 import type { Link } from "../types";
 
@@ -48,6 +53,9 @@ export const useLinks = ({ teamUuid, folderUuid }: UseLinksOptions) => {
       return response.data;
     },
     enabled: !!teamUuid && !!folderUuid,
+    // 폴더 전환 시 이전 폴더의 카드를 그대로 보여주다가 새 데이터로 교체 →
+    // 캐시 hit이든 miss든 빈 화면 없이 부드럽게 전환.
+    placeholderData: keepPreviousData,
   });
 
   const error = queryError ? "링크를 불러오는데 실패했습니다." : null;
