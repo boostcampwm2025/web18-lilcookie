@@ -69,8 +69,12 @@ const TeamPage = () => {
     folderUuid: folderUuidForLinks,
   });
 
-  // 팀 및 폴더 정보 조회 (팀이 변경될 때만)
+  // 팀이 변경될 때만 팀/폴더 정보 fetch.
+  // selectedFolderUuidFromRequest는 진입 시점 1회만 사용하므로 의존성에서 제외 —
+  // 같은 팀 안에서 폴더 클릭은 Sidebar의 onFolderSelect → handleFolderSelect가 처리하고,
+  // 이 useEffect가 매번 돌면 setLoading(true)로 페이지 전체가 깜빡임.
   useEffect(() => {
+    const initialFolderUuid = selectedFolderUuidFromRequest;
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -106,10 +110,10 @@ const TeamPage = () => {
             : [];
 
           if (fetchedFolders.length > 0) {
-            // state로 전달받은 폴더가 있으면 해당 폴더 선택, 없으면 첫번째 폴더
-            const targetFolder = selectedFolderUuidFromRequest
+            // 진입 시점에 URL로 받은 폴더가 있으면 그것, 없으면 첫번째 폴더
+            const targetFolder = initialFolderUuid
               ? fetchedFolders.find(
-                  (f) => f.folderUuid === selectedFolderUuidFromRequest,
+                  (f) => f.folderUuid === initialFolderUuid,
                 )
               : null;
             setSelectedFolder(targetFolder || fetchedFolders[0]);
@@ -124,7 +128,8 @@ const TeamPage = () => {
     };
 
     fetchData();
-  }, [teamUuid, teamFromState, selectedFolderUuidFromRequest]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teamUuid, teamFromState]);
 
   // 폴더 선택 핸들러 (Sidebar에서 호출)
   const handleFolderSelect = (folder: FolderType) => {
