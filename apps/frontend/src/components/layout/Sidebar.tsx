@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { Users } from "lucide-react";
 import type { Team, Folder as FolderType } from "../../types";
@@ -33,31 +33,9 @@ const Sidebar = ({
     null,
   );
 
-  // useFolders 훅 사용
-  const {
-    teamFolders,
-    fetchFoldersIfNeeded,
-    createFolder,
-    deleteFolder,
-    renameFolder,
-  } = useFolders({
-    selectedTeamUuid,
-  });
-
   // 수동으로 펼침/접힘 토글한 팀 상태 (localStorage 영속)
   const manualExpandedTeams = useSidebarStore((s) => s.manualExpandedTeams);
   const setTeamExpanded = useSidebarStore((s) => s.setTeamExpanded);
-
-  // 영속된 펼침 상태에 맞춰 진입 시 폴더 미리 fetch
-  // (이전엔 useState라 빈 상태로 시작했지만, store 영속으로 펼쳐진 팀이 살아 있을 수 있음)
-  useEffect(() => {
-    if (loading) return;
-    Object.entries(manualExpandedTeams).forEach(([teamUuid, expanded]) => {
-      if (expanded) {
-        fetchFoldersIfNeeded(teamUuid);
-      }
-    });
-  }, [loading, manualExpandedTeams, fetchFoldersIfNeeded]);
 
   // 팀이 펼쳐져 있는지 계산 (수동 상태 우선, 없으면 선택된 팀만 펼침)
   const isTeamExpanded = (teamUuid: string): boolean => {
@@ -70,15 +48,18 @@ const Sidebar = ({
     return false;
   };
 
-  const toggleTeamExpand = async (teamUuid: string) => {
-    const currentlyExpanded = isTeamExpanded(teamUuid);
-    const willExpand = !currentlyExpanded;
+  // useFolders 훅 사용 — 펼쳐진 팀과 선택된 팀의 폴더만 TanStack Query로 fetch.
+  // 캐싱은 라이브러리에 위임하므로 명시적 fetchFoldersIfNeeded 호출은 불필요.
+  const { teamFolders, createFolder, deleteFolder, renameFolder } = useFolders({
+    teams,
+    isTeamEnabled: isTeamExpanded,
+    selectedTeamUuid,
+  });
 
+  const toggleTeamExpand = (teamUuid: string) => {
+    const willExpand = !isTeamExpanded(teamUuid);
     setTeamExpanded(teamUuid, willExpand);
-
-    if (willExpand) {
-      await fetchFoldersIfNeeded(teamUuid);
-    }
+    // 펼치면 useFolders 안의 useQueries enabled가 true가 되어 자동 fetch
   };
 
   const handleTeamClick = (team: Team) => {
