@@ -128,8 +128,12 @@ const TeamPage = () => {
     };
 
     fetchData();
+    // teamFromState는 location.state가 navigation마다 새 wrapper로 감싸져
+    // reference가 매번 달라지기 때문에 의존성에서 제외. 폴더 클릭으로 이
+    // useEffect가 매번 돌면 setLoading(true)와 folderApi.getFolders가 다시
+    // 일어나 페이지 전체가 깜빡임.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teamUuid, teamFromState]);
+  }, [teamUuid]);
 
   // 폴더 선택 핸들러 (Sidebar에서 호출)
   const handleFolderSelect = (folder: FolderType) => {
