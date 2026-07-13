@@ -2,7 +2,7 @@
 
 <!--[홈페이지](https://docs.teamstash.eupthere.uk)-->
 
-[대시보드](https://teamstash.app)
+<!--[대시보드](https://teamstash.app)-->
 
 [파이어폭스 애드온](https://addons.mozilla.org/ko/firefox/addon/teamstash/?utm_content=addons-manager-reviews-link&utm_medium=firefox-browser&utm_source=firefox-browser)
 
